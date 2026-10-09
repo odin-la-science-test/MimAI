@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["fr.mimai.app.overlay.MimirOverlayModule"]
+  }
+}

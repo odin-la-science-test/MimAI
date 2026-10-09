@@ -1,0 +1,24 @@
+node_modules/
+.expo/
+dist/
+*.log
+
+# dossiers natifs régénérés par `expo prebuild` (Continuous Native Generation)
+/android/
+/ios/
+modules/**/android/build/
+.gradle/
+.cxx/
+
+# build et signature : JAMAIS dans le dépôt
+*.aab
+*.apk
+*.jks
+*.keystore
+*.p12
+*.pem
+credentials.json
+google-service-account*.json
+.env
+.env.*
+local.properties

@@ -1,0 +1,76 @@
+/* Bulle assistant « Mìmir » par-dessus les autres applis.
+   Le module natif MimirOverlay n'existe que dans la version installée
+   (build de développement ou .aab) : en Expo Go, overlayAvailable() est faux
+   et l'interface reste honnête sur la limite.
+   Politique Google Play : SYSTEM_ALERT_WINDOW + service au premier plan sont des
+   permissions sensibles. Le build de production peut donc être compilé SANS bulle
+   (variable MIMAI_OVERLAY=0, voir plugins/withMimaiAndroid.js et docs/PLAY_STORE_CHECKLIST.md) :
+   le drapeau extra.overlayEnabled, injecté à la compilation, masque alors toute la fonction. */
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+/* drapeau de compilation : vrai par défaut (builds de développement) */
+const enabledAtBuild = (Constants.expoConfig?.extra as { overlayEnabled?: boolean } | undefined)?.overlayEnabled !== false;
+
+type NativeOverlay = {
+  isGranted(): boolean | Promise<boolean>;
+  requestPermission(): unknown;
+  show(): boolean | Promise<boolean>;
+  hide(): unknown;
+  sha256File(path: string): Promise<string>;
+  status(): OverlayStatus;
+  chatText?(text: string, done: boolean): unknown;
+  addListener?(name: string, cb: (e: { text?: string }) => void): { remove(): void };
+};
+
+/* état technique de la barre (aucune donnée personnelle), pour l'écran de diagnostic */
+export interface OverlayStatus {
+  sdk: number; fabricant: string; modele: string; permission: boolean;
+  serviceActif: boolean; dernierEvenement: string; encoche: string;
+}
+
+let M: NativeOverlay | null = null;
+if (Platform.OS === 'android' && enabledAtBuild) {
+  try { M = require('expo-modules-core').requireNativeModule('MimirOverlay') as NativeOverlay; } catch { M = null; }
+}
+
+export const overlayAvailable = (): boolean => !!M;
+/* faux quand la version a été compilée sans bulle (build Google Play) : la fonction n'existe pas du tout */
+export const overlayIncluded = enabledAtBuild;
+
+export async function overlayGranted(): Promise<boolean> {
+  try { return M ? !!(await M.isGranted()) : false; } catch { return false; }
+}
+
+export function overlayRequest(): void {
+  try { M?.requestPermission(); } catch { /* indisponible */ }
+}
+
+export async function overlayShow(): Promise<boolean> {
+  try { return M ? !!(await M.show()) : false; } catch { return false; }
+}
+
+export function overlayStatus(): OverlayStatus | null {
+  try { return M ? M.status() : null; } catch { return null; }
+}
+
+/* discussion flottante : la barre envoie les messages saisis (onChatSend), l'app répond par morceaux (chatText) */
+export function overlayChatOn(onOpen: () => void, onSend: (text: string) => void): () => void {
+  try {
+    const a = M?.addListener?.('onChatOpen', () => onOpen());
+    const b = M?.addListener?.('onChatSend', e => { if (e?.text) onSend(String(e.text)); });
+    return () => { try { a?.remove(); b?.remove(); } catch { /* déjà retiré */ } };
+  } catch { return () => undefined; }
+}
+export function overlayChatText(text: string, done: boolean): void {
+  try { M?.chatText?.(text, done); } catch { /* indisponible */ }
+}
+
+export async function overlayHide(): Promise<void> {
+  try { await M?.hide(); } catch { /* indisponible */ }
+}
+
+/* SHA-256 natif en flux (rapide même pour 1 Go) — version installée uniquement */
+export async function sha256FileNative(path: string): Promise<string | null> {
+  try { return M ? await M.sha256File(path) : null; } catch { return null; }
+}

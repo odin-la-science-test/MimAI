@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "MiMai",
+    "slug": "mimai",
+    "version": "1.0.0",
+    "scheme": "mimai",
+    "orientation": "portrait",
+    "icon": "./assets/icons/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f5ead8",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "fr.mimai.app",
+      "versionCode": 14,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "monochromeImage": "./assets/icons/adaptive-icon-mono.png",
+        "backgroundColor": "#c67139"
+      },
+      "softwareKeyboardLayoutMode": "pan",
+      "allowBackup": false,
+      "permissions": [
+        "INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/icons/favicon.png"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-sqlite",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ],
+      "./plugins/withMimaiAndroid",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icons/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#c67139"
+        }
+      ],
+      "expo-speech-recognition"
+    ]
+  }
+}

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Politique de confidentialité — MiMai</title>
+<style>
+:root{--bg:#f5ead8;--fg:#2a2420;--muted:#6b5f55;--acc:#c67139;--olive:#7a8a5e;--card:#fffaf1}
+@media(prefers-color-scheme:dark){:root{--bg:#1f1b17;--fg:#f1e7d6;--muted:#b3a794;--card:#2a2520}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,Segoe UI,Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px;color:var(--acc)}
+h2{font-size:1.1rem;margin:28px 0 6px}
+p,li{overflow-wrap:anywhere}
+.nav{display:flex;gap:10px;margin:14px 0 8px}
+.nav a{padding:8px 16px;border-radius:999px;background:var(--card);color:var(--fg);text-decoration:none;border:1px solid var(--olive)}
+section{background:var(--card);border-radius:20px;padding:6px 22px 18px;margin-top:16px}
+a{color:var(--acc)}code{background:rgba(122,138,94,.18);padding:1px 6px;border-radius:6px}
+.date{color:var(--muted);font-size:.9rem}
+</style></head><body><main>
+<h1>Politique de confidentialité — MiMai</h1>
+<div class="nav"><a href="#fr">Français</a><a href="#en">English</a></div>
+<section id="fr"><h2 style="font-size:1.4rem;color:var(--olive)">Français</h2>
+<p><em>Dernière mise à jour : 4 octobre 2026. Version française d'abord, English version below.</em></p>
+<h2>En bref</h2>
+<p>MiMai est une application d'assistant IA qui <strong>fonctionne sur votre téléphone</strong>. Il n'y a <strong>ni compte, ni serveur MiMai, ni publicité, ni outil d'analyse, ni collecte de données</strong>. L'éditeur ne reçoit aucune de vos données.</p>
+<h2>Éditeur et contact</h2>
+<p>MiMai (développeur : Ethan) — <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<h2>Données stockées sur votre appareil</h2>
+<p>Les éléments suivants sont créés par vous et <strong>restent sur votre appareil</strong> (base SQLite privée de l'application) :</p>
+<p>conversations et messages, souvenirs (mémoire), documents que vous importez ou écrivez, exemples d'entraînement, profils/adaptateurs personnalisés, réglages, journal réseau et journal d'erreurs locaux.</p>
+<ul>
+<li>Les contenus sensibles sont <strong>chiffrés au repos</strong> (AES-256-GCM) ; la clé est conservée dans le Keystore Android et ne quitte pas l'appareil. <em>(Le chiffrement n'est actif que dans l'application installée, pas dans le mode de test Expo Go.)</em></li>
+<li>La sauvegarde automatique Android et le transfert d'appareil sont <strong>désactivés</strong> pour ces données.</li>
+<li>Vous pouvez tout effacer depuis <strong>Confidentialité → Supprimer les données locales</strong>. Désinstaller l'application efface aussi toutes les données.</li>
+</ul>
+<h2>Ce qui est envoyé sur Internet</h2>
+<p>Le réseau est <strong>bloqué par défaut</strong>. Une seule opération l'ouvre, uniquement après votre action explicite : le <strong>téléchargement d'un modèle d'IA</strong> (fichier GGUF public) depuis <code>huggingface.co</code> (Hugging Face, Inc.). La fenêtre réseau dure 15 minutes au maximum et se referme dès la fin du téléchargement.</p>
+<ul>
+<li>Aucune donnée personnelle, aucun contenu de conversation ni aucun document n'est envoyé.</li>
+<li>Comme toute requête Internet, le serveur de téléchargement voit votre <strong>adresse IP</strong> et les informations techniques standard de la connexion. Ces informations sont traitées par Hugging Face selon sa propre politique ; MiMai ne les reçoit pas.</li>
+<li>Le fichier téléchargé est vérifié (taille et empreinte SHA-256) avant utilisation.</li>
+</ul>
+<h2>Autorisations Android</h2>
+<ul>
+<li><strong>Internet</strong> : uniquement pour le téléchargement explicite d'un modèle.</li>
+<li><strong>Vibration</strong> : retour haptique léger sur certains boutons. Aucune donnée n'est collectée.</li>
+<li><strong>Micro</strong> : uniquement quand vous touchez le bouton micro (commande vocale). La reconnaissance se fait <strong>sur votre appareil</strong> avec le service vocal d'Android ; MiMai refuse de la faire par Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.</li>
+<li><strong>Jeu « La Garde des Étoiles »</strong> : jeu intégré qui fonctionne entièrement <strong>hors ligne</strong> dans l'application (affichage par la WebView d'Android, sans accès réseau). Il ne demande aucune autorisation supplémentaire et n'envoie rien. Sa progression (étoiles, sorts) est conservée <strong>sur votre appareil</strong> et est effacée avec « Supprimer les données locales ».</li>
+<li><strong>Lecture à voix haute</strong> (option « Réponses vocales », désactivée par défaut) : MiMai confie le texte de ses réponses à la <strong>synthèse vocale d'Android</strong> de votre téléphone. MiMai n'envoie rien sur Internet ; si vous choisissez dans Android une voix « réseau », c'est ce moteur système (et non MiMai) qui peut utiliser Internet, selon sa propre politique.</li>
+<li><strong>Afficher par-dessus les autres applications</strong>, <strong>service au premier plan</strong> et <strong>notifications</strong> : uniquement dans la variante de l'application qui inclut la « bulle Mìmir » ; ces autorisations sont demandées seulement si vous activez la bulle, qui n'affiche qu'un bouton flottant et <strong>ne lit pas le contenu de l'écran</strong>.</li>
+<li>L'application n'accède ni aux contacts, ni à la localisation, ni à l'appareil photo, ni au stockage général : les fichiers que vous importez passent par le sélecteur de fichiers du système.</li>
+</ul>
+<h2>Enfants</h2>
+<p>MiMai ne collecte aucune donnée et n'est pas destinée à profiler des enfants. Tranche d'âge : tout public.</p>
+<h2>Vos droits (RGPD)</h2>
+<p>L'éditeur ne détenant aucune donnée vous concernant, il n'y a rien à lui demander d'accéder, de rectifier ou d'effacer : vous gardez la maîtrise complète de vos données sur votre appareil (suppression depuis l'application). Pour toute question : <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<h2>Modifications</h2>
+<p>Toute modification de cette politique sera publiée à cette adresse avec une nouvelle date.</p>
+</section>
+<section id="en"><h2 style="font-size:1.4rem;color:var(--olive)">English</h2>
+<h2>Summary</h2>
+<p>MiMai is an AI assistant app that <strong>runs on your phone</strong>. There is <strong>no account, no MiMai server, no ads, no analytics and no data collection</strong>. The publisher receives none of your data.</p>
+<h2>Publisher and contact</h2>
+<p>MiMai (developer: Ethan) — <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<h2>Data stored on your device</h2>
+<p>Conversations and messages, memories, documents you import or write, training examples, custom profiles/adapters, settings, and local network and error logs are created by you and <strong>stay on your device</strong> (the app's private SQLite database).</p>
+<ul>
+<li>Sensitive content is <strong>encrypted at rest</strong> (AES-256-GCM); the key lives in the Android Keystore and never leaves the device. <em>(Encryption is only active in the installed app, not in the Expo Go test mode.)</em></li>
+<li>Android auto-backup and device-to-device transfer are <strong>disabled</strong> for this data.</li>
+<li>You can erase everything from <strong>Privacy → Delete local data</strong>. Uninstalling the app also removes all data.</li>
+</ul>
+<h2>What is sent over the Internet</h2>
+<p>The network is <strong>blocked by default</strong>. Only one operation opens it, and only after your explicit action: <strong>downloading an AI model</strong> (a public GGUF file) from <code>huggingface.co</code> (Hugging Face, Inc.). The network window lasts 15 minutes at most and closes as soon as the download ends.</p>
+<ul>
+<li>No personal data, conversation content or document is ever sent.</li>
+<li>Like any Internet request, the download server sees your <strong>IP address</strong> and standard connection metadata. This is handled by Hugging Face under its own policy; MiMai does not receive it.</li>
+<li>The downloaded file is verified (size and SHA-256) before use.</li>
+</ul>
+<h2>Android permissions</h2>
+<ul>
+<li><strong>Internet</strong>: only for the explicit model download.</li>
+<li><strong>Vibration</strong>: light haptic feedback on some buttons. No data is collected.</li>
+<li><strong>Microphone</strong>: only when you tap the microphone button (voice command). Recognition runs <strong>on your device</strong> with Android's speech service; MiMai refuses to use network-based recognition. MiMai neither records nor sends the audio; only the recognised text is used, as if you had typed it. The microphone never listens continuously.</li>
+<li><strong>"La Garde des Étoiles" game</strong>: a built-in game that runs entirely <strong>offline</strong> inside the app (rendered by Android's WebView, with network access blocked). It needs no extra permission and sends nothing. Its progress (stars, spells) is kept <strong>on your device</strong> and is erased with "Delete local data".</li>
+<li><strong>Read aloud</strong> ("Voice replies" option, off by default): MiMai hands the text of its answers to your phone's <strong>Android text-to-speech</strong>. MiMai sends nothing over the Internet; if you pick a "network" voice in Android, it is that system engine (not MiMai) that may use the Internet, under its own policy.</li>
+<li><strong>Draw over other apps</strong>, <strong>foreground service</strong> and <strong>notifications</strong>: only in the app variant that includes the "Mìmir bubble"; they are requested only if you turn the bubble on. It shows a floating button and <strong>does not read screen content</strong>.</li>
+<li>The app does not access contacts, location, camera or general storage: files you import go through the system file picker.</li>
+</ul>
+<h2>Children</h2>
+<p>MiMai collects no data. Age range: everyone.</p>
+<h2>Your rights (GDPR)</h2>
+<p>The publisher holds no data about you, so there is nothing to access, rectify or erase on its side: you keep full control on your device (deletion from within the app). Questions: <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<h2>Changes</h2>
+<p>Any change to this policy will be published at this address with a new date.</p>
+</section>
+</main></body></html>

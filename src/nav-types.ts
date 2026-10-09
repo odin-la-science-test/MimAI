@@ -1,0 +1,24 @@
+export type RootStackParamList = {
+  Splash: undefined;
+  Welcome: undefined;
+  Device: undefined;
+  Download: { modelId: string } | undefined;
+  Ready: undefined;
+  Home: undefined;
+  Chat: { chatId?: string | null; preset?: string; mode?: 'rapide' | 'reflexion' | 'vision' | 'outils'; voice?: 'mic' | 'bubble' } | undefined;
+  Chats: undefined;
+  Library: undefined;
+  DocView: { docId: string };
+  Models: undefined;
+  Training: undefined;
+  TrainNew: undefined;
+  TrainExample: undefined;
+  TrainRun: { goal: string; opts: { useExamples: boolean; useConvs: boolean; useDocs: boolean } };
+  TrainResult: { runId: string };
+  Memory: undefined;
+  Privacy: undefined;
+  Companion: undefined;
+  Arena: undefined;
+  Game: undefined;
+  Moves: undefined;
+};

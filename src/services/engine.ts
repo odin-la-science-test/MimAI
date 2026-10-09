@@ -358,7 +358,7 @@ function integratedAnswer(ctx: GenerateCtx, seed: number): string {
     return 'Voici une base simple, à adapter\u00A0:\n\nfunction solution(input) {\n  // 1. valider l\u2019entrée\n  // 2. transformer\n  // 3. renvoyer un résultat clair\n  return input;\n}\n\nDites-moi le cas précis (langage, entrées, résultat attendu) et je complète le code.';
   }
   if (ctx.mode === 'vision') {
-    return 'L\u2019analyse d\u2019images demande un modèle compatible vision, comme Gemma 3 4B.\n\nVous pouvez l\u2019installer depuis Modèles — le téléchargement reste la seule chose qui sort de l\u2019appareil, et uniquement avec votre accord.';
+    return 'L\u2019analyse d\u2019images demande un modèle de vision (SmolVLM2, Qwen 2.5 VL ou Gemma 3).\n\nInstallez-en un depuis Modèles → Un moteur par fonction → Vision. Le téléchargement reste la seule chose qui sort de l\u2019appareil, et uniquement avec votre accord ; vos photos restent sur le téléphone.';
   }
 
   /* réponse constructive par défaut : recentre sur la question */

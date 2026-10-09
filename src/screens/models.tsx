@@ -20,6 +20,7 @@ import { scanModelFiles, importModelFile } from '../services/modelFiles';
 import type { ImportPhase } from '../services/modelFiles';
 import { reconcile, describeImportFailure } from '../services/installed';
 import type { SpecialtyId } from '../services/advisor';
+import { ModePicker } from './modepicker';
 
 /* ─────────── profil réel de l'appareil (RAM + disque libre) ─────────── */
 export function useDeviceProfile(): { profile: DeviceProfile; loaded: boolean } {
@@ -276,6 +277,8 @@ export function Models({ navigation }: NativeStackScreenProps<RootStackParamList
         <Btn kind="secondary" title="Importer un fichier .gguf" height={46} fontSize={13.5} style={{ flex: 1, minWidth: 150 }} onPress={() => { void importFile(); }} />
       </View>
       <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: C.n700 }}>MiMai reconnaît automatiquement les modèles déjà présents. Un fichier importé n’est accepté que s’il correspond exactement à un modèle du catalogue (taille et SHA-256).</Text>
+
+      <ModePicker />
 
       <Kicker style={{ marginTop: 22 }}>Installés</Kicker>
       {installed.length === 0 ? <Text style={{ marginTop: 8, fontSize: 13.5, lineHeight: 20, color: C.n700 }}>Aucun modèle installé : MiMai répond avec son moteur intégré. Choisissez-en un ci-dessous.</Text> : null}

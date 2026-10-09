@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp, MODELS } from '../state';
+import { modelForMode } from '../services/modes';
 import { C, F } from '../theme';
 import { Mark, ShakeBuddy } from '../art';
 import { useIsFocused } from '@react-navigation/native';
@@ -20,7 +21,7 @@ const MODES: [string, string][] = [['rapide', 'Rapide'], ['reflexion', 'Réflexi
 export function Chat({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Chat'>) {
   const focused = useIsFocused();
   const { data, e, set, sendMessage, newChat, deleteConv, feedback, saveCorrection, regenerate, patchData, toast } = useApp();
-  const am = MODELS[data.settings.activeModel];
+  const am = MODELS[modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode)];
   const conv = e.chatId ? data.convs.find(c => c.id === e.chatId) : null;
   const scrollRef = useRef<ScrollView>(null);
   const [menu, setMenu] = useState(false);

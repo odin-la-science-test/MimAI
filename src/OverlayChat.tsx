@@ -9,6 +9,8 @@ import { activeAdapter } from './services/training';
 import { uid } from './services/db';
 import type { Msg } from './services/db';
 import { MODELS } from './services/net';
+import { modelForMode, candidatesFor, assign, nextModel } from './services/modes';
+import type { FnMode } from './services/modes';
 import { titleFrom } from './theme';
 import { speak, stopSpeaking } from './services/speak';
 import { trail } from './services/crashlog';
@@ -29,10 +31,10 @@ export function OverlayChat() {
   const busy = useRef(false);
   /* choix faits dans la fenêtre : appliqués tout de suite, avant que l'état de l'app ait eu le temps de suivre */
   const modeRef = useRef<Mode | null>(null);
-  const modelRef = useRef<string | null>(null);
 
   const curMode = (): Mode => modeRef.current ?? dataRef.current.settings.mode;
-  const curModel = (): string => modelRef.current ?? dataRef.current.settings.activeModel;
+  /* le modèle dépend de la fonction (mode) : celui que l'utilisateur lui a associé, sinon le modèle actif */
+  const curModel = (): string => { const st = dataRef.current.settings; return modelForMode(st.installed, st.activeModel, st.modeModels, curMode()); };
 
   const pushState = (reset: boolean) => {
     overlayChatState(JSON.stringify({
@@ -84,12 +86,16 @@ export function OverlayChat() {
       patchRef.current(x => { x.settings.mode = arg; });
       pushState(false);
     } else if (type === 'model') {
-      /* passe au modèle installé suivant */
-      const list = dataRef.current.settings.installed.filter(m => !!MODELS[m]);
-      if (list.length < 2) { overlayChatText(list.length ? 'Un seul modèle est installé.' : 'Aucun modèle installé : MiMai répond avec son moteur intégré.', true); return; }
-      const next = list[(Math.max(0, list.indexOf(curModel())) + 1) % list.length];
-      modelRef.current = next;
-      setModelRef.current(next);
+      /* associe à la fonction courante le modèle installé suivant */
+      const st = dataRef.current.settings;
+      const list = candidatesFor(curMode() as FnMode, st.installed, MODELS as unknown as Record<string, { tags?: string[] } | undefined>);
+      if (list.length < 2) { overlayChatText(list.length ? 'Un seul modèle est disponible pour cette fonction.' : 'Aucun modèle disponible pour cette fonction : MiMai répond avec son moteur intégré.', true); return; }
+      const next = nextModel(list, curModel());
+      if (!next) return;
+      const mode = curMode() as FnMode;
+      patchRef.current(x => { x.settings.modeModels = assign(x.settings.modeModels, mode, next, x.settings.installed); });
+      /* l'état de l'app n'est à jour qu'au prochain rendu : on l'applique aussi à la copie locale */
+      dataRef.current = { ...dataRef.current, settings: { ...dataRef.current.settings, modeModels: assign(st.modeModels, mode, next, st.installed) } };
       pushState(false);
     } else if (type === 'new') {
       convId.current = null; hist.current = []; busy.current = false;
@@ -112,7 +118,7 @@ export function OverlayChat() {
   useEffect(() => {
     if (!overlayAvailable()) return;
     const off = overlayChatOn(
-      () => { modeRef.current = null; modelRef.current = null; pushState(true); },   /* ouverture : on garde la conversation en cours */
+      () => { modeRef.current = null; pushState(true); },   /* ouverture : on garde la conversation en cours */
       text => { void answer(text); },
       onAction,
     );

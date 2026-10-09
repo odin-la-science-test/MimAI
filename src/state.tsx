@@ -14,6 +14,7 @@ import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { appExits } from './services/overlay';
+import { modelForMode } from './services/modes';
 import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
@@ -182,11 +183,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   /* préchauffage : le modèle actif est chargé et son prompt système traité avant la première question */
   useEffect(() => {
-    if (!ready || !data.settings.installed.includes(data.settings.activeModel)) return;
-    const t = setTimeout(() => { void prewarm(data.settings.activeModel, { memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], docs: [] }); }, 1200);
+    const warm = modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode);
+    if (!ready || !data.settings.installed.includes(warm)) return;
+    const t = setTimeout(() => { void prewarm(warm, { memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], docs: [] }); }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, data.settings.activeModel, data.settings.installed.length, data.adapters, data.memories]);
+  }, [ready, data.settings.activeModel, data.settings.mode, data.settings.modeModels, data.settings.installed.length, data.adapters, data.memories]);
 
   const patchData = (fn: (d: AppData) => void) => setData(prev => { const copy: AppData = JSON.parse(JSON.stringify(prev)); fn(copy); return copy; });
 
@@ -200,7 +202,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const text = text0.trim();
     if (!text || e.busy) return;
     const token = ++runToken.current;
-    trail('question reçue : ' + text.length + ' car., mode ' + data.settings.mode + ', modèle ' + data.settings.activeModel);
+    /* le modèle dépend de la fonction (mode) choisie ; sans choix, c'est le modèle actif */
+    const modelId = modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode);
+    trail('question reçue : ' + text.length + ' car., mode ' + data.settings.mode + ', modèle ' + modelId);
 
     const convId = e.chatId || uid('c');
     const isNew = !e.chatId || !data.convs.some(c => c.id === convId);
@@ -257,18 +261,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const info = await generateDetailed({
         history: prevMsgs, userText: text, mode: data.settings.mode, docs: data.docs,
         memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], examples: data.tex,
-        modelName: data.settings.activeModel, forcedDoc, onText,
+        modelName: modelId, forcedDoc, onText,
       });
       answer = info.text;
       usedRealModel = info.real;
       /* vitesse mesurée de ce modèle sur ce téléphone (affichée dans Modèles) */
       if (info.real && info.tps && info.tps > 0) {
-        const id = data.settings.activeModel, v = Math.round(info.tps * 10) / 10;
+        const id = modelId, v = Math.round(info.tps * 10) / 10;
         patchData(d => { d.settings.speed = { ...(d.settings.speed || {}), [id]: v }; });
       }
       /* modèle installé mais en échec : on le dit, au lieu de répondre en silence avec le moteur intégré */
-      if (info.engineError && data.settings.installed.includes(data.settings.activeModel)) {
-        onErr('Modèle ' + data.settings.activeModel + ' : ' + info.engineError.slice(0, 200));
+      if (info.engineError && data.settings.installed.includes(modelId)) {
+        onErr('Modèle ' + modelId + ' : ' + info.engineError.slice(0, 200));
         toast('Le modèle n’a pas pu répondre : moteur intégré utilisé.');
       }
     } catch (err) {
@@ -289,7 +293,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!usedRealModel) set(s => ({ ...s, thinking: false, stream: { text: answer } }));
 
     const doc = forcedDoc || null;
-    const am: Msg = { id: uid('m'), role: 'ai', text: answer, ts: Date.now(), feedback: null, source: doc ? doc.name : null, model: usedRealModel ? (MODELS[data.settings.activeModel]?.name || 'local') : 'Moteur intégré' };
+    const am: Msg = { id: uid('m'), role: 'ai', text: answer, ts: Date.now(), feedback: null, source: doc ? doc.name : null, model: usedRealModel ? (MODELS[modelId]?.name || 'local') : 'Moteur intégré' };
     patchData(d => {
       const c = d.convs.find(x => x.id === convId);
       if (c) c.msgs.push(am);

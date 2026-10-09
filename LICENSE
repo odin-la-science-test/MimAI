@@ -1,0 +1,41 @@
+MiMai — Licence propriétaire / Proprietary License
+
+Copyright (c) 2026 Ethan (studio MiMai). Tous droits réservés. All rights reserved.
+
+FRANÇAIS
+
+1. Propriété. Le code source, les graphismes, le logo et le personnage « Mìmir », les textes, les scripts, la
+   documentation et tout autre contenu original de ce dépôt (le « Logiciel ») sont la propriété exclusive d'Ethan,
+   studio MiMai (le « Titulaire »). Les noms « MiMai » et « Mìmir » sont revendiqués par le Titulaire.
+
+2. Aucune licence implicite. La mise à disposition de ce dépôt (y compris sur une plateforme publique) ne constitue
+   pas une licence libre ni une cession de droits. Aucun droit n'est accordé, sauf autorisation écrite préalable du
+   Titulaire.
+
+3. Interdictions. Sans autorisation écrite du Titulaire, il est interdit de : (a) copier, reproduire ou redistribuer
+   le Logiciel en tout ou partie ; (b) le modifier, le traduire ou créer une œuvre dérivée ; (c) le compiler,
+   le publier ou le distribuer (y compris sur un magasin d'applications) ; (d) utiliser les noms, logos et personnages
+   MiMai / Mìmir ; (e) l'utiliser pour entraîner un modèle ou le revendre ; (f) retirer cette mention.
+
+4. Ce qui reste permis. Consulter le code à des fins d'information, et les usages que la loi autorise malgré le
+   droit d'auteur (par exemple la courte citation).
+
+5. Composants tiers. Le Logiciel utilise des composants tiers sous leurs propres licences (voir
+   THIRD_PARTY_NOTICES.md). Cette licence ne les remplace pas et ne s'applique pas à eux. Les modèles de langage que
+   l'utilisateur télécharge ne sont pas fournis dans ce dépôt et restent soumis à la licence de leurs auteurs.
+
+6. Absence de garantie. Le Logiciel est fourni « en l'état », sans garantie d'aucune sorte, expresse ou implicite.
+   Le Titulaire n'est pas responsable des dommages résultant de son utilisation, dans la limite permise par la loi.
+
+7. Contact. Pour une autorisation ou une licence commerciale : contacter le Titulaire via le dépôt GitHub.
+
+ENGLISH
+
+The source code, artwork, logo, the "Mìmir" character, texts, scripts and documentation in this repository (the
+"Software") are the exclusive property of Ethan, studio MiMai (the "Owner"). Making this repository viewable does not
+grant any license. Without the Owner's prior written permission you may not copy, modify, translate, create derivative
+works from, compile, publish, distribute, or sell the Software, use the MiMai / Mìmir names, logos or characters, or use
+the Software to train a model. Viewing the code for information, and uses that law permits regardless of copyright, remain
+allowed. Third-party components keep their own licenses (see THIRD_PARTY_NOTICES.md); downloaded language models are not
+part of this repository and remain under their authors' licenses. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, AND THE OWNER IS NOT LIABLE FOR DAMAGES ARISING FROM ITS USE, TO THE EXTENT PERMITTED BY LAW.

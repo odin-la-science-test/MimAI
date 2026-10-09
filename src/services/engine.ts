@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { selectFewShots, parseMeta, visibleRules, registerEvaluatorFactory, EXPORT_SYSTEM, datasetFrom, splitPairs, profileMessages, scoreVariant, snapshotFrom, activeAdapter } from './training';
 import { measureSpeed, type BenchSnapshot } from './bench';
 import type { TrainPair, ChatMsg, Evaluator, AdapterRef } from './training';
+import { trail } from './crashlog';
 import { classify, maxTokensFor, lengthHint, trimToSentence, historyWindow, fewShotCount, BUDGET_MS } from './speedplan';
 import type { Kind } from './speedplan';
 
@@ -75,6 +76,9 @@ async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
   if (llama && llama.file === modelFile) return llama.ctx;
   const info = await FileSystem.getInfoAsync(modelFile);
   if (!info.exists) return null; /* poids non installés : moteur intégré */
+  const base = modelFile.split('/').pop();
+  trail('chargement du modèle ' + base + ' (' + Math.round(((info as { size?: number }).size || 0) / 1048576) + ' Mo), compatibilité=' + compatMode);
+  const tLoad = Date.now();
   if (llama) { try { await llama.ctx.release(); } catch { /* déjà libéré */ } llama = null; }
   /* 4 threads : sur un téléphone (gros cœurs + petits cœurs), utiliser TOUS les cœurs est en général plus lent que
      les ~4 gros cœurs. Pas de GPU sur Android avec ce moteur : tout se calcule sur le processeur. */
@@ -82,6 +86,7 @@ async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
   const ctx = await mod.initLlama(compatMode
     ? { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 2, no_extra_bufts: true, use_mlock: false }
     : { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 4 });
+  trail('modèle chargé en ' + (Date.now() - tLoad) + ' ms');
   llama = { file: modelFile, ctx, adapterKey: '' };
   return ctx;
 }
@@ -126,8 +131,9 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
     await syncAdapter(ctx, o.adapter ?? null);
     const t1 = Date.now();
     let acc = '', ttft: number | null = null, cut = false;
+    trail('génération : ' + messages.length + ' messages, ' + messages.reduce((n, m) => n + m.content.length, 0) + ' car., n_predict=' + (o.maxTokens ?? 400) + ', délai=' + (o.deadlineMs ?? 0) + ' ms');
     /* arrêt par délai : au moins 2,5 s de génération même si le chargement du modèle a pris du temps */
-    const timer = o.deadlineMs ? setTimeout(() => { cut = true; void ctx.stopCompletion().catch(() => undefined); }, Math.max(2500, o.deadlineMs - (t1 - t0))) : null;
+    const timer = o.deadlineMs ? setTimeout(() => { cut = true; trail('délai atteint → arrêt de la génération'); void ctx.stopCompletion().catch(() => undefined); }, Math.max(2500, o.deadlineMs - (t1 - t0))) : null;
     try {
       /* enable_thinking:false = pas de « réflexion » invisible avant la réponse (les modèles Qwen 3 hybrides réfléchissent
          par défaut, ce qui multiplie le temps de réponse et ne peut pas être borné par un délai) ; la réflexion visible
@@ -144,12 +150,16 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
       } catch { prompt = ''; }
       const sampling = { n_predict: o.maxTokens ?? 400, temperature: o.temperature ?? 0.7, top_k: 40, top_p: 0.9 };
       const res = prompt
-        ? await ctx.completion({ prompt, stop, ...sampling }, d => { if (ttft === null) ttft = Date.now() - t0; acc += d?.token || ''; o.onText?.(acc); })
+        ? await ctx.completion({ prompt, stop, ...sampling }, d => { if (ttft === null) { ttft = Date.now() - t0; trail('premier jeton après ' + ttft + ' ms'); } acc += d?.token || ''; o.onText?.(acc); })
         /* gabarit indisponible : génération sans flux (pas de rappel par jeton), plus lente à afficher mais sûre */
         : await ctx.completion({ messages, ...sampling, enable_thinking: !!o.thinking });
       const t = res?.timings;
+      trail('génération terminée : ' + (t?.predicted_n ?? '?') + ' jetons en ' + (Date.now() - t0) + ' ms' + (cut ? ' (coupée par le délai)' : ''));
       lastTps = t && t.predicted_per_second && t.predicted_per_second > 0 ? { gen: t.predicted_per_second, prompt: t.prompt_per_second || 0, tokens: t.predicted_n || 0 } : null;
       return { text: res?.text || acc, cut, ms: Date.now() - t0, ttftMs: ttft, tokens: t?.predicted_n || 0, tps: lastTps?.gen ?? null, promptTps: lastTps?.prompt || null };
+    } catch (err) {
+      trail('ERREUR du moteur : ' + (err instanceof Error ? err.message : String(err)));
+      throw err;
     } finally { if (timer) clearTimeout(timer); }
   });
 }
@@ -168,6 +178,7 @@ export async function prewarm(modelId: string, ctx: Pick<GenerateCtx, 'memories'
     const sys = buildSystemPrompt({ history: [], userText: '', mode: 'rapide', docs: ctx.docs, memories: ctx.memories, adapterRules: ctx.adapterRules, examples: [], modelName: modelId });
     const key = file + '|' + hash(sys);
     if (warmKey === key) return;
+    trail('préchauffage du modèle ' + modelId);
     const r = await llmCompleteDetailed(file, [{ role: 'system', content: sys }, { role: 'user', content: 'Bonjour' }], { maxTokens: 1, temperature: 0, deadlineMs: 15000 });
     if (r) warmKey = key;
   } catch { /* le préchauffage est facultatif */ }

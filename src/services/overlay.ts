@@ -21,6 +21,9 @@ type NativeOverlay = {
   status(): OverlayStatus;
   chatText?(text: string, done: boolean): unknown;
   lastExit?(): ExitInfo[];
+  trail?(text: string): boolean;
+  readTrail?(): string;
+  clearTrail?(): boolean;
   addListener?(name: string, cb: (e: { text?: string }) => void): { remove(): void };
 };
 
@@ -72,6 +75,11 @@ export interface ExitInfo { reason: string; desc: string; time: number; rssMb: n
 export function appExits(): ExitInfo[] {
   try { return M?.lastExit ? M.lastExit() : []; } catch { return []; }
 }
+
+/* fil d'Ariane natif (écrit sur disque à chaque étape) */
+export const trailNative = (text: string): void => { try { M?.trail?.(text); } catch { /* indisponible */ } };
+export const readTrailNative = (): string => { try { return M?.readTrail ? String(M.readTrail()) : ''; } catch { return ''; } };
+export const clearTrailNative = (): void => { try { M?.clearTrail?.(); } catch { /* indisponible */ } };
 
 export async function overlayHide(): Promise<void> {
   try { await M?.hide(); } catch { /* indisponible */ }

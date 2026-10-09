@@ -21,4 +21,5 @@ export type RootStackParamList = {
   Arena: undefined;
   Game: undefined;
   Moves: undefined;
+  CrashLog: undefined;
 };

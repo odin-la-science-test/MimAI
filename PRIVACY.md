@@ -19,6 +19,7 @@ conversations et messages, souvenirs (mémoire), documents que vous importez ou 
 - Les contenus sensibles sont **chiffrés au repos** (AES-256-GCM) ; la clé est conservée dans le Keystore Android et ne quitte pas l'appareil. *(Le chiffrement n'est actif que dans l'application installée, pas dans le mode de test Expo Go.)*
 - La sauvegarde automatique Android et le transfert d'appareil sont **désactivés** pour ces données.
 - Vous pouvez tout effacer depuis **Confidentialité → Supprimer les données locales**. Désinstaller l'application efface aussi toutes les données.
+- Un **rapport de plantage** (appareil, erreurs techniques, étapes juste avant un problème) est conservé sur l'appareil pour vous aider à signaler un bug. Il ne contient ni conversation ni document. Il n'est jamais envoyé automatiquement : c'est vous qui le copiez ou le partagez, et vous pouvez l'effacer (Menu → Rapport de plantage).
 
 ### Ce qui est envoyé sur Internet
 Le réseau est **bloqué par défaut**. Une seule opération l'ouvre, uniquement après votre action explicite : le **téléchargement d'un modèle d'IA** (fichier GGUF public) depuis `huggingface.co` (Hugging Face, Inc.). La fenêtre réseau dure 15 minutes au maximum et se referme dès la fin du téléchargement.
@@ -61,6 +62,7 @@ Conversations and messages, memories, documents you import or write, training ex
 - Sensitive content is **encrypted at rest** (AES-256-GCM); the key lives in the Android Keystore and never leaves the device. *(Encryption is only active in the installed app, not in the Expo Go test mode.)*
 - Android auto-backup and device-to-device transfer are **disabled** for this data.
 - You can erase everything from **Privacy → Delete local data**. Uninstalling the app also removes all data.
+- A **crash report** (device, technical errors, steps just before a problem) is kept on the device to help you report a bug. It contains no conversation or document. It is never sent automatically: you copy or share it yourself, and you can erase it (Menu → Crash report).
 
 ### What is sent over the Internet
 The network is **blocked by default**. Only one operation opens it, and only after your explicit action: **downloading an AI model** (a public GGUF file) from `huggingface.co` (Hugging Face, Inc.). The network window lasts 15 minutes at most and closes as soon as the download ends.

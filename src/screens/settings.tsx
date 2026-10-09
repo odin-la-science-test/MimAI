@@ -79,6 +79,10 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
 
       <Kicker style={{ marginTop: 18 }}>Diagnostic et données</Kicker>
       <View style={{ marginTop: 6 }}>
+        <Row onPress={() => navigation.navigate('CrashLog')}>
+          <Text style={{ flex: 1, minWidth: 0, fontSize: 15, color: C.text }}>Rapport de plantage (à copier)</Text>
+          <Ico name="chevron" size={16} color={C.n600} />
+        </Row>
         <Row onPress={() => { void Share.share({ message: exportDiagnostic() }).catch(() => toast('Export impossible')); }}>
           <AvatarIc name="download" size={32} />
           <View style={{ flex: 1, minWidth: 0 }}>

@@ -21,7 +21,7 @@ export interface NetEntry { t: number; ev: string; }
 export interface CrashEntry { t: number; msg: string; stack: string; }
 export interface Settings {
   onboarded: boolean; installed: string[]; activeModel: string; mode: 'rapide' | 'reflexion' | 'vision' | 'outils';
-  wifiOnly: boolean; speed?: Record<string, number>; compat?: boolean; voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
+  wifiOnly: boolean; speed?: Record<string, number>; compat?: boolean; crashSeen?: number; voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
   comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean };
 }
 export interface AppData {

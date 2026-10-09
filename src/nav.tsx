@@ -17,6 +17,8 @@ import { Privacy } from './screens/settings';
 import { Companion, FloatingMimir } from './screens/companion';
 import { Arena, Moves } from './screens/arena';
 import { Game } from './screens/game';
+import { CrashLog } from './screens/crashlog';
+import { trail } from './services/crashlog';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
@@ -45,7 +47,7 @@ export function RootNav() {
     return () => sub.remove();
   }, []);
   return (
-    <NavigationContainer ref={navigationRef} onReady={() => {
+    <NavigationContainer ref={navigationRef} onStateChange={() => { const r = navigationRef.getCurrentRoute(); if (r) trail('écran ' + r.name); }} onReady={() => {
       if (pendingLink.current) { pendingLink.current = false; navigationRef.navigate('Chat', { voice: pendingVoice.current }); pendingVoice.current = undefined; }
     }}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom', contentStyle: { backgroundColor: '#f5ead8' } }}>
@@ -71,6 +73,7 @@ export function RootNav() {
         <Stack.Screen name="Arena" component={Arena} />
         <Stack.Screen name="Game" component={Game} options={{ animation: 'fade' }} />
         <Stack.Screen name="Moves" component={Moves} />
+        <Stack.Screen name="CrashLog" component={CrashLog} />
       </Stack.Navigator>
       {ready ? <FloatingMimir /> : null}
     </NavigationContainer>

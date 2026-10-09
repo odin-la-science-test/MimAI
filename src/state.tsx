@@ -12,6 +12,8 @@ import type { ModelManifest, PhaseInfo } from './services/net';
 import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
+import { trail, recordJsError } from './services/crashlog';
+import { appExits } from './services/overlay';
 import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
@@ -134,6 +136,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           loaded.settings.installed = r.installed;
           loaded.settings.activeModel = r.activeModel;
         }
+        /* Android a-t-il fermé MiMai de façon anormale depuis la dernière fois ? On le dit et on indique où trouver le rapport. */
+        const bad = appExits().find(x => /plantage|MÉMOIRE|ne répond/.test(x.reason));
+        if (bad && bad.time > (loaded.settings.crashSeen || 0)) {
+          loaded.settings.crashSeen = bad.time;
+          trail('fermeture anormale détectée au démarrage : ' + bad.reason);
+          setTimeout(() => toast('MiMai s’est fermé la dernière fois. Menu ⋯ → Rapport de plantage : copiez-le pour qu’on corrige.'), 2500);
+        }
         if (alive) setData(d => ({ ...loaded, netLog: [...d.netLog, ...loaded.netLog].slice(0, 40) }));
       } catch (err) {
         onErr('Lecture de la base impossible : ' + (err instanceof Error ? err.message : String(err)));
@@ -191,6 +200,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const text = text0.trim();
     if (!text || e.busy) return;
     const token = ++runToken.current;
+    trail('question reçue : ' + text.length + ' car., mode ' + data.settings.mode + ', modèle ' + data.settings.activeModel);
 
     const convId = e.chatId || uid('c');
     const isNew = !e.chatId || !data.convs.some(c => c.id === convId);
@@ -268,6 +278,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         set(s => ({ ...s, busy: false, thinking: false, stream: null, streamSource: null }));
         toast('Mìmir n’a pas pu répondre. Réessayez.');
         onErr('Génération : ' + (err instanceof Error ? err.message : String(err)));
+        recordJsError('génération', err);
       }
       return;
     }
@@ -284,6 +295,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (c) c.msgs.push(am);
     });
     set(s => ({ ...s, busy: false, thinking: false, stream: null, streamSource: null }));
+    trail('réponse enregistrée (' + answer.length + ' car.)');
   };
 
   const newChat = () => set(s => ({ ...s, chatId: null, draft: '', stream: null, thinking: false, busy: false }));

@@ -69,6 +69,40 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* fil d'Ariane : quelques lignes techniques (étapes, mémoire) écrites tout de suite sur disque, pour savoir ce qui se
+       passait juste avant un plantage natif ; aucun texte de conversation n'y est écrit */
+    Function("trail") { text: String ->
+      val ctx = appContext.reactContext ?: return@Function false
+      try {
+        synchronized(TRAIL_LOCK) {
+          val f = java.io.File(ctx.filesDir, "mimai-trail.txt")
+          if (f.exists() && f.length() > 60000) f.writeText(f.readText().takeLast(30000))
+          val ts = java.text.SimpleDateFormat("dd/MM HH:mm:ss.SSS", java.util.Locale.FRANCE).format(java.util.Date())
+          val mb = android.os.Debug.getNativeHeapAllocatedSize() / (1024 * 1024)
+          java.io.FileOutputStream(f, true).use { os ->
+            os.write((ts + " [natif " + mb + " Mo] " + text + "\n").toByteArray())
+            os.fd.sync()
+          }
+        }
+        true
+      } catch (e: Exception) { false }
+    }
+
+    Function("readTrail") {
+      val ctx = appContext.reactContext ?: return@Function ""
+      try {
+        synchronized(TRAIL_LOCK) {
+          val f = java.io.File(ctx.filesDir, "mimai-trail.txt")
+          if (f.exists()) f.readText().takeLast(24000) else ""
+        }
+      } catch (e: Exception) { "" }
+    }
+
+    Function("clearTrail") {
+      val ctx = appContext.reactContext ?: return@Function false
+      try { synchronized(TRAIL_LOCK) { java.io.File(ctx.filesDir, "mimai-trail.txt").delete() }; true } catch (e: Exception) { false }
+    }
+
     /* pourquoi Android a fermé l'app ces dernières fois (plantage natif, mémoire, plantage JavaScript…) :
        aucune donnée personnelle, uniquement l'état technique ; sert à comprendre un plantage sans câble ni outil */
     Function("lastExit") {
@@ -172,3 +206,5 @@ private fun printableRuns(buf: ByteArray, n: Int): String {
   if (run.length >= 6 && sb.length < 2500) { if (sb.isNotEmpty()) sb.append(" | "); sb.append(run) }
   return sb.toString()
 }
+
+private val TRAIL_LOCK = Any()

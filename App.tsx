@@ -10,6 +10,10 @@ import { BubbleSync } from './src/BubbleSync';
 import { OverlayChat } from './src/OverlayChat';
 import { View, ActivityIndicator } from 'react-native';
 import { C } from './src/theme';
+import { CrashBoundary } from './src/CrashBoundary';
+import { installCrashHandlers } from './src/services/crashlog';
+
+installCrashHandlers();
 
 export default function App() {
   const [fonts, fontError] = useFonts({
@@ -29,6 +33,7 @@ export default function App() {
   }
 
   return (
+    <CrashBoundary>
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
       <SafeAreaProvider>
         <AppProvider>
@@ -39,5 +44,6 @@ export default function App() {
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+    </CrashBoundary>
   );
 }

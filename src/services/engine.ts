@@ -133,7 +133,7 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
     let acc = '', ttft: number | null = null, cut = false;
     trail('génération : ' + messages.length + ' messages, ' + messages.reduce((n, m) => n + m.content.length, 0) + ' car., n_predict=' + (o.maxTokens ?? 400) + ', délai=' + (o.deadlineMs ?? 0) + ' ms');
     /* arrêt par délai : au moins 2,5 s de génération même si le chargement du modèle a pris du temps */
-    const timer = o.deadlineMs ? setTimeout(() => { cut = true; trail('délai atteint → arrêt de la génération'); void ctx.stopCompletion().catch(() => undefined); }, Math.max(2500, o.deadlineMs - (t1 - t0))) : null;
+    const timer = o.deadlineMs ? setTimeout(() => { cut = true; trail('délai atteint → arrêt de la génération'); /* llama.rn renvoie `undefined` (et non une promesse) : ne jamais chaîner .catch() directement dessus, ce serait une erreur fatale */ try { void Promise.resolve(ctx.stopCompletion()).catch(() => undefined); } catch { /* déjà terminée */ } }, Math.max(2500, o.deadlineMs - (t1 - t0))) : null;
     try {
       /* enable_thinking:false = pas de « réflexion » invisible avant la réponse (les modèles Qwen 3 hybrides réfléchissent
          par défaut, ce qui multiplie le temps de réponse et ne peut pas être borné par un délai) ; la réflexion visible

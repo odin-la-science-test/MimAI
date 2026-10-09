@@ -45,6 +45,7 @@ export function planSteps(ctx: GenerateCtx): Step[] {
 interface LlamaCtx {
   completion(p: Record<string, unknown>, cb?: (d: { token?: string }) => void): Promise<{ text?: string; timings?: { predicted_per_second?: number; predicted_n?: number; prompt_per_second?: number } }>;
   stopCompletion(): Promise<void>;
+  getFormattedChat(messages: unknown[], template?: string, params?: Record<string, unknown>): Promise<unknown>;
   applyLoraAdapters(l: { path: string; scaled?: number }[]): Promise<void>;
   removeLoraAdapters(): Promise<void>;
   release(): Promise<void>;
@@ -125,8 +126,21 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
       /* enable_thinking:false = pas de « réflexion » invisible avant la réponse (les modèles Qwen 3 hybrides réfléchissent
          par défaut, ce qui multiplie le temps de réponse et ne peut pas être borné par un délai) ; la réflexion visible
          est demandée dans la consigne du mode Réflexion. */
-      const res = await ctx.completion({ messages, n_predict: o.maxTokens ?? 400, temperature: o.temperature ?? 0.7, top_k: 40, top_p: 0.9, enable_thinking: !!o.thinking },
-        d => { if (ttft === null) ttft = Date.now() - t0; acc += d?.token || ''; o.onText?.(acc); });
+      /* On applique le gabarit de discussion NOUS-MÊMES puis on envoie un prompt texte (format « contenu seul »).
+         Avec `messages` + un rappel par jeton, llama.rn ré-analyse TOUT le texte généré à chaque jeton (expressions
+         régulières de l'analyseur de discussion) : sur les réponses un peu longues cela fait planter l'application. */
+      let prompt = '';
+      let stop: string[] = [];
+      try {
+        const f = await ctx.getFormattedChat(messages, undefined, { jinja: true, enable_thinking: !!o.thinking }) as { prompt?: string; additional_stops?: string[] };
+        prompt = String(f?.prompt || '');
+        stop = Array.isArray(f?.additional_stops) ? f.additional_stops : [];
+      } catch { prompt = ''; }
+      const sampling = { n_predict: o.maxTokens ?? 400, temperature: o.temperature ?? 0.7, top_k: 40, top_p: 0.9 };
+      const res = prompt
+        ? await ctx.completion({ prompt, stop, ...sampling }, d => { if (ttft === null) ttft = Date.now() - t0; acc += d?.token || ''; o.onText?.(acc); })
+        /* gabarit indisponible : génération sans flux (pas de rappel par jeton), plus lente à afficher mais sûre */
+        : await ctx.completion({ messages, ...sampling, enable_thinking: !!o.thinking });
       const t = res?.timings;
       lastTps = t && t.predicted_per_second && t.predicted_per_second > 0 ? { gen: t.predicted_per_second, prompt: t.prompt_per_second || 0, tokens: t.predicted_n || 0 } : null;
       return { text: res?.text || acc, cut, ms: Date.now() - t0, ttftMs: ttft, tokens: t?.predicted_n || 0, tps: lastTps?.gen ?? null, promptTps: lastTps?.prompt || null };

@@ -17,7 +17,8 @@ import { navigationRef } from '../nav';
 import { voiceAvailable, describeVoiceFailure } from '../services/voice';
 import { speakAvailable, speak, stopSpeaking, listVoices, setVoicePrefs, VOICE_STYLES, type VoiceInfo } from '../services/speak';
 import * as Clipboard from 'expo-clipboard';
-import { overlayStatus } from '../services/overlay';
+import { overlayStatus, appExits } from '../services/overlay';
+import { setCompat } from '../services/engine';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
 
 export function Companion({ navigation }: NativeStackScreenProps<RootStackParamList, 'Companion'>) {
@@ -57,6 +58,14 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       } else lines.push('État natif illisible.');
     }
     lines.push('Réglage MiMai : activée = ' + (c.on && c.overlay ? 'oui' : 'non'));
+    lines.push('Mode compatibilité : ' + (data.settings.compat ? 'oui' : 'non'));
+    /* pourquoi Android a fermé MiMai ces dernières fois */
+    const exits = appExits();
+    lines.push(exits.length ? '— Dernières fermetures de MiMai (donnés par Android) —' : 'Fermetures : aucune information (Android 11+ requis, ou version sans module natif).');
+    exits.slice(0, 3).forEach(x => {
+      lines.push('• ' + new Date(x.time).toLocaleString('fr-FR') + ' : ' + x.reason + (x.desc ? ' — ' + x.desc : '') + (x.rssMb ? ' — mémoire ' + x.rssMb + ' Mo' : ''));
+      if (x.trace) lines.push('  trace : ' + x.trace.slice(0, 700));
+    });
     setDiag(lines.join('\n'));
   };
   /* après l'autorisation système, on finit l'activation tout seul au retour dans l'app */
@@ -217,6 +226,15 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
         <View style={{ marginTop: 14, borderRadius: 22, backgroundColor: C.surface, padding: 14, gap: 10 }}>
           <Text style={{ fontFamily: F.heading, fontSize: 16 }}>La barre ne s’affiche pas ?</Text>
           <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.n700 }}>Ce diagnostic essaie d’afficher la barre et dit exactement où ça bloque. Aucune donnée personnelle n’y figure.</Text>
+          <Row>
+            <AvatarIc name="cpu" size={36} tone="n" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14.5 }}>Mode compatibilité</Text>
+              <Text style={{ fontSize: 12.5, color: C.n700 }}>Si MiMai se ferme quand vous posez une question : active ce mode (calcul plus simple, plus lent, mais plus sûr). Le modèle est rechargé.</Text>
+            </View>
+            <Toggle label="Mode compatibilité du moteur" on={!!data.settings.compat}
+              onChange={() => { const v = !data.settings.compat; setCompat(v); patchData(d => { d.settings.compat = v; }); toast(v ? 'Mode compatibilité activé' : 'Mode compatibilité désactivé'); }} />
+          </Row>
           <Btn kind="secondary" title="Lancer le diagnostic" height={48} fontSize={14} onPress={() => { void runDiag(); }} />
           {diag ? (
             <View style={{ gap: 8 }}>

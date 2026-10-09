@@ -9,7 +9,7 @@ import { DEFAULT_MODEL_ID } from './services/catalog';
 import { scanModelFiles } from './services/modelFiles';
 import { reconcile } from './services/installed';
 import type { ModelManifest, PhaseInfo } from './services/net';
-import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot } from './services/engine';
+import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { extractMemory } from './services/memory';
@@ -120,6 +120,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         /* une base écrite par une ancienne version peut référencer un modèle disparu du catalogue */
         loaded.settings.installed = (loaded.settings.installed || []).filter(id => !!MODELS[id]);
         setVoicePrefs(loaded.settings.voice);
+        setCompat(!!loaded.settings.compat);
         seedSpeed(loaded.settings.speed); /* vitesses mesurées lors des sessions précédentes : longueur de réponse adaptée dès la 1re question */
         /* « Wi-Fi uniquement » n'a aucune option dans l'app : une ancienne valeur true bloquerait la 4G/5G sans recours */
         loaded.settings.wifiOnly = false;

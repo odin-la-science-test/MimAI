@@ -1,5 +1,8 @@
 package fr.mimai.app.overlay
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -66,6 +69,40 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* pourquoi Android a fermé l'app ces dernières fois (plantage natif, mémoire, plantage JavaScript…) :
+       aucune donnée personnelle, uniquement l'état technique ; sert à comprendre un plantage sans câble ni outil */
+    Function("lastExit") {
+      val out = ArrayList<Map<String, Any?>>()
+      val ctx = appContext.reactContext
+      if (ctx == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@Function out
+      try {
+        val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (r in am.getHistoricalProcessExitReasons(ctx.packageName, 0, 4)) {
+          var trace = ""
+          try {
+            if (r.reason == ApplicationExitInfo.REASON_CRASH_NATIVE || r.reason == ApplicationExitInfo.REASON_ANR) {
+              r.traceInputStream?.use { ins ->
+                val buf = ByteArray(40000)
+                val n = ins.read(buf)
+                if (n > 0) trace = printableRuns(buf, n)
+              }
+            }
+          } catch (e: Exception) { trace = "trace illisible : " + e.javaClass.simpleName }
+          out.add(mapOf<String, Any?>(
+            "reason" to exitReasonName(r.reason),
+            "desc" to (r.description ?: ""),
+            "time" to r.timestamp,
+            "rssMb" to (r.rss / 1024),
+            "importance" to r.importance,
+            "trace" to trace
+          ))
+        }
+      } catch (e: Exception) {
+        out.add(mapOf<String, Any?>("reason" to "lecture impossible", "desc" to (e.message ?: ""), "time" to 0L, "rssMb" to 0L, "importance" to 0, "trace" to ""))
+      }
+      out
+    }
+
     /* état pour l'écran de diagnostic : aucune donnée personnelle, uniquement l'état technique de la barre */
     Function("status") {
       val ctx = appContext.reactContext
@@ -103,4 +140,35 @@ class MimirOverlayModule : Module() {
     }
 
   }
+}
+
+private fun exitReasonName(r: Int): String = when (r) {
+  ApplicationExitInfo.REASON_CRASH -> "plantage JavaScript/Java"
+  ApplicationExitInfo.REASON_CRASH_NATIVE -> "plantage NATIF (moteur du modèle)"
+  ApplicationExitInfo.REASON_LOW_MEMORY -> "manque de MÉMOIRE (fermée par Android)"
+  ApplicationExitInfo.REASON_ANR -> "application ne répond plus"
+  ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "usage excessif de ressources"
+  ApplicationExitInfo.REASON_SIGNALED -> "signal reçu"
+  ApplicationExitInfo.REASON_USER_REQUESTED -> "fermée par l'utilisateur"
+  ApplicationExitInfo.REASON_USER_STOPPED -> "arrêt forcé"
+  ApplicationExitInfo.REASON_DEPENDENCY_DIED -> "dépendance arrêtée"
+  ApplicationExitInfo.REASON_EXIT_SELF -> "fermeture normale"
+  ApplicationExitInfo.REASON_PERMISSION_CHANGE -> "changement de permission"
+  else -> "autre (" + r + ")"
+}
+
+/* extrait les suites de caractères lisibles d'un fichier binaire (signal, noms de bibliothèques et de fonctions) */
+private fun printableRuns(buf: ByteArray, n: Int): String {
+  val sb = StringBuilder()
+  var run = StringBuilder()
+  for (i in 0 until n) {
+    val c = buf[i].toInt() and 0xFF
+    if (c in 32..126) run.append(c.toChar())
+    else {
+      if (run.length >= 6 && sb.length < 2500) { if (sb.isNotEmpty()) sb.append(" | "); sb.append(run) }
+      run = StringBuilder()
+    }
+  }
+  if (run.length >= 6 && sb.length < 2500) { if (sb.isNotEmpty()) sb.append(" | "); sb.append(run) }
+  return sb.toString()
 }

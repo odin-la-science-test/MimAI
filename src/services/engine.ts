@@ -64,6 +64,9 @@ function llamaModule(): { initLlama: (p: Record<string, unknown>) => Promise<Lla
     return mod?.initLlama ? mod : null;
   } catch { return null; }
 }
+let compatMode = false;
+/* change le mode ; le modèle est rechargé à la prochaine question */
+export function setCompat(on: boolean): void { if (compatMode !== on) { compatMode = on; void releaseLlama(); } }
 export const llamaAvailable = (): boolean => llamaModule() !== null;
 
 async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
@@ -75,7 +78,10 @@ async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
   if (llama) { try { await llama.ctx.release(); } catch { /* déjà libéré */ } llama = null; }
   /* 4 threads : sur un téléphone (gros cœurs + petits cœurs), utiliser TOUS les cœurs est en général plus lent que
      les ~4 gros cœurs. Pas de GPU sur Android avec ce moteur : tout se calcule sur le processeur. */
-  const ctx = await mod.initLlama({ model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 4 });
+  /* mode compatibilité : sans réarrangement des poids en mémoire (no_extra_bufts) et sur moins de cœurs ; plus lent mais le plus sûr */
+  const ctx = await mod.initLlama(compatMode
+    ? { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 2, no_extra_bufts: true, use_mlock: false }
+    : { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 4 });
   llama = { file: modelFile, ctx, adapterKey: '' };
   return ctx;
 }

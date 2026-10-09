@@ -20,6 +20,7 @@ type NativeOverlay = {
   sha256File(path: string): Promise<string>;
   status(): OverlayStatus;
   chatText?(text: string, done: boolean): unknown;
+  lastExit?(): ExitInfo[];
   addListener?(name: string, cb: (e: { text?: string }) => void): { remove(): void };
 };
 
@@ -64,6 +65,12 @@ export function overlayChatOn(onOpen: () => void, onSend: (text: string) => void
 }
 export function overlayChatText(text: string, done: boolean): void {
   try { M?.chatText?.(text, done); } catch { /* indisponible */ }
+}
+
+/* motifs des dernières fermetures de l'app, donnés par Android (diagnostic de plantage) */
+export interface ExitInfo { reason: string; desc: string; time: number; rssMb: number; importance: number; trace: string }
+export function appExits(): ExitInfo[] {
+  try { return M?.lastExit ? M.lastExit() : []; } catch { return []; }
 }
 
 export async function overlayHide(): Promise<void> {

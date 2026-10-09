@@ -13,7 +13,7 @@
     ],
     "android": {
       "package": "fr.mimai.app",
-      "versionCode": 19,
+      "versionCode": 20,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "monochromeImage": "./assets/icons/adaptive-icon-mono.png",

@@ -21,6 +21,8 @@ type NativeOverlay = {
   status(): OverlayStatus;
   chatText?(text: string, done: boolean): unknown;
   lastExit?(): ExitInfo[];
+  setBar?(on: boolean): boolean;
+  openNotifSettings?(promoted: boolean): boolean;
   trail?(text: string): boolean;
   readTrail?(): string;
   clearTrail?(): boolean;
@@ -31,6 +33,7 @@ type NativeOverlay = {
 export interface OverlayStatus {
   sdk: number; fabricant: string; modele: string; permission: boolean;
   serviceActif: boolean; dernierEvenement: string; encoche: string;
+  notifications?: boolean; puceAutorisee?: boolean;
 }
 
 let M: NativeOverlay | null = null;
@@ -50,8 +53,11 @@ export function overlayRequest(): void {
   try { M?.requestPermission(); } catch { /* indisponible */ }
 }
 
-export async function overlayShow(): Promise<boolean> {
-  try { return M ? !!(await M.show()) : false; } catch { return false; }
+export async function overlayShow(bar?: boolean): Promise<boolean> {
+  try {
+    if (M && bar !== undefined) M.setBar?.(!!bar);   /* barre noire dessinée : facultative, la puce système est toujours là */
+    return M ? !!(await M.show()) : false;
+  } catch { return false; }
 }
 
 export function overlayStatus(): OverlayStatus | null {
@@ -80,6 +86,9 @@ export function appExits(): ExitInfo[] {
 export const trailNative = (text: string): void => { try { M?.trail?.(text); } catch { /* indisponible */ } };
 export const readTrailNative = (): string => { try { return M?.readTrail ? String(M.readTrail()) : ''; } catch { return ''; } };
 export const clearTrailNative = (): void => { try { M?.clearTrail?.(); } catch { /* indisponible */ } };
+
+/* ouvre les réglages Android de la notification (promoted = autorisation de la puce « mises à jour en direct ») */
+export function overlayNotifSettings(promoted = true): void { try { M?.openNotifSettings?.(promoted); } catch { /* indisponible */ } }
 
 export async function overlayHide(): Promise<void> {
   try { await M?.hide(); } catch { /* indisponible */ }

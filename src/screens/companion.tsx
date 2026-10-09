@@ -17,7 +17,7 @@ import { navigationRef } from '../nav';
 import { voiceAvailable, describeVoiceFailure } from '../services/voice';
 import { speakAvailable, speak, stopSpeaking, listVoices, setVoicePrefs, VOICE_STYLES, type VoiceInfo } from '../services/speak';
 import * as Clipboard from 'expo-clipboard';
-import { overlayStatus, appExits } from '../services/overlay';
+import { overlayStatus, appExits, overlayNotifSettings } from '../services/overlay';
 import { setCompat } from '../services/engine';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
 
@@ -44,12 +44,14 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     lines.push('Module natif chargé : ' + (native ? 'oui' : 'non'));
     if (native) {
       const before = overlayStatus();
-      if (before?.permission) { await overlayShow(); await new Promise(r => setTimeout(r, 1500)); }
+      if (before?.permission) { await overlayShow(!!c.bar); await new Promise(r => setTimeout(r, 1500)); }
       const s = overlayStatus();
       if (s) {
         lines.push('Android : API ' + s.sdk + ' · ' + s.fabricant + ' ' + s.modele);
         lines.push('Permission « Afficher par-dessus » : ' + (s.permission ? 'accordée' : 'NON accordée'));
         lines.push('Service de la barre actif : ' + (s.serviceActif ? 'oui' : 'non'));
+        lines.push('Notifications autorisées : ' + (s.notifications === undefined ? '?' : s.notifications ? 'oui' : 'NON (la puce ne peut pas s\u2019afficher)'));
+        lines.push('Puce dans la barre d\u2019état (mises à jour en direct, Android 16) : ' + (s.puceAutorisee === undefined ? '?' : s.puceAutorisee ? 'autorisée' : 'non autorisée ou non disponible'));
         lines.push('Caméra / encoche : ' + s.encoche);
         lines.push('Dernier événement : ' + s.dernierEvenement);
         if (/xiaomi|redmi|poco|oppo|realme|vivo|huawei|honor|oneplus/i.test(s.fabricant)) {
@@ -58,6 +60,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       } else lines.push('État natif illisible.');
     }
     lines.push('Réglage MiMai : activée = ' + (c.on && c.overlay ? 'oui' : 'non'));
+    lines.push('Barre noire dessinée : ' + (c.bar ? 'oui' : 'non (puce seule)'));
     lines.push('Mode compatibilité : ' + (data.settings.compat ? 'oui' : 'non'));
     /* pourquoi Android a fermé MiMai ces dernières fois */
     const exits = appExits();
@@ -88,9 +91,9 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
   }, [navigation]);
   /* si activé et autorisé : la bulle est (re)affichée à l'ouverture de l'app */
   useEffect(() => {
-    if (native && c.on && c.overlay && granted) { void overlayShow(); }
+    if (native && c.on && c.overlay && granted) { void overlayShow(!!c.bar); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [native, c.on, c.overlay, granted]);
+  }, [native, c.on, c.overlay, granted, c.bar]);
 
   const enableOverlay = async () => {
     if (!native) {
@@ -100,7 +103,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     }
     const g = await overlayGranted();
     if (!g) { pendingEnable.current = true; overlayRequest(); toast('Autorisez « Afficher par-dessus » puis revenez ici : la barre s’affichera toute seule.'); setGranted(null); return; }
-    const ok = await overlayShow();
+    const ok = await overlayShow(!!c.bar);
     if (ok) {
       patchData(d => { d.settings.comp.on = true; d.settings.comp.overlay = true; });
       toast('Mìmir est présent dans toutes vos applis.');
@@ -127,7 +130,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12.5, color: C.n700 }}>Secouez le téléphone : Mìmir réagit (étourdi, atchoum, danse, saut, pirouette, tremblement, surprise).</Text>
       <H1 size={32} style={{ marginTop: 18 }}>Mìmir, toujours à portée.</H1>
       <Sub style={{ marginTop: 6 }}>{overlayIncluded
-        ? 'Dans la version installée, une fine barre entoure la caméra de votre téléphone, par-dessus vos applis. Touchez-la : une fenêtre de discussion flottante s’ouvre sous la caméra, par-dessus l’appli en cours (appui long : parler à voix haute). Tout est traité sur l’appareil, sans réseau.'
+        ? 'Dans la version installée, Mìmir reste à portée dans la barre d’état, par-dessus vos applis. Touchez la puce près de la caméra : une fenêtre de discussion flottante s’ouvre par-dessus l’appli en cours. Vous pouvez aussi écrire dans la notification ou toucher « Parler ». Tout est traité sur l’appareil, sans réseau.'
         : 'Mìmir vous accompagne dans l’application. La barre autour de la caméra n’est pas incluse dans cette version.'}</Sub>
       <View style={{ marginTop: 14 }}>
         <Row>
@@ -147,6 +150,27 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
             ? <Toggle label="Afficher Mìmir par-dessus les autres applis" on={overlayOn} onChange={() => (overlayOn ? void disableOverlay() : void enableOverlay())} />
             : <Tag kind="neutral">Bientôt</Tag>}
         </Row>
+        {native && overlayIncluded ? (
+          <>
+            <Row>
+              <AvatarIc name="layers" size={36} tone="n" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14.5 }}>Puce dans la barre d’état</Text>
+                <Text style={{ fontSize: 12.5, color: C.n700 }}>Comme un lecteur de musique : sur Android 16 (Samsung compris), Mìmir apparaît en pastille près de la caméra. Touchez-la pour discuter, ou écrivez directement dans la notification. Si la pastille n’apparaît pas, autorisez les « mises à jour en direct » pour MiMai.</Text>
+              </View>
+            </Row>
+            <Btn kind="secondary" title="Régler la puce (notifications)" height={44} fontSize={13.5} style={{ marginTop: 6 }} onPress={() => overlayNotifSettings(true)} />
+            <Row>
+              <AvatarIc name="layers" size={36} tone="g" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14.5 }}>Barre noire autour de la caméra</Text>
+                <Text style={{ fontSize: 12.5, color: C.n700 }}>Facultative : une barre dessinée en plus de la puce. Désactivée par défaut.</Text>
+              </View>
+              <Toggle label="Afficher la barre noire autour de la caméra" on={!!c.bar}
+                onChange={() => { const v = !c.bar; patchData(d => { d.settings.comp.bar = v; }); void overlayShow(v); }} />
+            </Row>
+          </>
+        ) : null}
         <Row>
           <AvatarIc name="eye" size={36} />
           <View style={{ flex: 1 }}>

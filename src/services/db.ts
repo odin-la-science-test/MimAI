@@ -22,7 +22,7 @@ export interface CrashEntry { t: number; msg: string; stack: string; }
 export interface Settings {
   onboarded: boolean; installed: string[]; activeModel: string; mode: 'rapide' | 'reflexion' | 'vision' | 'outils';
   wifiOnly: boolean; speed?: Record<string, number>; compat?: boolean; crashSeen?: number; voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
-  comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean };
+  comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean; bar?: boolean };
 }
 export interface AppData {
   convs: Conv[]; docs: Doc[]; memories: Memory[]; tex: TEx[]; runs: Run[]; adapters: Adapter[];

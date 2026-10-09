@@ -14,6 +14,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Icon
+import android.app.RemoteInput
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
@@ -60,6 +62,11 @@ class MimirOverlayService : Service() {
   private var waiting = false
   private var barBottom = 0
 
+  /* réponse rapide écrite dans la notification */
+  private var notifWaiting = false
+  private var lastNotifAt = 0L
+  private var lastAnswer: String? = null
+
   /* racine de la fenêtre : la touche Retour la ferme */
   private class PanelRoot(ctx: Context, val onBack: () -> Unit) : LinearLayout(ctx) {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -71,7 +78,11 @@ class MimirOverlayService : Service() {
     }
   }
 
-  override fun onCreate() { super.onCreate(); instance = this }
+  override fun onCreate() {
+    super.onCreate()
+    instance = this
+    wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+  }
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -83,7 +94,7 @@ class MimirOverlayService : Service() {
     /* Le type « specialUse » n'existe qu'à partir d'Android 14 (API 34). Avant, l'attribut du manifeste est ignoré :
        passer ce type à startForeground() lèverait une exception et ferait planter le service. */
     try {
-      val notification = buildNotification()
+      val notification = buildNotification(lastAnswer)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         startForeground(NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
       } else {
@@ -94,20 +105,47 @@ class MimirOverlayService : Service() {
       Log.e(TAG, lastEvent, e)
       stopSelf(); return START_NOT_STICKY
     }
-    if (intent?.action == ACTION_HIDE || !Settings.canDrawOverlays(this)) {
-      lastEvent = "arrêt : " + (if (intent?.action == ACTION_HIDE) "demandé" else "permission « Afficher par-dessus » absente")
-      removeBar(); stopSelf(); return START_NOT_STICKY
+    if (intent?.action == ACTION_HIDE) {
+      lastEvent = "arrêt : demandé"
+      closePanel(); removeBar(); stopSelf(); return START_NOT_STICKY
     }
-    refreshBar()
+    if (intent?.action == ACTION_OPEN_PANEL) {
+      /* toucher sur la puce / la notification : la fenêtre de discussion s'ouvre par-dessus l'appli en cours */
+      lastEvent = "puce touchée"
+      if (Settings.canDrawOverlays(this)) { if (panel == null) openPanel() } else openAssistant("0")
+      return START_NOT_STICKY
+    }
+    if (!Settings.canDrawOverlays(this)) {
+      /* sans la permission « par-dessus », seule la puce de la barre d'état est active (un toucher ouvre l'appli) */
+      lastEvent = "puce seule : permission « Afficher par-dessus » absente"
+      removeBar()
+      return START_NOT_STICKY
+    }
+    applyBarPref()
     /* NOT_STICKY : Android 12+ interdit de relancer un service au premier plan depuis
        l'arrière-plan ; l'utilisateur réactive la barre depuis l'app. */
     return START_NOT_STICKY
   }
 
+  /* la barre noire dessinée autour de la caméra est facultative (réglage de l'app) ; la puce système, elle, est toujours là */
+  fun applyBarPref() {
+    val want = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getBoolean("bar", false)
+    if (want && Settings.canDrawOverlays(this)) refreshBar() else { closePanel(); removeBar(); lastEvent = "puce seule (barre dessinée désactivée)" }
+  }
+
   /* rotation : on replace la barre (cachée en paysage) */
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)
-    if (Settings.canDrawOverlays(this)) refreshBar()
+    if (Settings.canDrawOverlays(this)) applyBarPref()
+  }
+
+  /* bas de la zone caméra / barre d'état : la fenêtre de discussion s'ouvre juste en dessous */
+  private fun anchorBottom(): Int {
+    if (barBottom > 0 && bar != null) return barBottom
+    val cut = cutoutRect(this)
+    if (cut != null) return cut.bottom
+    val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
+    return if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * resources.displayMetrics.density).toInt()
   }
 
   private fun refreshBar() {
@@ -344,7 +382,7 @@ class MimirOverlayService : Service() {
     /* fenêtre prenant le focus (clavier) mais laissant passer les touches hors de la fenêtre */
     val lp = WindowManager.LayoutParams(pw, ph, type, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT)
     lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-    lp.y = barBottom + (8 * dp).toInt()
+    lp.y = anchorBottom() + (8 * dp).toInt()
     lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
     try {
       w.addView(root, lp)
@@ -377,6 +415,11 @@ class MimirOverlayService : Service() {
   /* appelé par le module (réponse du moteur de l'app) : texte courant de la réponse, done = réponse terminée */
   fun updateReply(text: String, done: Boolean) {
     ui.post {
+      if (notifWaiting) {
+        val now = System.currentTimeMillis()
+        if (done || now - lastNotifAt > 1200) { lastNotifAt = now; setNotif(text) }
+        if (done) notifWaiting = false
+      }
       if (panel == null) return@post
       val v = typing ?: bubble("", false).also { typing = it }
       v.text = text
@@ -429,19 +472,66 @@ class MimirOverlayService : Service() {
     return bmp
   }
 
-  private fun buildNotification(): Notification {
-    val chId = "mimir_overlay"
+  /* texte écrit dans la notification (réponse rapide) : on la remet à jour avec l'état ou la réponse */
+  fun onNotifReply(text: String) {
+    val send = sinkSend
+    if (send == null) { setNotif("Le moteur de MiMai n'est pas actif. Ouvrez MiMai une fois, puis réessayez."); return }
+    notifWaiting = true
+    lastNotifAt = 0L
+    setNotif("Mìmir réfléchit…")
+    send(text)
+  }
+
+  private fun setNotif(answer: String?) {
+    lastAnswer = answer
+    try { (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIF_ID, buildNotification(answer)) } catch (e: Exception) { Log.w(TAG, "mise à jour de la notification impossible", e) }
+  }
+
+  /* appel par réflexion : ces méthodes n'existent qu'à partir d'Android 16 (API 36) ; si absentes, la notification reste une notification normale */
+  private fun tryCall(target: Any, name: String, type: Class<*>, value: Any) {
+    try { target.javaClass.getMethod(name, type).invoke(target, value) } catch (e: Exception) { Log.i(TAG, name + " indisponible : " + e.javaClass.simpleName) }
+  }
+
+  /* La notification de Mìmir : sur Android 16 (Samsung One UI 8 compris) elle devient une PUCE dans la barre d'état,
+     près de la caméra, comme un lecteur de musique. Un toucher ouvre la discussion ; on peut aussi écrire dans la notification. */
+  private fun buildNotification(answer: String? = null): Notification {
+    val chId = "mimir_chip"
     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      nm.createNotificationChannel(NotificationChannel(chId, "Mìmir", NotificationManager.IMPORTANCE_MIN))
+      val ch = NotificationChannel(chId, "Mìmir : puce dans la barre d'état", NotificationManager.IMPORTANCE_LOW)
+      ch.setShowBadge(false)
+      nm.createNotificationChannel(ch)
     }
-    val pi = PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName) ?: Intent(), PendingIntent.FLAG_IMMUTABLE)
+    val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    val open: PendingIntent = if (Settings.canDrawOverlays(this)) {
+      PendingIntent.getService(this, 1, Intent(this, MimirOverlayService::class.java).setAction(ACTION_OPEN_PANEL), flags)
+    } else {
+      PendingIntent.getActivity(this, 0, packageManager.getLaunchIntentForPackage(packageName) ?: Intent(), flags)
+    }
+    val ri = RemoteInput.Builder(MimirReplyReceiver.KEY_REPLY).setLabel("Poser une question à Mìmir").build()
+    val replyPi = PendingIntent.getBroadcast(this, 2, Intent(this, MimirReplyReceiver::class.java).setAction(MimirReplyReceiver.ACTION),
+      PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    val icon = Icon.createWithResource(this, R.drawable.ic_mimir_notif)
+    val reply = Notification.Action.Builder(icon, "Écrire", replyPi).addRemoteInput(ri).setAllowGeneratedReplies(false).build()
+    val talkPi = PendingIntent.getActivity(this, 3,
+      Intent(Intent.ACTION_VIEW, Uri.parse("mimai://assistant?voice=force")).setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), flags)
+    val talk = Notification.Action.Builder(icon, "Parler", talkPi).build()
+
+    val body = answer ?: "Touchez pour discuter, ou écrivez ici."
     val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, chId) else Notification.Builder(this)
-    b.setContentTitle("Mìmir est à portée")
-      .setContentText("Touchez la barre près de la caméra pour demander de l'aide, partout.")
+    b.setContentTitle("Mìmir")
+      .setContentText(body)
+      .setStyle(Notification.BigTextStyle().bigText(body))
       .setSmallIcon(R.drawable.ic_mimir_notif)
-      .setContentIntent(pi)
+      .setContentIntent(open)
       .setOngoing(true)
+      .setOnlyAlertOnce(true)
+      .addAction(reply)
+      .addAction(talk)
+    if (Build.VERSION.SDK_INT >= 36) {
+      tryCall(b, "setRequestPromotedOngoing", java.lang.Boolean.TYPE, true)
+      tryCall(b, "setShortCriticalText", CharSequence::class.java, "Mìmir")
+    }
     return b.build()
   }
 
@@ -468,6 +558,9 @@ class MimirOverlayService : Service() {
       }
     }
     const val ACTION_HIDE = "fr.mimai.app.overlay.HIDE"
+    const val ACTION_OPEN_PANEL = "fr.mimai.app.overlay.OPEN_PANEL"
+    /* texte écrit dans la notification : envoyé au moteur de l'app */
+    fun replyFromNotification(text: String) { instance?.onNotifReply(text) }
     const val NOTIF_ID = 4700
   }
 }

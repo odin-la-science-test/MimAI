@@ -36,7 +36,7 @@ explicitement demandé par l'utilisateur, d'un fichier de modèle.
 | **Apprentissage local** | Profil de style (niveau 1) et import d'un adaptateur LoRA entraîné sur PC (niveau 2), toujours évalués avant activation. |
 | **Benchmarks avant / après** | Vitesse et qualité mesurées au début et à la fin de chaque entraînement, ou à la demande, puis comparées. |
 | **Voix** | Commande vocale (reconnaissance sur l'appareil), lecture des réponses à voix haute, **choix de la voix** et du style (naturelle, posée, grave, aiguë, vive). |
-| **Barre autour de la caméra** | Une fine barre noire entoure la caméra frontale, par-dessus les autres applis. Un toucher ouvre une **discussion flottante** ; un appui long lance la voix. |
+| **Puce dans la barre d'état** | Notification « mise à jour en direct » (Android 16, Samsung One UI 8) : une pastille près de la caméra, comme un lecteur de musique. Un toucher ouvre une **discussion flottante** ; on peut aussi écrire dans la notification ou toucher « Parler ». Une barre noire autour de la caméra est disponible en option. |
 | **Jeu hors ligne** | « La Garde des Étoiles », jeu intégré, sans réseau. |
 | **Confidentialité** | Aucune télémétrie, aucun compte ; données chiffrées au repos ; suppression complète en un geste. |
 

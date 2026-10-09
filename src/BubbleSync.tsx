@@ -11,17 +11,19 @@ export function BubbleSync() {
   const { data, ready } = useApp();
   const want = useRef(false);
   want.current = !!(data.settings.comp.on && data.settings.comp.overlay);
+  const bar = useRef(false);
+  bar.current = !!data.settings.comp.bar;
 
   useEffect(() => {
     if (!overlayAvailable()) return;
     const sync = async () => {
       if (!want.current) return;
-      if (await overlayGranted()) await overlayShow();
+      if (await overlayGranted()) await overlayShow(bar.current);
     };
     if (ready) void sync();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') void sync(); });
     return () => sub.remove();
-  }, [ready, data.settings.comp.on, data.settings.comp.overlay]);
+  }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar]);
 
   return null;
 }

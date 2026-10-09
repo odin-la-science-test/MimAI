@@ -2,6 +2,7 @@ package fr.mimai.app.overlay
 
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -57,7 +58,7 @@ class MimirOverlayModule : Module() {
 
     Function("show") {
       val ctx = appContext.reactContext ?: return@Function false
-      if (!Settings.canDrawOverlays(ctx)) return@Function false
+      /* la puce de la barre d'état n'a pas besoin de la permission « par-dessus » : le service gère l'absence */
       val intent = Intent(ctx, MimirOverlayService::class.java)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(intent) else ctx.startService(intent)
       true
@@ -148,8 +149,34 @@ class MimirOverlayModule : Module() {
         "permission" to (ctx != null && Settings.canDrawOverlays(ctx)),
         "serviceActif" to MimirOverlayService.running,
         "dernierEvenement" to MimirOverlayService.lastEvent,
-        "encoche" to (cut?.toShortString() ?: "non détectée")
+        "encoche" to (cut?.toShortString() ?: "non détectée"),
+        "notifications" to notifEnabled(ctx),
+        "puceAutorisee" to promotedAllowed(ctx)
       )
+    }
+
+    /* barre noire dessinée autour de la caméra : facultative */
+    Function("setBar") { on: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()
+      MimirOverlayService.instance?.applyBarPref()
+      true
+    }
+
+    /* ouvre les réglages Android de la notification de MiMai (promoted = page « mises à jour en direct » si elle existe) */
+    Function("openNotifSettings") { promoted: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      try {
+        var intent: Intent? = null
+        if (promoted && Build.VERSION.SDK_INT >= 36) {
+          intent = Intent("android.settings.MANAGE_APP_PROMOTED_NOTIFICATIONS").setData(Uri.parse("package:" + ctx.packageName))
+          if (intent.resolveActivity(ctx.packageManager) == null) intent = null
+        }
+        val target = intent ?: Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+        target.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        ctx.startActivity(target)
+        true
+      } catch (e: Exception) { false }
     }
 
     /* SHA-256 d'un fichier, en flux : rapide même pour des Go */
@@ -208,3 +235,15 @@ private fun printableRuns(buf: ByteArray, n: Int): String {
 }
 
 private val TRAIL_LOCK = Any()
+
+private fun notifEnabled(ctx: Context): Boolean =
+  try { (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).areNotificationsEnabled() } catch (e: Exception) { false }
+
+/* Android 16+ : l'utilisateur autorise-t-il les mises à jour en direct (puce de la barre d'état) pour MiMai ? (réflexion : API 36) */
+private fun promotedAllowed(ctx: Context): Boolean {
+  if (Build.VERSION.SDK_INT < 36) return false
+  return try {
+    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    nm.javaClass.getMethod("canPostPromotedNotifications").invoke(nm) as Boolean
+  } catch (e: Exception) { false }
+}

@@ -31,6 +31,8 @@ explicitement demandé par l'utilisateur, d'un fichier de modèle.
 | **Modes** | Rapide, Réflexion, Vision, Outils. |
 | **Catalogue d'environ 100 modèles** | Choix adapté au téléphone (RAM, stockage) + « décisionnel » qui recommande un modèle selon la spécialité demandée (code, français, raisonnement…). |
 | **Détecteur de modèles installés** | Retrouve les fichiers déjà présents sur le téléphone (taille exacte), ou importe un fichier (vérifié par SHA-256). |
+| **Une IA par fonction** | Chaque fonction (Rapide, Réflexion, Outils, Vision) a son propre modèle. Le mode et le modèle sont **fixés à la création d'une discussion** : pour en changer, on ouvre une nouvelle discussion. |
+| **Vision** | Joignez une photo : le modèle de vision (SmolVLM2 500M, Qwen 2.5 VL 3B ou Gemma 3 4B, chacun avec son module image « mmproj » vérifié par SHA-256) la décrit **sur l'appareil**. |
 | **Mémoire** | Retient les préférences ; séparée de l'entraînement. |
 | **Bibliothèque (RAG)** | Importez des textes ; MiMai les cite dans ses réponses. |
 | **Apprentissage local** | Profil de style (niveau 1) et import d'un adaptateur LoRA entraîné sur PC (niveau 2), toujours évalués avant activation. |

@@ -19,6 +19,7 @@ conversations et messages, souvenirs (mémoire), documents que vous importez ou 
 - Les contenus sensibles sont **chiffrés au repos** (AES-256-GCM) ; la clé est conservée dans le Keystore Android et ne quitte pas l'appareil. *(Le chiffrement n'est actif que dans l'application installée, pas dans le mode de test Expo Go.)*
 - La sauvegarde automatique Android et le transfert d'appareil sont **désactivés** pour ces données.
 - Vous pouvez tout effacer depuis **Confidentialité → Supprimer les données locales**. Désinstaller l'application efface aussi toutes les données.
+- Les **photos** que vous joignez à la fonction Vision sont copiées dans l'espace privé de l'application, analysées **sur l'appareil** par le modèle de vision, et supprimées avec la conversation ou lors de la suppression des données. Elles ne sont jamais envoyées. MiMai n'utilise pas la caméra et ne demande aucune permission photo (sélecteur de fichiers d'Android).
 - Un **rapport de plantage** (appareil, erreurs techniques, étapes juste avant un problème) est conservé sur l'appareil pour vous aider à signaler un bug. Il ne contient ni conversation ni document. Il n'est jamais envoyé automatiquement : c'est vous qui le copiez ou le partagez, et vous pouvez l'effacer (Menu → Rapport de plantage).
 
 ### Ce qui est envoyé sur Internet
@@ -62,6 +63,7 @@ Conversations and messages, memories, documents you import or write, training ex
 - Sensitive content is **encrypted at rest** (AES-256-GCM); the key lives in the Android Keystore and never leaves the device. *(Encryption is only active in the installed app, not in the Expo Go test mode.)*
 - Android auto-backup and device-to-device transfer are **disabled** for this data.
 - You can erase everything from **Privacy → Delete local data**. Uninstalling the app also removes all data.
+- **Photos** you attach to the Vision function are copied into the app's private storage, analysed **on the device** by the vision model, and deleted with the conversation or when you delete local data. They are never uploaded. MiMai does not use the camera and requests no photo permission (Android file picker).
 - A **crash report** (device, technical errors, steps just before a problem) is kept on the device to help you report a bug. It contains no conversation or document. It is never sent automatically: you copy or share it yourself, and you can erase it (Menu → Crash report).
 
 ### What is sent over the Internet

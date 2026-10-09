@@ -21,12 +21,13 @@ type NativeOverlay = {
   status(): OverlayStatus;
   chatText?(text: string, done: boolean): unknown;
   lastExit?(): ExitInfo[];
+  chatState?(json: string): boolean;
   setBar?(on: boolean): boolean;
   openNotifSettings?(promoted: boolean): boolean;
   trail?(text: string): boolean;
   readTrail?(): string;
   clearTrail?(): boolean;
-  addListener?(name: string, cb: (e: { text?: string }) => void): { remove(): void };
+  addListener?(name: string, cb: (e: any) => void): { remove(): void };
 };
 
 /* état technique de la barre (aucune donnée personnelle), pour l'écran de diagnostic */
@@ -65,13 +66,15 @@ export function overlayStatus(): OverlayStatus | null {
 }
 
 /* discussion flottante : la barre envoie les messages saisis (onChatSend), l'app répond par morceaux (chatText) */
-export function overlayChatOn(onOpen: () => void, onSend: (text: string) => void): () => void {
+export function overlayChatOn(onOpen: () => void, onSend: (text: string) => void, onAction?: (type: string, arg: string) => void): () => void {
   try {
     const a = M?.addListener?.('onChatOpen', () => onOpen());
     const b = M?.addListener?.('onChatSend', e => { if (e?.text) onSend(String(e.text)); });
-    return () => { try { a?.remove(); b?.remove(); } catch { /* déjà retiré */ } };
+    const c = M?.addListener?.('onChatAction', (e: { type?: string; arg?: string }) => { if (e?.type) onAction?.(String(e.type), String(e.arg ?? '')); });
+    return () => { try { a?.remove(); b?.remove(); c?.remove(); } catch { /* déjà retiré */ } };
   } catch { return () => undefined; }
 }
+export function overlayChatState(json: string): void { try { M?.chatState?.(json); } catch { /* indisponible */ } }
 export function overlayChatText(text: string, done: boolean): void {
   try { M?.chatText?.(text, done); } catch { /* indisponible */ }
 }

@@ -22,16 +22,24 @@ class MimirOverlayModule : Module() {
     Name("MimirOverlay")
 
     /* discussion flottante : la barre envoie les messages saisis au moteur de l'app (JavaScript) et reçoit les réponses */
-    Events("onChatSend", "onChatOpen")
+    Events("onChatSend", "onChatOpen", "onChatAction")
 
     OnCreate {
       MimirOverlayService.sinkSend = { text -> sendEvent("onChatSend", mapOf("text" to text)) }
       MimirOverlayService.sinkOpen = { sendEvent("onChatOpen", mapOf<String, Any?>()) }
+      MimirOverlayService.sinkAction = { type, arg -> sendEvent("onChatAction", mapOf("type" to type, "arg" to arg)) }
     }
 
     OnDestroy {
       MimirOverlayService.sinkSend = null
       MimirOverlayService.sinkOpen = null
+      MimirOverlayService.sinkAction = null
+    }
+
+    /* modèle, mode et conversation à afficher dans la fenêtre flottante (JSON) */
+    Function("chatState") { json: String ->
+      MimirOverlayService.instance?.applyState(json)
+      true
     }
 
     /* réponse en cours (texte complet jusqu'ici) ; done = réponse terminée */

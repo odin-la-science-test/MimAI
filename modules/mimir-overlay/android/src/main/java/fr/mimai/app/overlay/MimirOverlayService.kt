@@ -61,6 +61,7 @@ class MimirOverlayService : Service() {
   private var typing: TextView? = null
   private var waiting = false
   private var barBottom = 0
+  private var curMode = "rapide"
 
   /* réponse rapide écrite dans la notification */
   private var notifWaiting = false
@@ -250,7 +251,11 @@ class MimirOverlayService : Service() {
     }
   }
 
-  /* ───────── discussion flottante ───────── */
+  /* ───────── discussion flottante (fonctionne comme le chat de l'appli) ───────── */
+  private var modeViews: Map<String, TextView> = emptyMap()
+  private var modelView: TextView? = null
+  private var regenView: TextView? = null
+
   private fun togglePanel() {
     if (panel != null) { closePanel(); return }
     /* la fenêtre s'ouvre toujours (un toucher doit toujours avoir un effet visible). Si le moteur de l'app
@@ -262,8 +267,37 @@ class MimirOverlayService : Service() {
     }
   }
 
+  private fun dp(v: Float): Int = (v * resources.displayMetrics.density).toInt()
+
+  private fun styleChip(tv: TextView, on: Boolean) {
+    val bg = GradientDrawable()
+    bg.setColor(Color.parseColor(if (on) "#C67139" else "#2E2A26"))
+    bg.cornerRadius = dp(14f).toFloat()
+    tv.background = bg
+    tv.setTextColor(if (on) Color.WHITE else Color.parseColor("#F5EAD8"))
+  }
+
+  private fun chip(label: String, on: Boolean, click: () -> Unit): TextView {
+    val tv = TextView(this)
+    tv.text = label
+    tv.textSize = 12.5f
+    styleChip(tv, on)
+    tv.setPadding(dp(11f), dp(6f), dp(11f), dp(6f))
+    tv.setOnClickListener { click() }
+    return tv
+  }
+
+  private fun smallAction(label: String, click: () -> Unit): TextView {
+    val tv = TextView(this)
+    tv.text = label
+    tv.textSize = 12f
+    tv.setTextColor(Color.parseColor("#C67139"))
+    tv.setPadding(dp(4f), dp(6f), dp(12f), dp(6f))
+    tv.setOnClickListener { click() }
+    return tv
+  }
+
   private fun bubble(text: String, mine: Boolean): TextView {
-    val dp = resources.displayMetrics.density
     val maxW = (resources.displayMetrics.widthPixels * 0.94f * 0.78f).toInt()
     val tv = TextView(this)
     tv.text = text
@@ -273,36 +307,60 @@ class MimirOverlayService : Service() {
     tv.setTextIsSelectable(true)
     val bg = GradientDrawable()
     bg.setColor(Color.parseColor(if (mine) "#C67139" else "#2E2A26"))
-    bg.cornerRadius = 16 * dp
+    bg.cornerRadius = dp(16f).toFloat()
     tv.background = bg
-    tv.setPadding((12 * dp).toInt(), (8 * dp).toInt(), (12 * dp).toInt(), (8 * dp).toInt())
+    tv.setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
     val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
     lp.gravity = if (mine) Gravity.END else Gravity.START
-    lp.topMargin = (6 * dp).toInt()
+    lp.topMargin = dp(6f)
     panelList?.addView(tv, lp)
     scrollDown()
     return tv
+  }
+
+  /* Copier / Écouter / Régénérer sous une réponse terminée (Régénérer seulement sur la dernière) */
+  private fun addActions(text: String, canRegen: Boolean) {
+    regenView?.visibility = View.GONE
+    regenView = null
+    val row = LinearLayout(this)
+    row.orientation = LinearLayout.HORIZONTAL
+    row.addView(smallAction("Copier") {
+      try {
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("Mìmir", text))
+        android.widget.Toast.makeText(this, "Réponse copiée", android.widget.Toast.LENGTH_SHORT).show()
+      } catch (e: Exception) { Log.w(TAG, "copie impossible", e) }
+    })
+    row.addView(smallAction("Écouter") { sinkAction?.invoke("speak", text) })
+    if (canRegen) {
+      val r = smallAction("Régénérer") { sinkAction?.invoke("regen", "") }
+      row.addView(r)
+      regenView = r
+    }
+    val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+    lp.gravity = Gravity.START
+    panelList?.addView(row, lp)
+    scrollDown()
   }
 
   private fun scrollDown() { panelScroll?.post { panelScroll?.fullScroll(View.FOCUS_DOWN) } }
 
   private fun openPanel() {
     val w = wm ?: return
-    val dp = resources.displayMetrics.density
     val sw = resources.displayMetrics.widthPixels
     val sh = resources.displayMetrics.heightPixels
     val pw = (sw * 0.94f).toInt()
-    val ph = (sh * 0.44f).toInt()
+    val ph = (sh * 0.5f).toInt()
 
     val root = PanelRoot(this) { closePanel() }
     root.orientation = LinearLayout.VERTICAL
     val bg = GradientDrawable()
     bg.setColor(Color.parseColor("#181614"))
-    bg.cornerRadius = 22 * dp
+    bg.cornerRadius = dp(22f).toFloat()
     root.background = bg
-    root.setPadding((12 * dp).toInt(), (10 * dp).toInt(), (12 * dp).toInt(), (10 * dp).toInt())
+    root.setPadding(dp(12f), dp(10f), dp(12f), dp(10f))
 
-    /* en-tête : titre, ouvrir l'application, fermer */
+    /* ligne 1 : titre, nouvelle discussion, ouvrir l'application, fermer */
     val head = LinearLayout(this)
     head.orientation = LinearLayout.HORIZONTAL
     head.gravity = Gravity.CENTER_VERTICAL
@@ -312,22 +370,43 @@ class MimirOverlayService : Service() {
     title.textSize = 17f
     title.typeface = Typeface.DEFAULT_BOLD
     head.addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-    val open = TextView(this)
-    open.text = "Ouvrir MiMai"
-    open.setTextColor(Color.parseColor("#C67139"))
-    open.textSize = 13f
-    open.setPadding((10 * dp).toInt(), (8 * dp).toInt(), (10 * dp).toInt(), (8 * dp).toInt())
-    open.setOnClickListener { closePanel(); openAssistant("0") }
+    val fresh = smallAction("Nouveau") { sinkAction?.invoke("new", "") }
+    head.addView(fresh)
+    val open = smallAction("Ouvrir MiMai") { closePanel(); openAssistant("0") }
     head.addView(open)
     val close = TextView(this)
     close.text = "✕"
     close.setTextColor(Color.parseColor("#F5EAD8"))
     close.textSize = 18f
     close.contentDescription = "Fermer la discussion"
-    close.setPadding((10 * dp).toInt(), (6 * dp).toInt(), (6 * dp).toInt(), (6 * dp).toInt())
+    close.setPadding(dp(10f), dp(6f), dp(6f), dp(6f))
     close.setOnClickListener { closePanel() }
     head.addView(close)
     root.addView(head, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+
+    /* ligne 2 : modèle (un toucher passe au suivant) et modes */
+    val opts = LinearLayout(this)
+    opts.orientation = LinearLayout.HORIZONTAL
+    opts.gravity = Gravity.CENTER_VERTICAL
+    val model = chip("Modèle ▾", false) { sinkAction?.invoke("model", "") }
+    modelView = model
+    opts.addView(model)
+    val modes = LinkedHashMap<String, TextView>()
+    for ((key, label) in listOf("rapide" to "Rapide", "reflexion" to "Réflexion", "outils" to "Outils")) {
+      val c = chip(label, key == curMode) {
+        curMode = key
+        for ((k, v) in modeViews) styleChip(v, k == key)
+        sinkAction?.invoke("mode", key)
+      }
+      val lpc = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+      lpc.leftMargin = dp(6f)
+      opts.addView(c, lpc)
+      modes[key] = c
+    }
+    modeViews = modes
+    val olp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+    olp.topMargin = dp(6f)
+    root.addView(opts, olp)
 
     /* messages : aucune phrase pré-écrite, la page est vide jusqu'au premier message */
     val list = LinearLayout(this)
@@ -350,9 +429,9 @@ class MimirOverlayService : Service() {
     input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
     val ibg = GradientDrawable()
     ibg.setColor(Color.parseColor("#2E2A26"))
-    ibg.cornerRadius = 20 * dp
+    ibg.cornerRadius = dp(20f).toFloat()
     input.background = ibg
-    input.setPadding((14 * dp).toInt(), (8 * dp).toInt(), (14 * dp).toInt(), (8 * dp).toInt())
+    input.setPadding(dp(14f), dp(8f), dp(14f), dp(8f))
     row.addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
     val send = TextView(this)
     send.text = "Envoyer"
@@ -361,17 +440,17 @@ class MimirOverlayService : Service() {
     send.typeface = Typeface.DEFAULT_BOLD
     val sbg = GradientDrawable()
     sbg.setColor(Color.parseColor("#C67139"))
-    sbg.cornerRadius = 20 * dp
+    sbg.cornerRadius = dp(20f).toFloat()
     send.background = sbg
-    send.setPadding((14 * dp).toInt(), (10 * dp).toInt(), (14 * dp).toInt(), (10 * dp).toInt())
+    send.setPadding(dp(14f), dp(10f), dp(14f), dp(10f))
     val slp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-    slp.leftMargin = (8 * dp).toInt()
+    slp.leftMargin = dp(8f)
     row.addView(send, slp)
     val rlp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-    rlp.topMargin = (8 * dp).toInt()
+    rlp.topMargin = dp(8f)
     root.addView(row, rlp)
 
-    panel = root; panelList = list; panelScroll = scroll; panelInput = input; typing = null; waiting = false
+    panel = root; panelList = list; panelScroll = scroll; panelInput = input; typing = null; waiting = false; regenView = null
     send.setOnClickListener { sendFromPanel() }
     input.setOnEditorActionListener { _, action, _ ->
       if (action == EditorInfo.IME_ACTION_SEND) { sendFromPanel(); true } else false
@@ -382,12 +461,12 @@ class MimirOverlayService : Service() {
     /* fenêtre prenant le focus (clavier) mais laissant passer les touches hors de la fenêtre */
     val lp = WindowManager.LayoutParams(pw, ph, type, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT)
     lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-    lp.y = anchorBottom() + (8 * dp).toInt()
+    lp.y = anchorBottom() + dp(8f)
     lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
     try {
       w.addView(root, lp)
       lastEvent = "discussion flottante ouverte"
-      sinkOpen?.invoke()
+      sinkOpen?.invoke()   /* l'app répond avec le modèle, le mode et l'historique (applyState) */
       input.postDelayed({
         input.requestFocus()
         (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
@@ -399,11 +478,39 @@ class MimirOverlayService : Service() {
     }
   }
 
+  /* état envoyé par l'app : modèle actif, mode, et (reset) toute la conversation à afficher */
+  fun applyState(json: String) {
+    ui.post {
+      if (panel == null) return@post
+      try {
+        val o = org.json.JSONObject(json)
+        curMode = o.optString("mode", curMode)
+        for ((k, v) in modeViews) styleChip(v, k == curMode)
+        modelView?.text = "Modèle : " + o.optString("model", "—") + " ▾"
+        if (o.optBoolean("reset", false)) {
+          panelList?.removeAllViews()
+          typing = null; waiting = false; regenView = null
+          val arr = o.optJSONArray("msgs")
+          if (arr != null) {
+            for (i in 0 until arr.length()) {
+              val m = arr.getJSONObject(i)
+              val mine = m.optString("role") == "user"
+              val t = m.optString("text")
+              bubble(t, mine)
+              if (!mine) addActions(t, i == arr.length() - 1)
+            }
+          }
+        }
+      } catch (e: Exception) { Log.w(TAG, "état de la discussion illisible", e) }
+    }
+  }
+
   private fun sendFromPanel() {
     val input = panelInput ?: return
     val t = input.text.toString().trim()
     if (t.isEmpty() || waiting) return
     input.setText("")
+    regenView?.visibility = View.GONE
     bubble(t, true)
     typing = bubble("…", false)
     waiting = true
@@ -424,7 +531,7 @@ class MimirOverlayService : Service() {
       val v = typing ?: bubble("", false).also { typing = it }
       v.text = text
       scrollDown()
-      if (done) { typing = null; waiting = false }
+      if (done) { typing = null; waiting = false; addActions(text, true) }
     }
   }
 
@@ -433,6 +540,7 @@ class MimirOverlayService : Service() {
     try { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(p.windowToken, 0) } catch (e: Exception) { /* ignoré */ }
     try { wm?.removeView(p) } catch (e: Exception) { /* déjà retirée */ }
     panel = null; panelList = null; panelScroll = null; panelInput = null; typing = null; waiting = false
+    modeViews = emptyMap(); modelView = null; regenView = null
   }
 
   private fun removeBar() {
@@ -544,6 +652,8 @@ class MimirOverlayService : Service() {
     /* branchés par le module JavaScript : envoi d'un message / ouverture d'une nouvelle discussion */
     @Volatile var sinkSend: ((String) -> Unit)? = null
     @Volatile var sinkOpen: (() -> Unit)? = null
+    /* actions de la fenêtre : "mode", "model", "new", "regen", "speak" */
+    @Volatile var sinkAction: ((String, String) -> Unit)? = null
 
     /* rectangle de la caméra (encoche / trou) en pixels écran, ou null si inconnu ou absent (Android 11+) */
     fun cutoutRect(ctx: Context): android.graphics.Rect? {

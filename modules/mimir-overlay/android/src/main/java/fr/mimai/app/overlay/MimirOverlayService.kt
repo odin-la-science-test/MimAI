@@ -178,7 +178,7 @@ class MimirOverlayService : Service() {
     var downAt = 0L
     iv.setOnTouchListener { _, ev ->
       when (ev.actionMasked) {
-        MotionEvent.ACTION_DOWN -> { downAt = System.currentTimeMillis(); true }
+        MotionEvent.ACTION_DOWN -> { downAt = System.currentTimeMillis(); lastEvent = "toucher reçu sur la barre"; true }
         MotionEvent.ACTION_UP -> {
           if (System.currentTimeMillis() - downAt > 500) {
             /* appui long : MiMai s'ouvre et écoute (reconnaissance vocale SUR L'APPAREIL, gérée côté JS) */
@@ -215,9 +215,13 @@ class MimirOverlayService : Service() {
   /* ───────── discussion flottante ───────── */
   private fun togglePanel() {
     if (panel != null) { closePanel(); return }
-    /* le moteur de l'app (JavaScript) répond aux messages : s'il n'est pas actif, on ouvre l'application à la place */
-    if (sinkSend == null) { openAssistant(); return }
+    /* la fenêtre s'ouvre toujours (un toucher doit toujours avoir un effet visible). Si le moteur de l'app
+       (JavaScript) n'est pas actif, elle l'indique : Android interdit à un service de relancer l'app en arrière-plan. */
     openPanel()
+    if (panel != null && sinkSend == null) {
+      lastEvent = "discussion ouverte, mais le moteur de l'app n'est pas actif"
+      bubble("Le moteur de MiMai n'est pas actif. Touchez « Ouvrir MiMai » en haut, puis revenez ici.", false)
+    }
   }
 
   private fun bubble(text: String, mine: Boolean): TextView {

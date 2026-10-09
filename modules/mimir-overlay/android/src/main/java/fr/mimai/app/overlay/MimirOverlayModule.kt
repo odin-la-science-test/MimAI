@@ -150,8 +150,8 @@ class MimirOverlayModule : Module() {
         "serviceActif" to MimirOverlayService.running,
         "dernierEvenement" to MimirOverlayService.lastEvent,
         "encoche" to (cut?.toShortString() ?: "non détectée"),
-        "notifications" to notifEnabled(ctx),
-        "puceAutorisee" to promotedAllowed(ctx)
+        "notifications" to (ctx != null && notifEnabled(ctx)),
+        "puceAutorisee" to (ctx != null && promotedAllowed(ctx))
       )
     }
 

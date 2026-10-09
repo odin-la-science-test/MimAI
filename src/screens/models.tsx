@@ -278,7 +278,7 @@ export function Models({ navigation }: NativeStackScreenProps<RootStackParamList
       </View>
       <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 17, color: C.n700 }}>MiMai reconnaît automatiquement les modèles déjà présents. Un fichier importé n’est accepté que s’il correspond exactement à un modèle du catalogue (taille et SHA-256).</Text>
 
-      <ModePicker />
+      <ModePicker onInstall={requestDownload} />
 
       <Kicker style={{ marginTop: 22 }}>Installés</Kicker>
       {installed.length === 0 ? <Text style={{ marginTop: 8, fontSize: 13.5, lineHeight: 20, color: C.n700 }}>Aucun modèle installé : MiMai répond avec son moteur intégré. Choisissez-en un ci-dessous.</Text> : null}

@@ -1,11 +1,14 @@
 /* Conversation : étapes de réflexion locales, streaming, modes, feedback, correction. */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Image } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp, MODELS } from '../state';
-import { modelForMode } from '../services/modes';
+import { modelForMode, isVisionModel } from '../services/modes';
+import { uid } from '../services/db';
 import { C, F } from '../theme';
 import { Mark, ShakeBuddy } from '../art';
 import { useIsFocused } from '@react-navigation/native';
@@ -21,8 +24,17 @@ const MODES: [string, string][] = [['rapide', 'Rapide'], ['reflexion', 'Réflexi
 export function Chat({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Chat'>) {
   const focused = useIsFocused();
   const { data, e, set, sendMessage, newChat, deleteConv, feedback, saveCorrection, regenerate, patchData, toast } = useApp();
-  const am = MODELS[modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode)];
   const conv = e.chatId ? data.convs.find(c => c.id === e.chatId) : null;
+  /* le mode et le modèle d'une discussion sont FIXÉS dès son premier message ; on ne les change que dans une nouvelle discussion */
+  const locked = !!(conv && conv.msgs.length > 0);
+  const mode = locked && conv!.mode ? conv!.mode : data.settings.mode;
+  const modelId = locked && conv!.model && data.settings.installed.includes(conv!.model)
+    ? conv!.model! : modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, mode);
+  const am = MODELS[modelId];
+  const modeLabel = MODES.find(m => m[0] === mode)?.[1] || 'Rapide';
+  const visionMode = mode === 'vision';
+  const hasVisionModel = isVisionModel(am);
+  const [photo, setPhoto] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [menu, setMenu] = useState(false);
   const top = useTopPad(4);
@@ -88,7 +100,29 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
   }, [route.params?.voice]);
 
   const closeDialog = () => set(s => ({ ...s, dialog: null }));
-  const doSend = () => { const t = e.draft; stopSpeaking(); setSpeakingId(null); set(s => ({ ...s, draft: '' })); void sendMessage(t); };
+  /* photo : sélecteur de fichiers d'Android (aucune permission), copiée dans l'espace privé de l'app */
+  const pickPhoto = async () => {
+    try {
+      const r = await DocumentPicker.getDocumentAsync({ type: 'image/*', copyToCacheDirectory: true, multiple: false });
+      if (r.canceled || !r.assets?.length) return;
+      const a = r.assets[0];
+      const ext = (/\.(jpe?g|png|webp|gif|bmp)$/i.exec(a.name || a.uri) || ['', 'jpg'])[1].toLowerCase();
+      const dir = (FileSystem.documentDirectory || '') + 'vision/';
+      await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => { /* existe déjà */ });
+      const dest = dir + uid('img') + '.' + ext;
+      await FileSystem.copyAsync({ from: a.uri, to: dest });
+      setPhoto(dest);
+    } catch (err) { toast('Photo impossible : ' + (err instanceof Error ? err.message.slice(0, 80) : 'erreur')); }
+  };
+  const doSend = () => {
+    if (visionMode && !hasVisionModel) { toast('Choisissez d’abord un modèle de vision.'); navigation.navigate('Models'); return; }
+    const raw = e.draft.trim();
+    if (!raw && !photo) return;
+    const img = visionMode ? photo : null;
+    const t = raw || 'Décris cette image.';
+    stopSpeaking(); setSpeakingId(null); set(s => ({ ...s, draft: '' })); setPhoto(null);
+    void sendMessage(t, null, undefined, img);
+  };
 
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: C.bg }}>
@@ -98,7 +132,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
           <Text numberOfLines={1} style={{ fontWeight: '700', fontSize: 16, fontFamily: F.bodyBold }}>{conv ? conv.title : 'Nouvelle conversation'}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.g600 }} />
-            <Text style={{ fontSize: 12, color: C.g700 }}>Local · {am ? am.name : 'modèle local'}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: C.g700 }}>Local · {modeLabel} · {am ? am.name : 'modèle local'}</Text>
           </View>
         </View>
         <IconBtn name="dots" onPress={() => setMenu(true)} />
@@ -154,6 +188,15 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
         ) : null}
       </ScrollView>
 
+      {locked ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 8 }}>
+          <Tag kind="accent">{'Mode ' + modeLabel + ' · ' + (am ? am.name : 'moteur intégré')}</Tag>
+          <Text style={{ flexShrink: 1, fontSize: 12, color: C.n700 }}>Fixé pour cette discussion.</Text>
+          <TouchableOpacity onPress={() => newChat()} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
+            <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.a700 }}>Nouvelle discussion</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 14, paddingBottom: 8 }}>
         {MODES.map(([id, label]) => {
           const on = data.settings.mode === id;
@@ -167,9 +210,36 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
           );
         })}
       </View>
+      )}
+
+      {visionMode ? (
+        <View style={{ paddingHorizontal: 14, paddingBottom: 8, gap: 8 }}>
+          {!hasVisionModel ? (
+            <View style={{ borderRadius: 18, backgroundColor: C.a100, padding: 12, gap: 6 }}>
+              <Text style={{ fontSize: 13, lineHeight: 18, color: C.n900 }}>La fonction Vision a besoin d’un modèle capable de voir les images. Aucun n’est choisi ou installé.</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Models')} accessibilityRole="button"><Text style={{ fontSize: 13.5, fontWeight: '700', color: C.a700 }}>Choisir ou installer un modèle de vision</Text></TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity onPress={() => { void pickPhoto(); }} accessibilityRole="button" accessibilityLabel="Joindre une photo"
+                style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: C.a200, justifyContent: 'center' }}>
+                <Text style={{ fontSize: 13.5, fontWeight: '700', color: C.a800 }}>{photo ? 'Changer la photo' : 'Joindre une photo'}</Text>
+              </TouchableOpacity>
+              {photo ? (
+                <View>
+                  <Image source={{ uri: photo }} style={{ width: 54, height: 54, borderRadius: 12 }} />
+                  <TouchableOpacity onPress={() => setPhoto(null)} accessibilityRole="button" accessibilityLabel="Retirer la photo" style={{ position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: C.text, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: C.bg, fontSize: 12, fontWeight: '700' }}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : <Text style={{ flex: 1, fontSize: 12, color: C.n700 }}>L’analyse reste sur l’appareil. Une photo peut demander jusqu’à une minute.</Text>}
+            </View>
+          )}
+        </View>
+      ) : null}
 
       <View style={{ paddingHorizontal: 14, paddingBottom: Math.max(bottom, 12) + 8 }}>
-        <Composer value={e.draft} onChange={t => set(s => ({ ...s, draft: t }))} onSend={doSend} placeholder={listening ? 'Je vous écoute…' : 'Écrire à MiMai…'} busy={e.busy} onMic={() => { void startVoice(); }} listening={listening} />
+        <Composer value={e.draft} onChange={t => set(s => ({ ...s, draft: t }))} onSend={doSend} placeholder={listening ? 'Je vous écoute…' : visionMode ? 'Une question sur la photo…' : 'Écrire à MiMai…'} busy={e.busy} onMic={() => { void startVoice(); }} listening={listening} />
       </View>
 
       <MenuSheet visible={menu} onClose={() => setMenu(false)} items={[
@@ -201,6 +271,7 @@ function Bubble({ m, convId, onFeedback, busy, isLast, onRegenerate, onCopied, o
     return (
       <View style={{ alignItems: 'flex-end', marginBottom: 20 }}>
         <View style={{ maxWidth: '82%', flexShrink: 1, backgroundColor: C.surface, borderRadius: 22, borderTopRightRadius: 6, paddingVertical: 12, paddingHorizontal: 16 }}>
+          {m.image ? <Image source={{ uri: m.image }} style={{ width: 210, height: 160, borderRadius: 14, marginBottom: 8 }} resizeMode="cover" /> : null}
           <Text style={{ fontSize: 15, lineHeight: 22 }}>{m.text}</Text>
         </View>
       </View>

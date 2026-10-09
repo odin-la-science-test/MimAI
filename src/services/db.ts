@@ -9,8 +9,9 @@ import { encryptText, decryptText } from './crypto';
 import type { BenchSnapshot } from './bench';
 
 export type Role = 'user' | 'ai';
-export interface Msg { id: string; role: Role; text: string; ts: number; source?: string | null; model?: string | null; feedback?: 'good' | 'bad' | null; }
-export interface Conv { id: string; title: string; ts: number; trainFlag: 'yes' | 'no' | 'memory'; msgs: Msg[]; }
+export interface Msg { id: string; role: Role; text: string; ts: number; source?: string | null; model?: string | null; feedback?: 'good' | 'bad' | null; image?: string | null; }
+/* mode et modèle sont FIXÉS à la création de la discussion : on ne change pas de moteur en cours de route */
+export interface Conv { id: string; title: string; ts: number; trainFlag: 'yes' | 'no' | 'memory'; msgs: Msg[]; mode?: string; model?: string; }
 export interface Memory { id: string; text: string; kind: 'préférence' | 'fait' | 'style'; ts: number; enabled: boolean; }
 export interface Doc { id: string; name: string; type: string; sizeMb: number; addedAt: number; text: string; indexed: boolean; chunks?: Chunk[]; }
 export interface Chunk { i: number; text: string; page: string; }
@@ -61,7 +62,7 @@ let opening: Promise<SQLite.SQLiteDatabase> | null = null;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, title TEXT, ts INTEGER, train_flag TEXT);
-CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, conv_id TEXT, role TEXT, text_enc TEXT, ts INTEGER, source TEXT, model TEXT, feedback TEXT);
+CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, conv_id TEXT, role TEXT, text_enc TEXT, ts INTEGER, source TEXT, model TEXT, feedback TEXT, image TEXT);
 CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, text_enc TEXT, kind TEXT, ts INTEGER, enabled INTEGER);
 CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, name TEXT, type TEXT, size_mb REAL, added_at INTEGER, text_enc TEXT, indexed INTEGER);
 CREATE TABLE IF NOT EXISTS training_examples (id TEXT PRIMARY KEY, q_enc TEXT, base_enc TEXT, target_enc TEXT, tags TEXT, ts INTEGER, src TEXT);
@@ -81,6 +82,10 @@ export function openDb(): Promise<SQLite.SQLiteDatabase> {
       /* secure_delete : les lignes supprimées sont écrasées sur le disque */
       await d.execAsync('PRAGMA secure_delete = ON; PRAGMA journal_mode = WAL;');
       await d.execAsync(SCHEMA);
+      /* bases créées avant la vision : colonne de la photo jointe (ignorée si elle existe déjà) */
+      await d.execAsync('ALTER TABLE messages ADD COLUMN image TEXT').catch(() => { /* déjà présente */ });
+      await d.execAsync('ALTER TABLE conversations ADD COLUMN mode TEXT').catch(() => { /* déjà présente */ });
+      await d.execAsync('ALTER TABLE conversations ADD COLUMN model TEXT').catch(() => { /* déjà présente */ });
       return d;
     })().catch(err => { opening = null; throw err; });
   }
@@ -108,19 +113,19 @@ export async function loadAll(): Promise<AppData> {
   const data = freshData();
   saved.clear();
   try {
-    const convs = await d.getAllAsync<{ id: string; title: string; ts: number; train_flag: string }>('SELECT * FROM conversations ORDER BY ts DESC');
+    const convs = await d.getAllAsync<{ id: string; title: string; ts: number; train_flag: string; mode: string | null; model: string | null }>('SELECT * FROM conversations ORDER BY ts DESC');
     for (const c of convs) {
-      const rows = await d.getAllAsync<{ id: string; role: Role; text_enc: string; ts: number; source: string | null; model: string | null; feedback: string | null }>(
+      const rows = await d.getAllAsync<{ id: string; role: Role; text_enc: string; ts: number; source: string | null; model: string | null; feedback: string | null; image: string | null }>(
         'SELECT * FROM messages WHERE conv_id = ? ORDER BY ts', [c.id]);
       const msgs: Msg[] = [];
       for (const r of rows) {
         const text = await tryDecrypt(r.text_enc);
         if (text === null) continue;
-        const m: Msg = { id: r.id, role: r.role, text, ts: r.ts, source: r.source, model: r.model, feedback: (r.feedback as Msg['feedback']) || null };
+        const m: Msg = { id: r.id, role: r.role, text, ts: r.ts, source: r.source, model: r.model, feedback: (r.feedback as Msg['feedback']) || null, image: r.image || null };
         msgs.push(m);
         saved.set(keyOf('messages', m.id), fpMsg({ m, convId: c.id }));
       }
-      const conv: Conv = { id: c.id, title: c.title, ts: c.ts, trainFlag: c.train_flag as Conv['trainFlag'], msgs };
+      const conv: Conv = { id: c.id, title: c.title, ts: c.ts, trainFlag: c.train_flag as Conv['trainFlag'], msgs, mode: c.mode || undefined, model: c.model || undefined };
       data.convs.push(conv);
       saved.set(keyOf('conversations', c.id), fpConv(conv));
     }
@@ -226,11 +231,11 @@ async function doSave(data: AppData): Promise<void> {
     };
 
     await sync('conversations', data.convs, c => c.id, fpConv,
-      c => d.runAsync('INSERT OR REPLACE INTO conversations (id, title, ts, train_flag) VALUES (?,?,?,?)', [c.id, c.title, c.ts, c.trainFlag]));
+      c => d.runAsync('INSERT OR REPLACE INTO conversations (id, title, ts, train_flag, mode, model) VALUES (?,?,?,?,?,?)', [c.id, c.title, c.ts, c.trainFlag, c.mode ?? null, c.model ?? null]));
     const msgRows: MsgRow[] = data.convs.flatMap(c => c.msgs.map(m => ({ m, convId: c.id })));
     await sync('messages', msgRows, r => r.m.id, fpMsg, async ({ m, convId }) => {
-      await d.runAsync('INSERT OR REPLACE INTO messages (id, conv_id, role, text_enc, ts, source, model, feedback) VALUES (?,?,?,?,?,?,?,?)',
-        [m.id, convId, m.role, await encryptText(m.text), m.ts, m.source ?? null, m.model ?? null, m.feedback ?? null]);
+      await d.runAsync('INSERT OR REPLACE INTO messages (id, conv_id, role, text_enc, ts, source, model, feedback, image) VALUES (?,?,?,?,?,?,?,?,?)',
+        [m.id, convId, m.role, await encryptText(m.text), m.ts, m.source ?? null, m.model ?? null, m.feedback ?? null, m.image ?? null]);
     });
     await sync('memories', data.memories, m => m.id, m => JSON.stringify(m), async m => {
       await d.runAsync('INSERT OR REPLACE INTO memories (id, text_enc, kind, ts, enabled) VALUES (?,?,?,?,?)', [m.id, await encryptText(m.text), m.kind, m.ts, m.enabled ? 1 : 0]);

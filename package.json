@@ -24,6 +24,7 @@
     "test:motion": "node --test scripts/motion-equiv.test.mjs",
     "bench:motion": "node scripts/motion-bench.mjs",
     "catalog:build": "node scripts/build-catalog.mjs",
+    "vision:build": "node scripts/build-vision.mjs",
     "catalog:check": "node --test scripts/catalog.test.mjs",
     "test:advisor": "node --test scripts/advisor.test.cjs",
     "test:speak": "node --test scripts/speak.test.cjs",

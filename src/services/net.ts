@@ -126,13 +126,23 @@ const pause = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 /* — pipeline complet : download → taille → SHA-256 → manifeste → licence → install → re-blocage —
    Le réseau n'est utile que pendant le téléchargement : il est re-bloqué dès qu'il se termine
    (succès ou échec) ; le bloc finally garantit le re-blocage et le nettoyage du fichier partiel. */
+/* fichiers à installer pour un modèle : le modèle lui-même, et pour la vision son second fichier (mmproj) */
+interface FileJob { label: string; url: string; target: string; sizeBytes: number; sha256: string }
+export function jobsFor(id: string): FileJob[] {
+  const m = MODELS[id];
+  const jobs: FileJob[] = [{ label: m.name, url: m.url, target: modelFilePath(id), sizeBytes: m.sizeBytes, sha256: m.sha256 }];
+  if (m.mmproj) jobs.push({ label: m.name + ' (module image)', url: m.mmproj.url, target: mmprojPath(id), sizeBytes: m.mmproj.sizeBytes, sha256: m.mmproj.sha256 });
+  return jobs;
+}
+
 export async function installModel(id: string, onPhase: PhaseFn, opts: { wifiOnly?: boolean } = {}): Promise<ModelManifest> {
   const m = MODELS[id];
   if (!m) throw new Error('UNKNOWN_MODEL');
   NET.assertAllowed();
-  if (!m.url.startsWith(ALLOWED_URL_PREFIX)) { NET.block('URL de modèle non autorisée'); throw new Error('URL_NOT_ALLOWED'); }
+  const jobs = jobsFor(id);
+  if (jobs.some(j => !j.url.startsWith(ALLOWED_URL_PREFIX))) { NET.block('URL de modèle non autorisée'); throw new Error('URL_NOT_ALLOWED'); }
+  const totalBytes = jobs.reduce((n, j) => n + j.sizeBytes, 0);
 
-  const target = modelFilePath(id);
   let dl: FileSystem.DownloadResumable | null = null;
   const unregister = NET.onBlock(() => { void dl?.pauseAsync().catch(() => { /* déjà terminé */ }); });
   let ok = false;
@@ -142,51 +152,65 @@ export async function installModel(id: string, onPhase: PhaseFn, opts: { wifiOnl
       if (st && st.type === Network.NetworkStateType.CELLULAR) throw new Error('WIFI_REQUIRED');
       if (st && st.isConnected === false) throw new Error('OFFLINE');
     }
-    /* espace disque : le fichier + une marge pour la vérification */
+    /* espace disque : tous les fichiers + une marge pour la vérification */
     const free = await FileSystem.getFreeDiskStorageAsync().catch(() => -1);
-    if (free >= 0 && free < m.sizeBytes * 1.1) throw new Error('DISK_FULL:' + Math.ceil((m.sizeBytes * 1.1 - free) / 1e6));
-    await FileSystem.makeDirectoryAsync(target.slice(0, target.lastIndexOf('/') + 1), { intermediates: true }).catch(() => { /* existe déjà */ });
+    if (free >= 0 && free < totalBytes * 1.1) throw new Error('DISK_FULL:' + Math.ceil((totalBytes * 1.1 - free) / 1e6));
+    await FileSystem.makeDirectoryAsync(jobs[0].target.slice(0, jobs[0].target.lastIndexOf('/') + 1), { intermediates: true }).catch(() => { /* existe déjà */ });
 
     onPhase('download', 0);
-    dl = FileSystem.createDownloadResumable(m.url, target, {},
-      (wp) => { if (wp.totalBytesExpectedToWrite > 0) onPhase('download', (wp.totalBytesWritten / wp.totalBytesExpectedToWrite) * 100); });
-    let res: FileSystem.FileSystemDownloadResult | undefined;
-    let dlError = '';
-    const progress = (wp: FileSystem.DownloadProgressData) => { if (wp.totalBytesExpectedToWrite > 0) onPhase('download', (wp.totalBytesWritten / wp.totalBytesExpectedToWrite) * 100); };
-    /* jusqu'à 3 tentatives : reprise si possible, sinon nouveau départ (coupure Wi-Fi, CDN qui ferme la connexion) */
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        if (attempt === 0) res = await dl.downloadAsync();
-        else {
-          try { res = await dl.resumeAsync(); }
-          catch {
-            await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => { /* rien */ });
-            dl = FileSystem.createDownloadResumable(m.url, target, {}, progress);
-            res = await dl.downloadAsync();
+    let doneBytes = 0;   /* octets des fichiers déjà téléchargés : la progression est celle de l'ensemble */
+    for (const job of jobs) {
+      const progress = (wp: FileSystem.DownloadProgressData) => {
+        if (wp.totalBytesExpectedToWrite > 0) onPhase('download', Math.min(100, ((doneBytes + wp.totalBytesWritten) / totalBytes) * 100));
+      };
+      dl = FileSystem.createDownloadResumable(job.url, job.target, {}, progress);
+      let res: FileSystem.FileSystemDownloadResult | undefined;
+      let dlError = '';
+      /* jusqu'à 3 tentatives : reprise si possible, sinon nouveau départ (coupure Wi-Fi, CDN qui ferme la connexion) */
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          if (attempt === 0) res = await dl.downloadAsync();
+          else {
+            try { res = await dl.resumeAsync(); }
+            catch {
+              await FileSystem.deleteAsync(job.target, { idempotent: true }).catch(() => { /* rien */ });
+              dl = FileSystem.createDownloadResumable(job.url, job.target, {}, progress);
+              res = await dl.downloadAsync();
+            }
           }
+          dlError = '';
+          break;
+        } catch (err) {
+          dlError = err instanceof Error ? err.message : String(err);
+          res = undefined;
+          NET_LOG('Téléchargement ' + job.label + ' : tentative ' + (attempt + 1) + ' échouée (' + dlError.slice(0, 80) + ')');
+          if (NET.state() !== 'authorized') break; /* fenêtre fermée : on n'insiste pas */
+          await pause(1500 * (attempt + 1));
         }
-        dlError = '';
-        break;
-      } catch (err) {
-        dlError = err instanceof Error ? err.message : String(err);
-        res = undefined;
-        NET_LOG('Téléchargement ' + m.name + ' : tentative ' + (attempt + 1) + ' échouée (' + dlError.slice(0, 80) + ')');
-        if (NET.state() !== 'authorized') break; /* fenêtre fermée : on n'insiste pas */
-        await pause(1500 * (attempt + 1));
       }
+      if (!res || (res.status !== 200 && res.status !== 206)) {
+        unregister();
+        NET.block('téléchargement interrompu');
+        throw new Error('DOWNLOAD_FAILED:' + (dlError || (res ? 'HTTP ' + res.status : 'interrompu')).slice(0, 160));
+      }
+      doneBytes += job.sizeBytes;
     }
     unregister();
     NET.block('téléchargement terminé'); /* le reste du pipeline est 100 % local */
-    if (!res || (res.status !== 200 && res.status !== 206)) throw new Error('DOWNLOAD_FAILED:' + (dlError || (res ? 'HTTP ' + res.status : 'interrompu')).slice(0, 160));
 
+    /* vérification de CHAQUE fichier : taille exacte puis SHA-256 */
     onPhase('size', 100);
-    const info = await FileSystem.getInfoAsync(target);
-    if (!info.exists || info.size !== m.sizeBytes) throw new Error('SIZE_MISMATCH');
-
+    for (const job of jobs) {
+      const info = await FileSystem.getInfoAsync(job.target);
+      if (!info.exists || info.size !== job.sizeBytes) throw new Error('SIZE_MISMATCH');
+    }
     onPhase('sha', 1);
-    const got = await hashModelFile(target, m.sizeBytes, p => onPhase('sha', Math.max(1, Math.min(99, p))));
-    onPhase('sha', 100, { got, ok: got === m.sha256 });
-    if (got !== m.sha256) throw new Error('CHECKSUM_INVALID');
+    for (let i = 0; i < jobs.length; i++) {
+      const job = jobs[i];
+      const got = await hashModelFile(job.target, job.sizeBytes, p => onPhase('sha', Math.max(1, Math.min(99, ((i + p / 100) / jobs.length) * 100))));
+      if (got !== job.sha256) { onPhase('sha', 100, { got, ok: false }); throw new Error('CHECKSUM_INVALID'); }
+      if (i === jobs.length - 1) onPhase('sha', 100, { got, ok: true });
+    }
     await pause(200);
 
     const manifest = buildManifest(id);
@@ -197,7 +221,7 @@ export async function installModel(id: string, onPhase: PhaseFn, opts: { wifiOnl
     onPhase('install', 100);
     await pause(350);
 
-    NET_LOG('Modèle ' + m.name + ' installé (SHA-256 vérifié)');
+    NET_LOG('Modèle ' + m.name + ' installé (SHA-256 vérifié' + (jobs.length > 1 ? ', ' + jobs.length + ' fichiers' : '') + ')');
     ok = true;
     return manifest;
   } catch (e) {
@@ -206,7 +230,7 @@ export async function installModel(id: string, onPhase: PhaseFn, opts: { wifiOnl
   } finally {
     unregister();
     NET.block('retour au mode bloqué'); /* idempotent : garantit le re-blocage dans tous les cas */
-    if (!ok) await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => { /* rien à nettoyer */ });
+    if (!ok) for (const j of jobs) await FileSystem.deleteAsync(j.target, { idempotent: true }).catch(() => { /* rien à nettoyer */ });
   }
 }
 
@@ -240,7 +264,14 @@ export function modelFilePath(id: string): string {
   return (FileSystem.documentDirectory || '') + 'models/' + MODELS[id].file;
 }
 
+/* chemin du second fichier (modèles de vision) ; null si le modèle n'en a pas */
+export function mmprojPath(id: string): string {
+  const m = MODELS[id];
+  return m && m.mmproj ? (FileSystem.documentDirectory || '') + 'models/' + m.mmproj.file : '';
+}
+
 export async function deleteModelFile(id: string): Promise<void> {
   if (!MODELS[id]) return;
   await FileSystem.deleteAsync(modelFilePath(id), { idempotent: true }).catch(() => { /* déjà absent */ });
+  if (MODELS[id].mmproj) await FileSystem.deleteAsync(mmprojPath(id), { idempotent: true }).catch(() => { /* déjà absent */ });
 }

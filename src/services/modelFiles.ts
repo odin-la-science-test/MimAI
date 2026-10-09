@@ -1,7 +1,7 @@
 /* MiMai — accès disque pour la détection et l'import de modèles (la logique pure est dans installed.ts). */
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
-import { MODELS, modelFilePath, hashModelFile } from './net';
+import { MODELS, modelFilePath, mmprojPath, hashModelFile } from './net';
 import { detectInstalled, candidatesBySize, matchByHash } from './installed';
 import type { FileInfo, ImportFailure } from './installed';
 
@@ -14,6 +14,12 @@ export async function scanModelFiles(): Promise<string[] | null> {
       try {
         const i = await FileSystem.getInfoAsync(modelFilePath(id));
         infos[id] = i.exists ? { exists: true, size: (i as { size?: number }).size } : { exists: false };
+        /* un modèle de vision n'est installé que si son second fichier (mmproj) est lui aussi présent, à la taille exacte */
+        const mm = MODELS[id].mmproj;
+        if (mm && infos[id].exists) {
+          const j = await FileSystem.getInfoAsync(mmprojPath(id));
+          if (!j.exists || (j as { size?: number }).size !== mm.sizeBytes) infos[id] = { exists: false };
+        }
       } catch { infos[id] = { exists: false }; }
     }
     return detectInstalled(MODELS, infos);
@@ -39,7 +45,8 @@ export async function importModelFile(onPhase: (p: ImportPhase, pct: number) => 
     try { const i = await FileSystem.getInfoAsync(asset.uri); size = (i as { size?: number }).size ?? -1; } catch { size = -1; }
   }
   if (!(size > 0)) return { ok: false, failure: 'no-size' };
-  const candidates = candidatesBySize(MODELS, size);
+  /* l'import manuel ne gère qu'un seul fichier : les modèles de vision (deux fichiers) se téléchargent */
+  const candidates = candidatesBySize(MODELS, size).filter(id => !MODELS[id].mmproj);
   if (!candidates.length) return { ok: false, failure: 'unknown-size' };
 
   const free = await FileSystem.getFreeDiskStorageAsync().catch(() => -1);

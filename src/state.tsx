@@ -2,6 +2,7 @@
    Actions : conversation, mémoire, RAG, modèles, entraînement, réseau, compte. */
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import type { AppData, Conv, Doc, Msg, Memory, TEx } from './services/db';
 import { freshData, loadAll, saveAll, wipeData, uid } from './services/db';
 import { NET, installModel, MODELS, ORDER, setNetLogger, deleteModelFile } from './services/net';
@@ -14,7 +15,7 @@ import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { appExits } from './services/overlay';
-import { modelForMode } from './services/modes';
+import { modelForMode, isVisionModel } from './services/modes';
 import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
@@ -45,7 +46,7 @@ interface AppCtx {
   patchData: (fn: (d: AppData) => void) => void;
   toast: (t: string) => void;
   /* conversation */
-  sendMessage: (text: string, forcedDoc?: Doc | null, regenOf?: string) => Promise<void>;
+  sendMessage: (text: string, forcedDoc?: Doc | null, regenOf?: string, image?: string | null) => Promise<void>;
   /* régénère une réponse : repose la même question (sans la dupliquer) et remplace la réponse `msg` */
   regenerate: (conv: Conv, msg: Msg) => void;
   newChat: () => void;
@@ -198,24 +199,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   /* ─────────── conversation ─────────── */
-  const sendMessage = async (text0: string, forcedDoc?: Doc | null, regenOf?: string) => {
+  const sendMessage = async (text0: string, forcedDoc?: Doc | null, regenOf?: string, image?: string | null) => {
     const text = text0.trim();
     if (!text || e.busy) return;
     const token = ++runToken.current;
-    /* le modèle dépend de la fonction (mode) choisie ; sans choix, c'est le modèle actif */
-    const modelId = modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode);
-    trail('question reçue : ' + text.length + ' car., mode ' + data.settings.mode + ', modèle ' + modelId);
+    /* le mode et le modèle sont FIXÉS à la création de la discussion : on ne change pas de moteur en cours de route.
+       Discussion neuve (ou ancienne, sans mode enregistré) : ceux du moment, c'est-à-dire la fonction choisie. */
+    const existing = e.chatId ? data.convs.find(c => c.id === e.chatId) : undefined;
+    const mode = (existing && existing.msgs.length > 0 && existing.mode) ? existing.mode : data.settings.mode;
+    const wanted = (existing && existing.msgs.length > 0 && existing.model && data.settings.installed.includes(existing.model)) ? existing.model : null;
+    const modelId = wanted ?? modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, mode);
+    trail('question reçue : ' + text.length + ' car., mode ' + mode + ', modèle ' + modelId + (image ? ', avec photo' : ''));
 
     const convId = e.chatId || uid('c');
     const isNew = !e.chatId || !data.convs.some(c => c.id === convId);
-    const um: Msg = { id: uid('m'), role: 'user', text, ts: Date.now(), feedback: null };
+    const um: Msg = { id: uid('m'), role: 'user', text, ts: Date.now(), feedback: null, image: image || null };
     /* régénération : l'historique s'arrête avant la question (qui reste en place) ; la réponse remplacée est retirée plus bas */
     const convMsgs = isNew ? [] : (data.convs.find(c => c.id === convId)?.msgs || []);
     const regenIdx = regenOf ? convMsgs.findIndex(m => m.id === regenOf) : -1;
     const regen = regenIdx > 0;
     const prevMsgs: Msg[] = regen ? convMsgs.slice(0, regenIdx - 1) : convMsgs;
 
-    const steps = planSteps({ history: prevMsgs, userText: text, mode: data.settings.mode, docs: data.docs, memories: data.memories, adapterRules: [], examples: data.tex, modelName: data.settings.activeModel, forcedDoc });
+    const steps = planSteps({ history: prevMsgs, userText: text, mode: mode as 'rapide', docs: data.docs, memories: data.memories, adapterRules: [], examples: data.tex, modelName: modelId, forcedDoc });
     set(s => ({
       ...s, chatId: convId, draft: '', busy: true, thinking: true, steps, step: 0, stream: null, streamSource: null,
     }));
@@ -227,9 +232,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (isNew) {
-        d.convs.unshift({ id: convId, title: titleFrom(text), ts: Date.now(), trainFlag: 'yes', msgs: [um] });
+        d.convs.unshift({ id: convId, title: titleFrom(text), ts: Date.now(), trainFlag: 'yes', msgs: [um], mode, model: modelId });
       } else {
         const c = d.convs.find(x => x.id === convId)!;
+        if (!c.mode) { c.mode = mode; c.model = modelId; }   /* ancienne discussion : on fige le moteur à partir d'ici */
         c.msgs.push(um);
         c.ts = Date.now();
       }
@@ -259,9 +265,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let usedRealModel = false;
     try {
       const info = await generateDetailed({
-        history: prevMsgs, userText: text, mode: data.settings.mode, docs: data.docs,
+        history: prevMsgs, userText: text, mode: mode as 'rapide', docs: data.docs,
         memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], examples: data.tex,
-        modelName: modelId, forcedDoc, onText,
+        modelName: modelId, forcedDoc, onText, image: image || null,
       });
       answer = info.text;
       usedRealModel = info.real;
@@ -305,6 +311,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const newChat = () => set(s => ({ ...s, chatId: null, draft: '', stream: null, thinking: false, busy: false }));
 
   const deleteConv = (id: string) => {
+    /* les photos jointes à la discussion sont effacées avec elle */
+    (data.convs.find(c => c.id === id)?.msgs || []).forEach(m => { if (m.image) void FileSystem.deleteAsync(m.image, { idempotent: true }).catch(() => { /* déjà absente */ }); });
     patchData(d => { d.convs = d.convs.filter(c => c.id !== id); });
     set(s => (s.chatId === id ? { ...s, chatId: null } : s));
     toast('Conversation supprimée');
@@ -370,7 +378,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }, { wifiOnly: data.settings.wifiOnly });
       patchData(d => {
         if (!d.settings.installed.includes(id)) d.settings.installed.push(id);
-        d.settings.activeModel = id;
+        if (isVisionModel(MODELS[id])) {
+          /* un modèle de vision va à la fonction Vision (sans devenir le modèle de discussion par défaut) */
+          d.settings.modeModels = { ...(d.settings.modeModels || {}), vision: id };
+        } else d.settings.activeModel = id;
       });
       toast(MODELS[id].name + ' installé et vérifié');
       return manifest;
@@ -415,6 +426,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const wipe = (what: 'data' | 'all') => {
     /* annule toute sauvegarde différée de l'ancien contenu avant d'effacer */
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    void FileSystem.deleteAsync((FileSystem.documentDirectory || '') + 'vision/', { idempotent: true }).catch(() => { /* aucune photo */ });
     /* la progression du jeu vit dans la WebView : on demande son effacement à la prochaine ouverture du jeu */
     const base = what === 'all'
       ? { ...freshData().settings, onboarded: data.settings.onboarded }

@@ -39,7 +39,29 @@ test('modèle suivant : boucle sur la liste', () => {
   assert.equal(M.nextModel([], 'a'), null);
 });
 
-test('le catalogue réel : aucun modèle de vision déclaré, donc la fonction Vision reste honnêtement vide', () => {
-  const cat = require('../src/data/catalog.json').models;
-  assert.equal(cat.filter(m => M.isVisionModel(m)).length, 0);
+test('catalogue de vision : chaque modèle a son module image (mmproj) vérifiable, étiqueté « vision »', () => {
+  const v = require('../src/data/vision.json').models;
+  assert.ok(v.length >= 3);
+  const ids = new Set();
+  for (const m of v) {
+    assert.ok(M.isVisionModel(m), m.id + ' doit porter l etiquette vision');
+    assert.match(m.sha256, /^[0-9a-f]{64}$/);
+    assert.match(m.mmproj.sha256, /^[0-9a-f]{64}$/);
+    assert.ok(m.mmproj.sizeBytes > 1e7 && m.sizeBytes > 1e8);
+    assert.ok(m.url.startsWith('https://huggingface.co/') && m.mmproj.url.startsWith('https://huggingface.co/'));
+    assert.notEqual(m.file, m.mmproj.file);
+    assert.ok(!ids.has(m.id)); ids.add(m.id);
+  }
+  /* aucun modèle de texte ne se déclare capable de voir */
+  const texte = require('../src/data/catalog.json').models;
+  assert.equal(texte.filter(m => M.isVisionModel(m)).length, 0);
+  assert.equal([...ids].filter(id => texte.some(m => m.id === id)).length, 0, 'pas de collision d identifiant avec le catalogue de texte');
+});
+
+test('vision : la fonction ne propose que des modèles de vision, même parmi les installés', () => {
+  const v = require('../src/data/vision.json').models;
+  const defs = Object.fromEntries([...require('../src/data/catalog.json').models, ...v].map(m => [m.id, m]));
+  const inst = ['qwen05b', v[0].id];
+  assert.deepEqual(M.candidatesFor('vision', inst, defs), [v[0].id]);
+  assert.ok(M.candidatesFor('rapide', inst, defs).includes('qwen05b'));
 });

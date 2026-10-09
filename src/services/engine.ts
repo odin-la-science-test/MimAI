@@ -8,7 +8,7 @@
 import type { AppData, Doc, Memory, Msg, TEx } from './db';
 import { RAG, summarize } from './rag';
 import { memoryLines, looksLikePreference } from './memory';
-import { MODELS, modelFilePath } from './net';
+import { MODELS, modelFilePath, mmprojPath } from './net';
 import * as FileSystem from 'expo-file-system/legacy';
 import { selectFewShots, parseMeta, visibleRules, registerEvaluatorFactory, EXPORT_SYSTEM, datasetFrom, splitPairs, profileMessages, scoreVariant, snapshotFrom, activeAdapter } from './training';
 import { measureSpeed, type BenchSnapshot } from './bench';
@@ -27,6 +27,8 @@ export interface GenerateCtx {
   examples: TEx[];
   modelName: string;
   forcedDoc?: Doc | null;
+  /* photo jointe (chemin de fichier) : fonction Vision, modèle capable de voir les images */
+  image?: string | null;
   /* texte de la réponse au fur et à mesure de sa production (affichage en direct) */
   onText?: (text: string) => void;
 }
@@ -50,13 +52,16 @@ interface LlamaCtx {
   applyLoraAdapters(l: { path: string; scaled?: number }[]): Promise<void>;
   removeLoraAdapters(): Promise<void>;
   release(): Promise<void>;
+  initMultimodal(o: { path: string; use_gpu?: boolean; image_max_tokens?: number }): Promise<boolean>;
 }
-let llama: { file: string; ctx: LlamaCtx; adapterKey: string } | null = null;
+/* mm = le module image (mmproj) est chargé : le modèle peut regarder des photos */
+let llama: { file: string; ctx: LlamaCtx; adapterKey: string; mm: boolean } | null = null;
 let chain: Promise<unknown> = Promise.resolve();
 /* un seul accès natif à la fois (chat et benchmark partagent le contexte) */
 const exclusive = <T,>(fn: () => Promise<T>): Promise<T> => { const r = chain.then(fn, fn); chain = r.catch(() => undefined); return r; };
 
 export class LoraLoadError extends Error {}
+export class VisionError extends Error {}
 
 function llamaModule(): { initLlama: (p: Record<string, unknown>) => Promise<LlamaCtx> } | null {
   try {
@@ -70,7 +75,7 @@ let compatMode = false;
 export function setCompat(on: boolean): void { if (compatMode !== on) { compatMode = on; void releaseLlama(); } }
 export const llamaAvailable = (): boolean => llamaModule() !== null;
 
-async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
+async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | null> {
   const mod = llamaModule();
   if (!mod || !modelFile) return null;
   if (llama && llama.file === modelFile) return llama.ctx;
@@ -83,11 +88,25 @@ async function getCtx(modelFile: string): Promise<LlamaCtx | null> {
   /* 4 threads : sur un téléphone (gros cœurs + petits cœurs), utiliser TOUS les cœurs est en général plus lent que
      les ~4 gros cœurs. Pas de GPU sur Android avec ce moteur : tout se calcule sur le processeur. */
   /* mode compatibilité : sans réarrangement des poids en mémoire (no_extra_bufts) et sur moins de cœurs ; plus lent mais le plus sûr */
+  /* un modèle de vision a besoin d'un contexte plus long : une image occupe plusieurs centaines de jetons */
+  const nCtx = mmproj ? 3072 : 2048;
   const ctx = await mod.initLlama(compatMode
-    ? { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 2, no_extra_bufts: true, use_mlock: false }
-    : { model: modelFile, n_ctx: 2048, n_gpu_layers: 0, n_threads: 4 });
+    ? { model: modelFile, n_ctx: nCtx, n_gpu_layers: 0, n_threads: 2, no_extra_bufts: true, use_mlock: false }
+    : { model: modelFile, n_ctx: nCtx, n_gpu_layers: 0, n_threads: 4 });
   trail('modèle chargé en ' + (Date.now() - tLoad) + ' ms');
-  llama = { file: modelFile, ctx, adapterKey: '' };
+  let mm = false;
+  if (mmproj) {
+    try {
+      const mi = await FileSystem.getInfoAsync(mmproj);
+      if (mi.exists) {
+        trail('chargement du module image ' + (mmproj.split('/').pop() || ''));
+        /* image_max_tokens borne le coût d'une photo (mémoire et temps) ; pas de GPU sur Android avec ce moteur */
+        mm = !!(await ctx.initMultimodal({ path: mmproj, use_gpu: false, image_max_tokens: 640 }));
+        trail('module image ' + (mm ? 'prêt' : 'refusé par le moteur'));
+      } else trail('module image absent du disque');
+    } catch (err) { trail('ERREUR module image : ' + (err instanceof Error ? err.message : String(err))); mm = false; }
+  }
+  llama = { file: modelFile, ctx, adapterKey: '', mm };
   return ctx;
 }
 
@@ -107,6 +126,9 @@ async function syncAdapter(ctx: LlamaCtx, want: AdapterRef | null): Promise<void
 
 export interface LlmOpts {
   adapter?: AdapterRef | null; maxTokens?: number; temperature?: number; thinking?: boolean;
+  /* modèles de vision : fichier mmproj et photos (chemins de fichiers) jointes à la dernière question */
+  mmproj?: string; images?: string[];
+
   /* délai total en ms depuis l'appel : à l'échéance la génération est arrêtée et le texte déjà produit est gardé */
   deadlineMs?: number;
   /* texte produit jusqu'ici, appelé à chaque jeton (affichage en direct) */
@@ -126,9 +148,11 @@ export const speedOf = (modelId: string): number | null => knownSpeed[modelId] ?
 export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: LlmOpts = {}): Promise<LlmResult | null> {
   const t0 = Date.now();
   return exclusive(async () => {
-    const ctx = await getCtx(modelFile);
+    const ctx = await getCtx(modelFile, o.mmproj);
     if (!ctx) return null;
     await syncAdapter(ctx, o.adapter ?? null);
+    const wantImages = !!(o.images && o.images.length);
+    if (wantImages && !llama?.mm) throw new VisionError('Le module image du modèle n’a pas pu être chargé.');
     const t1 = Date.now();
     let acc = '', ttft: number | null = null, cut = false;
     trail('génération : ' + messages.length + ' messages, ' + messages.reduce((n, m) => n + m.content.length, 0) + ' car., n_predict=' + (o.maxTokens ?? 400) + ', délai=' + (o.deadlineMs ?? 0) + ' ms');
@@ -143,14 +167,23 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
          régulières de l'analyseur de discussion) : sur les réponses un peu longues cela fait planter l'application. */
       let prompt = '';
       let stop: string[] = [];
+      let media: string[] = [];
       try {
-        const f = await ctx.getFormattedChat(messages, undefined, { jinja: true, enable_thinking: !!o.thinking }) as { prompt?: string; additional_stops?: string[] };
+        /* avec des photos : la dernière question devient [texte, image] ; le moteur remplace l'image par ses jetons */
+        const nativeMsgs: unknown[] = wantImages
+          ? messages.map((m, i) => (i === messages.length - 1 && m.role === 'user'
+              ? { role: 'user', content: [{ type: 'text', text: m.content }, ...o.images!.map(u => ({ type: 'image_url', image_url: { url: u } }))] }
+              : m))
+          : messages;
+        const f = await ctx.getFormattedChat(nativeMsgs, undefined, { jinja: true, enable_thinking: !!o.thinking }) as { prompt?: string; additional_stops?: string[]; media_paths?: string[] };
         prompt = String(f?.prompt || '');
         stop = Array.isArray(f?.additional_stops) ? f.additional_stops : [];
-      } catch { prompt = ''; }
+        media = Array.isArray(f?.media_paths) ? f.media_paths : [];
+      } catch (e) { prompt = ''; if (wantImages) throw new VisionError('Le gabarit du modèle n’a pas pu préparer l’image : ' + (e instanceof Error ? e.message : String(e))); }
+      if (wantImages && (!prompt || !media.length)) throw new VisionError('L’image n’a pas pu être jointe à la question.');
       const sampling = { n_predict: o.maxTokens ?? 400, temperature: o.temperature ?? 0.7, top_k: 40, top_p: 0.9 };
       const res = prompt
-        ? await ctx.completion({ prompt, stop, ...sampling }, d => { if (ttft === null) { ttft = Date.now() - t0; trail('premier jeton après ' + ttft + ' ms'); } acc += d?.token || ''; o.onText?.(acc); })
+        ? await ctx.completion({ prompt, stop, ...(media.length ? { media_paths: media } : {}), ...sampling }, d => { if (ttft === null) { ttft = Date.now() - t0; trail('premier jeton après ' + ttft + ' ms'); } acc += d?.token || ''; o.onText?.(acc); })
         /* gabarit indisponible : génération sans flux (pas de rappel par jeton), plus lente à afficher mais sûre */
         : await ctx.completion({ messages, ...sampling, enable_thinking: !!o.thinking });
       const t = res?.timings;
@@ -179,7 +212,7 @@ export async function prewarm(modelId: string, ctx: Pick<GenerateCtx, 'memories'
     const key = file + '|' + hash(sys);
     if (warmKey === key) return;
     trail('préchauffage du modèle ' + modelId);
-    const r = await llmCompleteDetailed(file, [{ role: 'system', content: sys }, { role: 'user', content: 'Bonjour' }], { maxTokens: 1, temperature: 0, deadlineMs: 15000 });
+    const r = await llmCompleteDetailed(file, [{ role: 'system', content: sys }, { role: 'user', content: 'Bonjour' }], { maxTokens: 1, temperature: 0, deadlineMs: 30000, mmproj: MODELS[modelId].mmproj ? mmprojPath(modelId) : undefined });
     if (r) warmKey = key;
   } catch { /* le préchauffage est facultatif */ }
 }
@@ -350,16 +383,25 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
   const adapter: AdapterRef | null = meta?.kind === 'lora' && meta.file
     ? { path: (FileSystem.documentDirectory || '') + meta.file, scale: meta.scale ?? 1 } : null;
   /* catégorie de la demande → longueur de réponse qui tient dans le délai (5 s / 10 s / 20 s) d'après la vitesse mesurée */
+  const def = MODELS[ctx.modelName];
   const kind = classify(ctx.userText, ctx.mode);
-  const shots = fewShotsFor(ctx, fewShotCount(kind));
-  const messages = buildMessages(ctx, shots, kind);
-  const maxTokens = maxTokensFor(kind, speedOf(ctx.modelName));
+  const withImage = !!ctx.image;
+  if (withImage && !def?.mmproj) {
+    /* modèle sans module image : on le dit clairement plutôt que de répondre à côté */
+    return { text: 'Le modèle choisi pour la fonction Vision ne sait pas lire les images. Installez un modèle de vision (Modèles → Un moteur par fonction) puis réessayez.', real: false, adapterApplied: null, fewShots: 0, kind };
+  }
+  const shots = withImage ? [] : fewShotsFor(ctx, fewShotCount(kind));
+  const messages = buildMessages(ctx, shots, kind, withImage);
+  /* une photo coûte du temps de calcul (le codeur d'image tourne sur le processeur) : délai de 90 s, longueur plafonnée */
+  const maxTokens = withImage ? Math.min(320, maxTokensFor('moyen', speedOf(ctx.modelName)) + 60) : maxTokensFor(kind, speedOf(ctx.modelName));
+  const deadline = withImage ? 90000 : BUDGET_MS[kind];
   let adapterError: string | undefined;
   let engineError: string | undefined;
   let real: LlmResult | null = null;
   const file = MODELS[ctx.modelName] ? modelFilePath(ctx.modelName) : '';
   const run = (ad: AdapterRef | null) => llmCompleteDetailed(file, messages, {
-    adapter: ad, maxTokens, deadlineMs: BUDGET_MS[kind],
+    adapter: ad, maxTokens, deadlineMs: deadline,
+    mmproj: def?.mmproj ? mmprojPath(ctx.modelName) : undefined, images: withImage ? [ctx.image as string] : undefined,
     onText: ctx.onText ? t => ctx.onText!(clean(t)) : undefined,
   });
   try {
@@ -369,6 +411,8 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
       /* adaptateur illisible : on répond avec le modèle de base plutôt que d'échouer */
       adapterError = e.message;
       try { real = await run(null); } catch (e2) { real = null; engineError = e2 instanceof Error ? e2.message : String(e2); }
+    } else if (e instanceof VisionError) {
+      return { text: 'Je n’ai pas pu analyser cette photo : ' + e.message + ' Essayez le mode compatibilité (Compagnon) ou un modèle de vision plus léger.', real: false, adapterApplied: null, fewShots: 0, engineError: e.message, kind };
     } else { real = null; engineError = e instanceof Error ? e.message : String(e); }
   }
   if (real && real.text.trim()) {
@@ -402,12 +446,12 @@ function buildSystemPrompt(ctx: GenerateCtx): string {
 }
 
 /* messages de chat (gabarit du modèle appliqué par llama.rn) : système + exemples pertinents + historique + question */
-function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind): ChatMsg[] {
+function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false): ChatMsg[] {
   const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx) }];
   shots.forEach(p => { out.push({ role: 'user', content: p.q }, { role: 'assistant', content: p.a }); });
   ctx.history.slice(-historyWindow(kind)).forEach(m => out.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
   /* la consigne de longueur est collée à la question : le prompt système reste identique d'une demande à l'autre */
-  out.push({ role: 'user', content: ctx.userText + '\n\n[' + lengthHint(kind) + ']' });
+  out.push({ role: 'user', content: ctx.userText + '\n\n[' + (withImage ? 'Regarde la photo jointe, décris ce que tu vois puis réponds à la question en quelques phrases.' : lengthHint(kind)) + ']' });
   return out;
 }
 

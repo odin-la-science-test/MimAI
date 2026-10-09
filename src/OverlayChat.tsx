@@ -31,14 +31,20 @@ export function OverlayChat() {
   const busy = useRef(false);
   /* choix faits dans la fenêtre : appliqués tout de suite, avant que l'état de l'app ait eu le temps de suivre */
   const modeRef = useRef<Mode | null>(null);
+  /* mode et modèle FIXÉS au premier message de la discussion */
+  const convMode = useRef<Mode | null>(null);
+  const convModel = useRef<string | null>(null);
 
-  const curMode = (): Mode => modeRef.current ?? dataRef.current.settings.mode;
+  const curMode = (): Mode => convMode.current ?? modeRef.current ?? dataRef.current.settings.mode;
   /* le modèle dépend de la fonction (mode) : celui que l'utilisateur lui a associé, sinon le modèle actif */
-  const curModel = (): string => { const st = dataRef.current.settings; return modelForMode(st.installed, st.activeModel, st.modeModels, curMode()); };
+  const curModel = (): string => {
+    const st = dataRef.current.settings;
+    return convModel.current && st.installed.includes(convModel.current) ? convModel.current : modelForMode(st.installed, st.activeModel, st.modeModels, curMode());
+  };
 
   const pushState = (reset: boolean) => {
     overlayChatState(JSON.stringify({
-      reset, mode: curMode(), model: MODELS[curModel()]?.name || curModel(),
+      reset, locked: hist.current.length > 0, mode: curMode(), model: MODELS[curModel()]?.name || curModel(),
       msgs: reset ? hist.current.map(m => ({ role: m.role === 'user' ? 'user' : 'ai', text: m.text })) : undefined,
     }));
   };
@@ -52,13 +58,14 @@ export function OverlayChat() {
     const id = convId.current ?? uid('c');
     const isNew = convId.current === null;
     convId.current = id;
+    if (isNew || !convMode.current) { convMode.current = curMode(); convModel.current = curModel(); }   /* premier message : on fige le moteur */
     trail('discussion flottante : question ' + text.length + ' car., mode ' + curMode() + (regen ? ' (régénération)' : ''));
     const prev = regen ? hist.current.slice(0, -1) : hist.current;   /* en régénération, la question est déjà la dernière */
     if (!regen) {
       const um: Msg = { id: uid('m'), role: 'user', text, ts: Date.now(), feedback: null };
       hist.current = [...hist.current, um];
       patchRef.current(x => {
-        if (isNew) x.convs.unshift({ id, title: titleFrom(text), ts: Date.now(), trainFlag: 'yes', msgs: [um] });
+        if (isNew) x.convs.unshift({ id, title: titleFrom(text), ts: Date.now(), trainFlag: 'yes', msgs: [um], mode: convMode.current ?? undefined, model: convModel.current ?? undefined });
         else { const c = x.convs.find(v => v.id === id); if (c) { c.msgs.push(um); c.ts = Date.now(); } }
       });
     }
@@ -81,24 +88,13 @@ export function OverlayChat() {
   };
 
   const onAction = (type: string, arg: string) => {
-    if (type === 'mode' && (arg === 'rapide' || arg === 'reflexion' || arg === 'outils')) {
+    if (type === 'mode' && hist.current.length === 0 && (arg === 'rapide' || arg === 'reflexion' || arg === 'outils')) {
       modeRef.current = arg;
       patchRef.current(x => { x.settings.mode = arg; });
       pushState(false);
-    } else if (type === 'model') {
-      /* associe à la fonction courante le modèle installé suivant */
-      const st = dataRef.current.settings;
-      const list = candidatesFor(curMode() as FnMode, st.installed, MODELS as unknown as Record<string, { tags?: string[] } | undefined>);
-      if (list.length < 2) { overlayChatText(list.length ? 'Un seul modèle est disponible pour cette fonction.' : 'Aucun modèle disponible pour cette fonction : MiMai répond avec son moteur intégré.', true); return; }
-      const next = nextModel(list, curModel());
-      if (!next) return;
-      const mode = curMode() as FnMode;
-      patchRef.current(x => { x.settings.modeModels = assign(x.settings.modeModels, mode, next, x.settings.installed); });
-      /* l'état de l'app n'est à jour qu'au prochain rendu : on l'applique aussi à la copie locale */
-      dataRef.current = { ...dataRef.current, settings: { ...dataRef.current.settings, modeModels: assign(st.modeModels, mode, next, st.installed) } };
-      pushState(false);
     } else if (type === 'new') {
       convId.current = null; hist.current = []; busy.current = false;
+      convMode.current = null; convModel.current = null; modeRef.current = null;
       stopSpeaking();
       pushState(true);
     } else if (type === 'regen') {

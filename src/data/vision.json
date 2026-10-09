@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-10-09",
+  "models": [
+    {
+      "id": "gemma3-4b-vision-q4_k_m",
+      "name": "Gemma 3 4B (vision)",
+      "family": "Gemma",
+      "paramsB": 3.9,
+      "paramsLabel": "3,9 B",
+      "quant": "Q4_K_M",
+      "ctx": "128K",
+      "license": "Gemma",
+      "tags": [
+        "vision",
+        "multilingue",
+        "francais",
+        "long-contexte",
+        "precis"
+      ],
+      "explain": "Le plus à l’aise en français et le plus précis pour décrire une scène, mais lourd (3,3 Go) : réservé aux téléphones de 8 Go.",
+      "sizeBytes": 2489757856,
+      "sha256": "882e8d2db44dc554fb0ea5077cb7e4bc49e7342a1f0da57901c0802ea21a0863",
+      "file": "gemma-3-4b-it-Q4_K_M.gguf",
+      "url": "https://huggingface.co/ggml-org/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf",
+      "repo": "ggml-org/gemma-3-4b-it-GGUF",
+      "needRamGb": 4.5,
+      "rank": 130,
+      "mmproj": {
+        "file": "mmproj-model-f16.gguf",
+        "url": "https://huggingface.co/ggml-org/gemma-3-4b-it-GGUF/resolve/main/mmproj-model-f16.gguf",
+        "sizeBytes": 851251104,
+        "sha256": "8c0fb064b019a6972856aaae2c7e4792858af3ca4561be2dbf649123ba6c40cb"
+      }
+    },
+    {
+      "id": "qwen2.5-vl-3b-q4_k_m",
+      "name": "Qwen 2.5 VL 3B (vision)",
+      "family": "Qwen",
+      "paramsB": 3.1,
+      "paramsLabel": "3,1 B",
+      "quant": "Q4_K_M",
+      "ctx": "125K",
+      "license": "qwen-research",
+      "licenseNote": "Le dépôt de conversion indique Apache-2.0, mais la licence du modèle Qwen2.5-VL 3B d’origine (Qwen Research) fait foi : vérifiez-la avant tout usage commercial.",
+      "tags": [
+        "vision",
+        "multilingue",
+        "francais",
+        "long-contexte"
+      ],
+      "explain": "Très bon pour lire du texte dans une image, des documents ou des captures d’écran. Demande un téléphone de 8 Go.",
+      "sizeBytes": 1929901056,
+      "sha256": "d02fe9b69ad8cadbbd228e387667af66612c44bed29ffc8eb1e7caf9ac486c12",
+      "file": "Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf",
+      "url": "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF/resolve/main/Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf",
+      "repo": "ggml-org/Qwen2.5-VL-3B-Instruct-GGUF",
+      "needRamGb": 3.9,
+      "rank": 131,
+      "mmproj": {
+        "file": "mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/Qwen2.5-VL-3B-Instruct-GGUF/resolve/main/mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf",
+        "sizeBytes": 844757728,
+        "sha256": "980c9b2f78c04e6cff93d277ada09e768394f112d75db3b4e9dea8a69f9fb904"
+      }
+    },
+    {
+      "id": "smolvlm2-500m-q8_0",
+      "name": "SmolVLM2 500M (vision)",
+      "family": "SmolVLM",
+      "paramsB": 0.4,
+      "paramsLabel": "0,4 B",
+      "quant": "Q8_0",
+      "ctx": "8K",
+      "license": "Apache-2.0",
+      "tags": [
+        "vision",
+        "leger",
+        "multilingue"
+      ],
+      "explain": "Le plus léger des modèles de vision : décrit une photo ou lit un texte court, sur presque tous les téléphones. Moins précis que les grands.",
+      "sizeBytes": 436808704,
+      "sha256": "6f67b8036b2469fcd71728702720c6b51aebd759b78137a8120733b4d66438bc",
+      "file": "SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+      "url": "https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/main/SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+      "repo": "ggml-org/SmolVLM2-500M-Video-Instruct-GGUF",
+      "needRamGb": 1.3,
+      "rank": 132,
+      "mmproj": {
+        "file": "mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+        "url": "https://huggingface.co/ggml-org/SmolVLM2-500M-Video-Instruct-GGUF/resolve/main/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf",
+        "sizeBytes": 108785184,
+        "sha256": "921dc7e259f308e5b027111fa185efcbf33db13f6e35749ddf7f5cdb60ef520b"
+      }
+    }
+  ]
+}

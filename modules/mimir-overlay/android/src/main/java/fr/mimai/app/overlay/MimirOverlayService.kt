@@ -62,6 +62,8 @@ class MimirOverlayService : Service() {
   private var waiting = false
   private var barBottom = 0
   private var curMode = "rapide"
+  /* le mode et le modèle d'une discussion sont fixés dès son premier message */
+  private var modeLocked = false
 
   /* réponse rapide écrite dans la notification */
   private var notifWaiting = false
@@ -388,15 +390,19 @@ class MimirOverlayService : Service() {
     val opts = LinearLayout(this)
     opts.orientation = LinearLayout.HORIZONTAL
     opts.gravity = Gravity.CENTER_VERTICAL
-    val model = chip("Modèle ▾", false) { sinkAction?.invoke("model", "") }
+    val model = chip("Modèle", false) { android.widget.Toast.makeText(this, "Le modèle est fixé pour cette discussion. Touchez Nouveau pour en changer.", android.widget.Toast.LENGTH_SHORT).show() }
     modelView = model
     opts.addView(model)
     val modes = LinkedHashMap<String, TextView>()
     for ((key, label) in listOf("rapide" to "Rapide", "reflexion" to "Réflexion", "outils" to "Outils")) {
       val c = chip(label, key == curMode) {
-        curMode = key
-        for ((k, v) in modeViews) styleChip(v, k == key)
-        sinkAction?.invoke("mode", key)
+        if (modeLocked) {
+          android.widget.Toast.makeText(this, "Le mode est fixé pour cette discussion. Touchez Nouveau pour en changer.", android.widget.Toast.LENGTH_SHORT).show()
+        } else {
+          curMode = key
+          for ((k, v) in modeViews) styleChip(v, k == key)
+          sinkAction?.invoke("mode", key)
+        }
       }
       val lpc = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
       lpc.leftMargin = dp(6f)
@@ -485,8 +491,9 @@ class MimirOverlayService : Service() {
       try {
         val o = org.json.JSONObject(json)
         curMode = o.optString("mode", curMode)
-        for ((k, v) in modeViews) styleChip(v, k == curMode)
-        modelView?.text = "Modèle : " + o.optString("model", "—") + " ▾"
+        modeLocked = o.optBoolean("locked", false)
+        for ((k, v) in modeViews) { styleChip(v, k == curMode); v.alpha = if (modeLocked && k != curMode) 0.45f else 1f }
+        modelView?.text = "Modèle : " + o.optString("model", "—")
         if (o.optBoolean("reset", false)) {
           panelList?.removeAllViews()
           typing = null; waiting = false; regenView = null

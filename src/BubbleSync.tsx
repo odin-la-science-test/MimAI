@@ -13,8 +13,9 @@ export function BubbleSync() {
   want.current = !!(data.settings.comp.on && data.settings.comp.overlay);
   const bar = useRef(false);
   bar.current = data.settings.comp.bar !== false;
-  const pos = useRef<'below' | 'camera'>('below');
-  pos.current = data.settings.comp.pos === 'camera' ? 'camera' : 'below';   /* la barre autour de la caméra est affichée par défaut */
+  /* sans choix de l'utilisateur, le module natif décide (à côté de la caméra, sauf Samsung) */
+  const pos = useRef<'below' | 'camera' | undefined>(undefined);
+  pos.current = data.settings.comp.pos;   /* la barre autour de la caméra est affichée par défaut */
 
   useEffect(() => {
     if (!overlayAvailable()) return;

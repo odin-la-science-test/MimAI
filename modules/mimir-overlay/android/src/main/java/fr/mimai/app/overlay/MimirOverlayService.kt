@@ -141,6 +141,14 @@ class MimirOverlayService : Service() {
     return START_NOT_STICKY
   }
 
+  /* position de Mìmir : choix de l'utilisateur ; par défaut à côté de la caméra, sauf sur Samsung où le système garde
+     les touchers de la barre d'état (Mìmir se tient alors juste en dessous) */
+  private fun posPref(): String {
+    val v = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("pos", null)
+    if (v == "camera" || v == "below") return v
+    return if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) "below" else "camera"
+  }
+
   /* la barre noire dessinée autour de la caméra est facultative (réglage de l'app) ; la puce système, elle, est toujours là */
   fun applyBarPref() {
     val want = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getBoolean("bar", true)
@@ -195,7 +203,7 @@ class MimirOverlayService : Service() {
     val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())   /* bas de la barre d'état : Mìmir se tient juste en dessous */
     val cy = if (cut != null) cut.exactCenterY() else sb / 2f
-    val atCam = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("pos", "below") == "camera"
+    val atCam = posPref() == "camera"
     val b = MimirBar(this, w, d, cx, cy, top, atCam, { togglePanel() }, { togglePanel(true) })
     if (!b.show()) return false
     animBar = b
@@ -222,7 +230,7 @@ class MimirOverlayService : Service() {
     val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())
     val size = (44 * dp).toInt()
-    val atCam = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("pos", "below") == "camera"
+    val atCam = posPref() == "camera"
     val cy = if (cut != null) cut.exactCenterY() else sb / 2f
     val x = Math.max(0, (if (atCam) Math.max(26 * dp, cx - 34 * dp) - size / 2f else cx - size / 2f).toInt())
     val y = Math.max(0, ((if (atCam) cy else top + 18 * dp) - size / 2f).toInt())

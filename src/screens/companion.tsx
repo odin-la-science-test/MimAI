@@ -44,7 +44,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     lines.push('Module natif chargé : ' + (native ? 'oui' : 'non'));
     if (native) {
       const before = overlayStatus();
-      if (before?.permission) { await overlayShow(c.bar !== false, c.pos === 'camera' ? 'camera' : 'below'); await new Promise(r => setTimeout(r, 1500)); }
+      if (before?.permission) { await overlayShow(c.bar !== false, c.pos); await new Promise(r => setTimeout(r, 1500)); }
       const s = overlayStatus();
       if (s) {
         lines.push('Android : API ' + s.sdk + ' · ' + s.fabricant + ' ' + s.modele);
@@ -164,8 +164,8 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
             <View style={{ paddingHorizontal: 4, paddingVertical: 8, gap: 8 }}>
               <Text style={{ fontSize: 14.5, fontWeight: '700' }}>Où se tient Mìmir ?</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {([['below', 'Sous la barre d’état (touchable partout)'], ['camera', 'À côté de la caméra (décor)']] as const).map(([id, label]) => {
-                  const on = (c.pos === 'camera' ? 'camera' : 'below') === id;
+                {([['camera', 'À côté de la caméra'], ['below', 'Sous la barre d’état']] as const).map(([id, label]) => {
+                  const on = (c.pos ?? (/samsung/i.test(overlayStatus()?.fabricant || '') ? 'below' : 'camera')) === id;
                   return (
                     <TouchableOpacity key={id} onPress={() => { patchData(d => { d.settings.comp.pos = id; }); void overlayShow(c.bar !== false, id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
                       style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: on ? C.a200 : C.n100, justifyContent: 'center' }}>
@@ -174,7 +174,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
                   );
                 })}
               </View>
-              <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>Sur certains téléphones (Samsung notamment), Android garde les touchers de la barre d’état : Mìmir y est visible mais on ne peut pas le toucher. « Sous la barre d’état » marche partout.</Text>
+              <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>Sur certains téléphones (Samsung notamment), Android garde les touchers de la barre d’état : Mìmir y est visible mais on ne peut pas le toucher. « Sous la barre d’état » marche partout ; c’est le choix par défaut sur Samsung.</Text>
             </View>
             <Row>
               <AvatarIc name="layers" size={36} tone="g" />

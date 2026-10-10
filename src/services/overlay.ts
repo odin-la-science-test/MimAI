@@ -59,7 +59,7 @@ export function overlayRequest(): void {
   try { M?.requestPermission(); } catch { /* indisponible */ }
 }
 
-export async function overlayShow(bar?: boolean, pos?: 'below' | 'camera'): Promise<boolean> {
+export async function overlayShow(bar?: boolean, pos?: 'below' | 'camera' | undefined): Promise<boolean> {
   try {
     if (M && pos !== undefined) M.setPos?.(pos);
     if (M && bar !== undefined) M.setBar?.(!!bar);   /* barre noire dessinée : facultative, la puce système est toujours là */

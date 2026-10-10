@@ -61,7 +61,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       } else lines.push('État natif illisible.');
     }
     lines.push('Réglage MiMai : activée = ' + (c.on && c.overlay ? 'oui' : 'non'));
-    lines.push('Barre noire dessinée : ' + (c.bar !== false ? 'oui' : 'non (puce seule)'));
+    lines.push('Mìmir près de la caméra : ' + (c.bar !== false ? 'oui' : 'non (puce seule)'));
     lines.push('Mode compatibilité : ' + (data.settings.compat ? 'oui' : 'non'));
     /* pourquoi Android a fermé MiMai ces dernières fois */
     const exits = appExits();
@@ -164,10 +164,10 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
             <Row>
               <AvatarIc name="layers" size={36} tone="g" />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5 }}>Barre noire autour de la caméra</Text>
-                <Text style={{ fontSize: 12.5, color: C.n700 }}>Une barre dessinée autour de la caméra, en plus de la puce. Activée par défaut.</Text>
+                <Text style={{ fontSize: 14.5 }}>Mìmir près de la caméra</Text>
+                <Text style={{ fontSize: 12.5, color: C.n700 }}>Le petit être Mìmir (yeux, 156 animations) se tient sous la caméra, sans barre. Touchez-le pour ouvrir la bulle de discussion. Activé par défaut.</Text>
               </View>
-              <Toggle label="Afficher la barre noire autour de la caméra" on={c.bar !== false}
+              <Toggle label="Afficher Mìmir près de la caméra" on={c.bar !== false}
                 onChange={() => { const v = c.bar === false; patchData(d => { d.settings.comp.bar = v; }); void overlayShow(v); }} />
             </Row>
           </>

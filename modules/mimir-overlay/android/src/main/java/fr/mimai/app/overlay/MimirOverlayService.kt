@@ -192,8 +192,8 @@ class MimirOverlayService : Service() {
     val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
     val sb = if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * resources.displayMetrics.density).toInt()
     val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
-    val cy = if (cut != null) cut.exactCenterY() else sb / 2f
-    val b = MimirBar(this, w, d, cx, cy, { togglePanel() }, { togglePanel(true) })
+    val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())   /* bas de la barre d'état : Mìmir se tient juste en dessous */
+    val b = MimirBar(this, w, d, cx, top, { togglePanel() }, { togglePanel(true) })
     if (!b.show()) return false
     animBar = b
     barBottom = b.bottomPx()
@@ -203,53 +203,36 @@ class MimirOverlayService : Service() {
   }
 
   /* état de la barre demandé par l'app : repos, notif, ecoute, reflexion, activite */
-  fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, title, body, label, prog) }
+  fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, prog) }
   fun barPlay(id: String) { animBar?.play(id) }
 
   /* rectangle de la caméra (encoche / trou) en pixels écran, ou null si inconnu ou absent */
   private fun cameraCutout(): android.graphics.Rect? = cutoutRect(this)
 
+  /* repli (si les animations ne se chargent pas) : une simple étoile près de la caméra, sans barre */
   private fun addBar() {
     wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val dp = resources.displayMetrics.density
-    val screenW = resources.displayMetrics.widthPixels
     val cut = cameraCutout()
-
-    /* dimensions : la barre enveloppe la caméra avec ~52 dp de chaque côté (étoile à gauche, voyant à droite) */
-    val side = (52 * dp).toInt()
-    val camW: Int; val w: Int; val h: Int; val x: Int; val y: Int
-    if (cut != null) {
-      camW = cut.width()
-      w = camW + 2 * side
-      h = cut.height() + (6 * dp).toInt()
-      x = cut.centerX() - w / 2
-      y = maxOf(0, cut.top - (3 * dp).toInt())
-      barBottom = y + h
-    } else {
-      /* pas d'encoche détectée : barre discrète centrée sous le bord haut */
-      camW = (22 * dp).toInt()
-      w = camW + 2 * side
-      h = (26 * dp).toInt()
-      x = (screenW - w) / 2
-      val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
-      val sb = if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * dp).toInt()
-      y = maxOf(0, (sb - h) / 2)
-      barBottom = y + h
-    }
+    val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
+    val sb = if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * dp).toInt()
+    val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
+    val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())
+    val size = (44 * dp).toInt()
+    val x = Math.max(0, (cx - size / 2f).toInt())
+    val y = Math.max(0, (top + 18 * dp - size / 2f).toInt())
+    barBottom = y + size
 
     val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE
     val params = WindowManager.LayoutParams(
-      w, h, type,
-      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+      size, size, type,
+      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
       PixelFormat.TRANSLUCENT
     )
     params.gravity = Gravity.TOP or Gravity.START
-    params.x = maxOf(0, x)
+    params.x = x
     params.y = y
-    /* autorise le dessin dans la zone de la caméra */
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -257,18 +240,14 @@ class MimirOverlayService : Service() {
     }
 
     val iv = ImageView(this)
-    iv.setImageBitmap(barBitmap(w, h, camW))
-    iv.contentDescription = "Mìmir : toucher pour ouvrir la discussion flottante, appui long pour parler à voix haute"
-
+    iv.setImageBitmap(starBitmap(size))
+    iv.contentDescription = "Mìmir : toucher pour ouvrir la bulle de discussion, appui long pour parler"
     var downAt = 0L
     iv.setOnTouchListener { _, ev ->
       when (ev.actionMasked) {
-        MotionEvent.ACTION_DOWN -> { downAt = System.currentTimeMillis(); lastEvent = "toucher reçu sur la barre"; true }
+        MotionEvent.ACTION_DOWN -> { downAt = System.currentTimeMillis(); lastEvent = "toucher reçu sur Mìmir"; true }
         MotionEvent.ACTION_UP -> {
-          if (System.currentTimeMillis() - downAt > 500) {
-            /* appui long : MiMai s'ouvre et écoute (reconnaissance vocale SUR L'APPAREIL, gérée côté JS) */
-            togglePanel(true)
-          } else togglePanel()
+          if (System.currentTimeMillis() - downAt > 500) togglePanel(true) else togglePanel()
           true
         }
         else -> false
@@ -277,10 +256,9 @@ class MimirOverlayService : Service() {
     try {
       wm?.addView(iv, params)
       bar = iv
-      lastEvent = "barre affichée " + w + "x" + h + " px en (" + params.x + "," + params.y + "), encoche " + (if (cut != null) cut.toShortString() else "non détectée")
+      lastEvent = "Mìmir (étoile fixe) affiché " + size + " px en (" + x + "," + y + ")"
       Log.i(TAG, lastEvent)
     } catch (e: Exception) {
-      /* permission retirée entre-temps, ou fenêtre refusée : on s'arrête proprement */
       lastEvent = "ajout de la fenêtre refusé : " + e.javaClass.simpleName + " " + (e.message ?: "")
       Log.e(TAG, lastEvent, e)
       bar = null
@@ -847,33 +825,25 @@ class MimirOverlayService : Service() {
 
   override fun onDestroy() { running = false; closePanel(); removeBar(); instance = null; super.onDestroy() }
 
-  /* la barre : pilule noire, étoile MiMai (astroïde x = a·cos³t, y = a·sin³t) à gauche de la caméra,
-     petit voyant terracotta à droite ; l'espace central (la caméra) reste noir et se fond dans la barre */
-  private fun barBitmap(w: Int, h: Int, camW: Int): Bitmap {
-    val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-    val c = Canvas(bmp)
+  /* l'étoile Mìmir (astroïde) sur un disque terracotta : repli sans animation */
+  private fun starBitmap(size: Int): Bitmap {
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val cv = Canvas(bmp)
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    p.color = Color.argb(240, 8, 8, 8)
-    c.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), h / 2f, h / 2f, p)
-
-    val seg = (w - camW) / 2f            // largeur de chaque côté de la caméra
-    val cy = h / 2f
-    val a = h * 0.30f
+    p.color = Color.parseColor("#C67139")
+    cv.drawCircle(size / 2f, size / 2f, size * 0.36f, p)
     p.color = Color.parseColor("#F5EAD8")
+    val a = size * 0.2f
     val path = Path()
     val n = 96
-    val cxStar = seg / 2f
     for (i in 0..n) {
       val t = (i.toDouble() / n) * 2 * Math.PI
-      val x = cxStar + (a * Math.pow(Math.cos(t), 3.0)).toFloat()
-      val y = cy + (a * Math.pow(Math.sin(t), 3.0)).toFloat()
+      val x = size / 2f + (a * Math.pow(Math.cos(t), 3.0)).toFloat()
+      val y = size / 2f + (a * Math.pow(Math.sin(t), 3.0)).toFloat()
       if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
     path.close()
-    c.drawPath(path, p)
-
-    p.color = Color.parseColor("#C67139")
-    c.drawCircle(w - seg / 2f, cy, h * 0.12f, p)
+    cv.drawPath(path, p)
     return bmp
   }
 

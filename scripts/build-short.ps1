@@ -133,7 +133,14 @@ if ($Target -eq 'apk') { $env:MIMAI_UPLOAD_STORE_FILE = "$Short\android\app\debu
 Write-Host "4/4 Compilation ($task) - arm64 uniquement, $Workers taches en parallele"
 Set-Location "$Short\android"
 $ErrorActionPreference = 'Continue'
-$gArgs = @($task, '--console=plain', "--max-workers=$Workers", '-PreactNativeArchitectures=arm64-v8a')
+# Memoire : le PC a 8 Go ; Gradle + Kotlin + Android Studio/navigateur ouverts le saturent (le demon Java est alors tue).
+try {
+  $os = Get-CimInstance Win32_OperatingSystem
+  $freeGo = [math]::Round($os.FreePhysicalMemory / 1MB, 1)
+  Write-Host "Memoire libre : $freeGo Go"
+  if ($freeGo -lt 3.5) { Write-Host "ATTENTION : moins de 3,5 Go libres. Fermez le navigateur et les autres programmes avant de continuer, sinon Gradle peut etre tue (manque de memoire)." }
+} catch { }
+$gArgs = @($task, '--console=plain', "--max-workers=$Workers", '-PreactNativeArchitectures=arm64-v8a', '-Dorg.gradle.jvmargs=-Xmx3072m', '-Pkotlin.daemon.jvmargs=-Xmx1536m')
 if ($Target -eq 'apk' -and -not $Strict) {
   # APK de test : on saute lint et R8 (plusieurs minutes). Le vrai AAB, lui, passe par R8 et lint.
   $gArgs += @('-x', 'lintVitalRelease', '-x', 'lintVitalAnalyzeRelease', '-x', 'lintVitalReportRelease',
@@ -142,6 +149,15 @@ if ($Target -eq 'apk' -and -not $Strict) {
 }
 # NE JAMAIS ajouter -Pandroid.injected.build.abi : AGP marque alors le bundle testOnly et Play le refuse.
 .\gradlew.bat @gArgs *> "$Short\build.log"
+# Demon Java tue faute de memoire : on libere tout et on recommence UNE fois avec un seul travail en parallele.
+if ($LASTEXITCODE -ne 0 -and (Select-String -Path "$Short\build.log" -Pattern 'daemon disappeared|insufficient memory' -Quiet)) {
+  Write-Host "Le demon Gradle a ete tue (manque de memoire). Nouvel essai avec 1 seul travail en parallele..."
+  Invoke-Quiet { .\gradlew.bat --stop }
+  Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Start-Sleep -Seconds 4
+  $gArgs = $gArgs | ForEach-Object { if ($_ -like '--max-workers=*') { '--max-workers=1' } else { $_ } }
+  .\gradlew.bat @gArgs *> "$Short\build.log"
+}
 if ($LASTEXITCODE -ne 0) {
   Get-Content "$Short\build.log" -Tail 40
   throw "Build echoue - voir $Short\build.log"

@@ -7,13 +7,16 @@ const path = require('node:path');
 const FILE = path.join(__dirname, '..', 'modules/mimir-overlay/android/src/main/assets/etoile.json');
 const D = JSON.parse(fs.readFileSync(FILE, 'utf8'));
 
-test('156 animations, 12 familles de 13, durées <= 2,8 s', () => {
-  assert.equal(D.anims.length, 156);
+test('156 animations en 12 familles de 13 (plus 7 animations d ouverture), durees <= 2,8 s', () => {
+  const main = D.anims.filter(a => a.fam !== 'extra');
+  assert.equal(main.length, 156);
+  assert.equal(D.anims.length, 163);
+  assert.deepEqual(D.anims.filter(a => a.fam === 'extra').map(a => a.id).sort(), ['atterrit', 'chute', 'eclot', 'envol', 'eveil', 'plane', 'pose']);
   const fam = {};
-  D.anims.forEach(a => { fam[a.fam] = (fam[a.fam] || 0) + 1; assert.ok(a.d > 0 && a.d <= 2.8, a.id); });
+  main.forEach(a => { fam[a.fam] = (fam[a.fam] || 0) + 1; assert.ok(a.d > 0 && a.d <= 2.8, a.id); });
   assert.equal(Object.keys(fam).length, 12);
   Object.values(fam).forEach(n => assert.equal(n, 13));
-  assert.equal(new Set(D.anims.map(a => a.id)).size, 156, 'identifiants uniques');
+  assert.equal(new Set(D.anims.map(a => a.id)).size, 163, 'identifiants uniques');
 });
 
 test('chaque animation a 15 valeurs par image, finies, et des yeux valides', () => {
@@ -66,7 +69,7 @@ test('formes : chemins absolus bien formés (M, L, Q, C, Z)', () => {
 
 test('animations utilisées par l\'app existent', () => {
   const ids = new Set(D.anims.map(a => a.id));
-  ['coucou', 'ecoute', 'reflechit', 'message', 'eureka', 'confus', 'termine', 'erreur'].forEach(i => assert.ok(ids.has(i), i));
+  ['coucou', 'ecoute', 'reflechit', 'message', 'eureka', 'confus', 'termine', 'erreur', 'eveil', 'envol', 'eclot', 'plane', 'atterrit', 'chute', 'pose', 'salut', 'clin', 'compris'].forEach(i => assert.ok(ids.has(i), i));
   D.tap.forEach(i => assert.ok(ids.has(i), 'tap ' + i));
   D.amb.forEach(i => assert.ok(ids.has(i), 'ambiance ' + i));
 });

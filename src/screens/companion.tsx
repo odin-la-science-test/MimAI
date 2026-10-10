@@ -17,7 +17,7 @@ import { navigationRef } from '../nav';
 import { voiceAvailable, describeVoiceFailure } from '../services/voice';
 import { speakAvailable, speak, stopSpeaking, listVoices, setVoicePrefs, VOICE_STYLES, type VoiceInfo } from '../services/speak';
 import * as Clipboard from 'expo-clipboard';
-import { overlayStatus, appExits, overlayNotifSettings } from '../services/overlay';
+import { overlayStatus, appExits, overlayNotifSettings, overlaySetOpen } from '../services/overlay';
 import { setCompat } from '../services/engine';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
 
@@ -162,6 +162,19 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
             </Row>
             <Btn kind="secondary" title="Régler la puce (notifications)" height={44} fontSize={13.5} style={{ marginTop: 6 }} onPress={() => overlayNotifSettings(true)} />
             <View style={{ paddingHorizontal: 4, paddingVertical: 8, gap: 8 }}>
+              <Text style={{ fontSize: 14.5, fontWeight: '700' }}>Comment Mìmir s’ouvre</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {([['2c', 'Chute'], ['2a', 'Bond'], ['2b', 'Éclosion']] as const).map(([id, label]) => {
+                  const on = (c.open || '2c') === id;
+                  return (
+                    <TouchableOpacity key={id} onPress={() => { patchData(d => { d.settings.comp.open = id; }); overlaySetOpen(id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                      style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: on ? C.a200 : C.n100, justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 13, fontWeight: on ? '700' : '500', color: on ? C.a800 : C.n800 }}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>Chute : elle tombe, rebondit et salue, la bulle s’ouvre dessous. Bond : elle bondit par-dessus la caméra et la bulle s’ouvre à sa droite. Éclosion : elle grandit dans un anneau de lumière et glisse sous la batterie.</Text>
               <Text style={{ fontSize: 14.5, fontWeight: '700' }}>Où se tient Mìmir ?</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                 {([['camera', 'À côté de la caméra'], ['below', 'Sous la barre d’état']] as const).map(([id, label]) => {

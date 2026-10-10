@@ -28,6 +28,7 @@ type NativeOverlay = {
   chatMic?(on: boolean): boolean;
   setBar?(on: boolean): boolean;
   setPos?(pos: string): boolean;
+  setOpen?(v: string): boolean;
   openNotifSettings?(promoted: boolean): boolean;
   trail?(text: string): boolean;
   readTrail?(): string;
@@ -59,8 +60,12 @@ export function overlayRequest(): void {
   try { M?.requestPermission(); } catch { /* indisponible */ }
 }
 
-export async function overlayShow(bar?: boolean, pos?: 'below' | 'camera' | undefined): Promise<boolean> {
+export type OpenStyle = '2a' | '2b' | '2c';
+export function overlaySetOpen(v: OpenStyle): void { try { M?.setOpen?.(v); } catch { /* indisponible */ } }
+
+export async function overlayShow(bar?: boolean, pos?: 'below' | 'camera' | undefined, open?: OpenStyle): Promise<boolean> {
   try {
+    if (M && open !== undefined) M.setOpen?.(open);
     if (M && pos !== undefined) M.setPos?.(pos);
     if (M && bar !== undefined) M.setBar?.(!!bar);   /* barre noire dessinée : facultative, la puce système est toujours là */
     return M ? !!(await M.show()) : false;

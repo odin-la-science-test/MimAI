@@ -21,7 +21,7 @@ const SCALE = 100;          // les effets sont échantillonnés pour une étoile
 /* ---- chargement du moteur dans Node (faux DOM minimal) ---- */
 let code = readFileSync(SRC, 'utf8');
 if (!code.includes('window.ETOILE = {')) throw new Error('ancre du moteur introuvable');
-code = code.replace('window.ETOILE = {', 'window.__EI = { LIST, FAMS, TAP, AMB, evalClip, fxItems, mix, pal, RGB, EY, SH, STAR, HEX }; window.ETOILE = {');
+code = code.replace('window.ETOILE = {', 'window.__EI = { LIST, BY, FAMS, TAP, AMB, evalClip, fxItems, mix, pal, RGB, EY, SH, STAR, HEX }; window.ETOILE = {');
 const win = { addEventListener() {}, matchMedia: () => ({ matches: false }), console };
 const doc = { documentElement: {}, createElementNS: () => ({ setAttribute() {}, appendChild() {} }) };
 new Function('window', 'document', 'getComputedStyle', 'requestAnimationFrame', 'performance', code)(win, doc, () => ({ getPropertyValue: () => '' }), () => 0, { now: () => 0 });
@@ -106,7 +106,9 @@ const r3 = v => Math.round(v * 1000) / 1000;
 const texts = [];
 const textId = t => { let j = texts.indexOf(t); if (j < 0) { texts.push(t); j = texts.length - 1; } return j; };
 let totalFrames = 0;
-const anims = I.LIST.map(A => {
+/* les 156 animations de la maquette + les animations « d'ouverture » (eveil, envol, eclot, plane, atterrit, chute, pose) */
+const ALL = [...I.LIST, ...Object.values(I.BY).filter(a => a.fam === 'extra')];
+const anims = ALL.map(A => {
   const N = Math.max(2, Math.ceil(A.d * FPS));
   const f = [], g = [], fx = [];
   let anyGrad = false;

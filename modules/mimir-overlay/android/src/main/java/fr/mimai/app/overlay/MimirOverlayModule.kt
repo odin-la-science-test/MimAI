@@ -184,6 +184,13 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* ouverture de Mìmir : "2a" Bond, "2b" Éclosion, "2c" Chute */
+    Function("setOpen") { v: String ->
+      val ctx = appContext.reactContext ?: return@Function false
+      ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putString("open", if (v == "2a" || v == "2b") v else "2c").apply()
+      true
+    }
+
     Function("setBar") { on: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()

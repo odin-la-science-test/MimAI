@@ -15,18 +15,20 @@ export function BubbleSync() {
   bar.current = data.settings.comp.bar !== false;
   /* sans choix de l'utilisateur, le module natif décide (à côté de la caméra, sauf Samsung) */
   const pos = useRef<'below' | 'camera' | undefined>(undefined);
-  pos.current = data.settings.comp.pos;   /* la barre autour de la caméra est affichée par défaut */
+  pos.current = data.settings.comp.pos;
+  const open = useRef<'2a' | '2b' | '2c'>('2c');
+  open.current = data.settings.comp.open || '2c';   /* la barre autour de la caméra est affichée par défaut */
 
   useEffect(() => {
     if (!overlayAvailable()) return;
     const sync = async () => {
       if (!want.current) return;
-      if (await overlayGranted()) await overlayShow(bar.current, pos.current);
+      if (await overlayGranted()) await overlayShow(bar.current, pos.current, open.current);
     };
     if (ready) void sync();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') void sync(); });
     return () => sub.remove();
-  }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar, data.settings.comp.pos]);
+  }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar, data.settings.comp.pos, data.settings.comp.open]);
 
   return null;
 }

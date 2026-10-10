@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="0f965afe-bfc5-4032-9a0a-81ea0495f18e"></script>
+
+
+
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>La barre Mìmir · 156 animations</title>
+  <meta name="design_doc_mode" content="canvas">
+  <style>/* Organic — design-system tokens and component classes. This file is the source of truth for the system's look; retune it here and see readme.md. */
+/* latin-ext */
+@font-face {
+  font-family: 'Caprasimo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("12cfb273-efdb-440d-8d9c-ff78e37a90ee") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Caprasimo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("ba6207b1-24a1-40dd-9227-721741f4fae1") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("be81e835-94a9-424d-92b2-36129009c014") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b49ac481-ec28-4650-aaad-6128360bc81c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("be81e835-94a9-424d-92b2-36129009c014") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b49ac481-ec28-4650-aaad-6128360bc81c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("be81e835-94a9-424d-92b2-36129009c014") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("b49ac481-ec28-4650-aaad-6128360bc81c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+:root {
+  --color-bg: #f5ead8;
+  --color-surface: #ebddc5;
+  --color-text: #201e1d;
+  --color-accent: #c67139;
+  --color-accent-2: #7a8a5e;
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
+     same step of any role matches the others in visual value. */
+  --color-neutral-100: #f9f4ed;
+  --color-neutral-200: #eee7db;
+  --color-neutral-300: #dcd3c4;
+  --color-neutral-400: #c0b6a5;
+  --color-neutral-500: #a19786;
+  --color-neutral-600: #82796a;
+  --color-neutral-700: #645c50;
+  --color-neutral-800: #474238;
+  --color-neutral-900: #2e2b25;
+
+  --color-accent-100: #fff2eb;
+  --color-accent-200: #ffe1d0;
+  --color-accent-300: #ffc6a5;
+  --color-accent-400: #f6a06b;
+  --color-accent-500: #d67f48;
+  --color-accent-600: #b2622d;
+  --color-accent-700: #8c491a;
+  --color-accent-800: #643312;
+  --color-accent-900: #402310;
+
+  --color-accent-2-100: #f0fae1;
+  --color-accent-2-200: #e1eecc;
+  --color-accent-2-300: #ccdbb2;
+  --color-accent-2-400: #aebf92;
+  --color-accent-2-500: #8fa073;
+  --color-accent-2-600: #728157;
+  --color-accent-2-700: #56633f;
+  --color-accent-2-800: #3d472b;
+  --color-accent-2-900: #272e1b;
+
+  --font-heading: "Caprasimo", system-ui, sans-serif;
+  --font-heading-weight: 400;
+  --font-body: "Figtree", system-ui, sans-serif;
+
+  --space-1: 4.4px;
+  --space-2: 8.8px;
+  --space-3: 13.2px;
+  --space-4: 17.6px;
+  --space-6: 26.4px;
+  --space-8: 35.2px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+
+  /* Elevation — derived from the ground: soft ink-tinted shadows on a
+     light theme, a hairline edge + ambient darkness on a dark one. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
+
+.washed{filter:saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94)}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Components — built with the tokens above. Plain CSS
+   on plain HTML: no JavaScript, no build step. Each class is documented in
+   readme.md and demonstrated in foundations/ and components/.
+   ══════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
+}
+h1 { font-size: 42px; }
+h2 { font-size: 32px; }
+h3 { font-size: 25px; }
+h4 { font-size: 20px; }
+h5 { font-size: 16px; }
+h6 { font-size: 13px; }
+h6 { letter-spacing: 0.08em; text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent); text-underline-offset: 3px; }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption {
+  font-size: 11px; margin-top: var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+/* — rules — */
+.hr {
+  height: 1px; border: 0; margin: var(--space-4) 0;
+  background: var(--color-divider);
+}
+
+/* — buttons — */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 14px; line-height: 1.2; color: var(--color-text); /* matches the .input's 14px —
+     the pair sits side by side in sign-up rows */
+  background: transparent; border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+}
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-bg); }
+.btn-primary:hover { background: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-block { width: 100%; margin-top: var(--space-2); }
+
+/* — forms — */
+.field > label {
+  display: block; font-size: 12px; margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.input {
+  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
+  font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+.radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.radio input, .seg-opt input {
+  position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;
+}
+.radio .dot {
+  width: 16px; height: 16px; flex: none; border-radius: 50%;
+  border: 1.5px solid var(--color-divider);
+}
+.radio:hover .dot { border-color: var(--color-accent); }
+.radio input:checked + .dot {
+  border-color: var(--color-accent); background: var(--color-accent);
+  box-shadow: inset 0 0 0 4px var(--color-bg);
+}
+.radio input:focus-visible + .dot { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.seg {
+  display: inline-flex; overflow: hidden;
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.seg-opt {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; font-size: 13px; cursor: pointer;
+}
+.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+.seg-opt:has(input:checked) { background: var(--color-accent); color: var(--color-bg); }
+.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+/* — cards — */
+.card {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-surface);
+}
+.card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent); }
+.card-title {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 17px; line-height: 1.2;
+}
+.card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
+.card-meta {
+  display: flex; align-items: center; gap: 6px; font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* — tags — */
+.tag {
+  display: inline-flex; align-items: center; font-size: 11px;
+  letter-spacing: 0.02em; padding: 3px 10px;
+  border-radius: calc(var(--radius-md) * 0.75);
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+
+/* — navigation — */
+.nav {
+  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: none;
+}
+.nav-brand {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 18px; margin-right: auto;
+}
+.nav a { color: inherit; text-decoration: none; font-size: 14px; }
+.nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
+
+/* — tables — */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  padding: var(--space-2); border-bottom: 1px solid var(--color-divider);
+}
+.table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+
+/* — dialog — */
+.dialog-backdrop {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+}
+.dialog {
+  width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-4); border-radius: var(--radius-lg);
+  background: var(--color-surface); box-shadow: var(--shadow-lg);
+}
+.dialog-title {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 20px;
+}
+.dialog-body { font-size: 14px; opacity: 0.85; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* — rounded frame: everything softens, small controls go pill — */
+.card, .dialog { border-radius: calc(var(--radius-lg) * 1.15); }
+.btn, .tag, .seg, .input { border-radius: 999px; }
+.input { padding-inline: 14px; }
+
+</style>
+  <script src="6afda2e8-7154-4a50-9d59-ee4550dedf14"></script>
+  <script src="c847fb6b-1457-414b-9e2a-6cf1efcec67f"></script>
+  <script src="b636487e-0292-4439-8076-0cfa27e01edb"></script>
+  <style>
+    html,body{margin:0;background:#e9dcc6;}
+    a{color:#8c491a;text-decoration:none;} a:hover{color:#643312;}
+    button:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;}
+    @keyframes bmIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    @keyframes bmBar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+    @keyframes bmDot{0%,100%{opacity:.25}50%{opacity:1}}
+  </style>
+</helmet>
+<div style="min-height:100vh;box-sizing:border-box;padding:56px;display:flex;flex-direction:column;gap:44px;background:var(--color-neutral-200);font-family:var(--font-body);color:var(--color-text)">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:940px">
+    <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">MiMai · Mìmir hors de l’app</span>
+    <h1 style="margin:0;font-family:var(--font-heading);font-size:60px;line-height:1;font-weight:400">La barre Mìmir</h1>
+    <p style="margin:0;font-size:17px;line-height:1.5;max-width:780px;text-wrap:pretty">La barre fine qui attend autour de la caméra, par-dessus toutes les applis. Trois formes à comparer (<a href="#1a">1a</a>, <a href="#1b">1b</a>, <a href="#1c">1c</a>), les 156 animations de l’étoile (<a href="#1d">1d</a>) et ce qu’elle ressent quand on bouge le téléphone (<a href="#1e">1e</a>). Nouveau : sans barre, l’étoile seule à côté de la caméra et son ouverture (<a href="#2a">2a</a>, <a href="#2b">2b</a>, <a href="#2c">2c</a>).</p>
+  </div>
+
+  <section id="t2" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:var(--font-heading);font-size:30px">Tour 2</span><span style="font-size:14px;color:var(--color-neutral-700)">Plus de barre : l’étoile seule, à côté de la caméra, côté batterie</span></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <button class="btn btn-primary" sc-camel-on-click="{{ opAll }}" style="height:46px;font-size:14px;white-space:nowrap">{{ opAllLbl }}</button>
+      <div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--color-bg);box-shadow:var(--shadow-sm)">
+        <sc-for list="{{ opSpeeds }}" as="os" hint-placeholder-count="2"><button sc-camel-on-click="{{ os.go }}" style="height:38px;padding:0 16px;border:0;border-radius:999px;background:{{ os.bg }};color:{{ os.ink }};font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap">{{ os.n }}</button></sc-for>
+      </div>
+      <span style="font-size:13px;line-height:1.4;color:var(--color-neutral-700);max-width:440px">Touchez l’étoile pour l’ouvrir. Touchez l’écran pour la renvoyer à sa place, à côté de la caméra.</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+      <sc-for list="{{ ops }}" as="op" hint-placeholder-count="3">
+        <div id="{{ op.id }}" style="width:410px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="padding:4px 10px;border-radius:999px;background:var(--color-text);color:var(--color-bg);font-size:12px;font-weight:700">{{ op.id }}</span><span style="font-family:var(--font-heading);font-size:22px;line-height:1">{{ op.n }}</span></div>
+          <span style="min-height:40px;font-size:13.5px;line-height:1.45;color:var(--color-neutral-800);text-wrap:pretty">{{ op.d }}</span>
+          <div style="width:390px;height:540px;padding:10px;border-radius:62px;background:#1b1918;box-shadow:inset 0 0 0 1px #34302d,0 30px 60px -30px rgba(46,43,37,.5)">
+            <div sc-camel-on-click="{{ op.bgTap }}" style="position:relative;width:390px;height:540px;border-radius:52px;overflow:hidden;background:{{ wpBg }};isolation:isolate">
+              <div style="position:absolute;right:30px;top:15px;display:flex;align-items:center;gap:6px;color:{{ wpInk }};pointer-events:none"><svg width="17" height="17" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"></path><path d="M7 20v-4"></path><path d="M12 20v-8"></path><path d="M17 20V8"></path></svg><svg width="17" height="17" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.859a10 10 0 0 1 14 0"></path><path d="M8.5 16.429a5 5 0 0 1 7 0"></path></svg><svg width="24" height="17" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="12" x="2" y="6" rx="2"></rect><path d="M6 10v4"></path><path d="M10 10v4"></path><path d="M14 10v4"></path><path d="M22 14v-4"></path></svg></div>
+              <div style="position:absolute;left:0;right:0;top:228px;display:flex;flex-direction:column;align-items:center;gap:6px;color:{{ wpInk }};pointer-events:none"><span style="font-size:76px;line-height:1;letter-spacing:-.03em">14:36</span><span style="font-size:16px;font-weight:700">Dimanche 4 octobre</span></div>
+              <div style="position:absolute;left:128px;bottom:8px;width:134px;height:5px;border-radius:3px;background:{{ wpInk }};opacity:.45"></div>
+              <div sc-camel-on-click="{{ op.stop }}" style="position:absolute;left:{{ op.bl }};top:{{ op.bt }};width:{{ op.bw }};padding:14px 14px 14px 16px;box-sizing:border-box;border-radius:28px;background:var(--color-bg);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:10px;transform-origin:{{ op.bo }};transform:{{ op.btf }};opacity:{{ op.bop }};transition:{{ op.btr }};pointer-events:{{ op.bpe }};z-index:2;cursor:default">
+                <span style="position:absolute;left:{{ op.tl }};top:{{ op.tt }};width:16px;height:16px;border-radius:4px;background:var(--color-bg);transform:rotate(45deg)"></span>
+                <sc-if value="{{ op.fresh }}" hint-placeholder-val="{{ true }}">
+                  <span style="position:relative;font-family:var(--font-heading);font-size:19px;line-height:1.15;color:var(--color-text)">Salut ! Que puis-je faire ?</span>
+                  <div style="position:relative;display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ op.chips }}" as="cp" hint-placeholder-count="3"><button sc-camel-on-click="{{ cp.go }}" style="height:34px;padding:0 14px;border:0;border-radius:999px;background:var(--color-surface);font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--color-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--color-neutral-300)">{{ cp.n }}</button></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ op.asked }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:relative;font-size:12.5px;font-weight:700;line-height:1.35;color:var(--color-neutral-700)">{{ op.q }}</span>
+                  <sc-if value="{{ op.busy }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:relative;display:flex;align-items:center;gap:6px;height:22px"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent);animation:bmDot 1.2s 0s infinite ease-in-out"></span><span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent);animation:bmDot 1.2s .2s infinite ease-in-out"></span><span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent);animation:bmDot 1.2s .4s infinite ease-in-out"></span></div>
+                  </sc-if>
+                  <sc-if value="{{ op.hasA }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:relative;max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+                      <sc-for list="{{ op.paras }}" as="pa" hint-placeholder-count="1"><span style="font-size:14px;line-height:1.45;color:var(--color-text);text-wrap:pretty">{{ pa }}</span></sc-for>
+                    </div>
+                  </sc-if>
+                </sc-if>
+                <div style="position:relative;height:44px;display:flex;align-items:center;gap:6px;padding:0 5px 0 16px;border-radius:999px;background:var(--color-neutral-100);box-shadow:inset 0 0 0 1px var(--color-divider)">
+                  <input ref="{{ op.inRef }}" value="{{ op.draft }}" sc-camel-on-change="{{ op.setDraft }}" sc-camel-on-key-down="{{ op.onKey }}" placeholder="Écrire à Mìmir…" style="flex:1;min-width:0;height:100%;border:0;outline:none;background:transparent;font-family:var(--font-body);font-size:14px;color:var(--color-text)">
+                  <button sc-camel-on-click="{{ op.send }}" aria-label="Envoyer" style="width:34px;height:34px;flex:none;border:0;border-radius:50%;background:{{ op.sendBg }};color:{{ op.sendInk }};display:grid;place-items:center;cursor:pointer"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg></button>
+                </div>
+              </div>
+              <div style="position:absolute;left:188.5px;top:17.5px;width:13px;height:13px;border-radius:50%;background:#2b2826;box-shadow:inset 0 0 0 3px #3b3734;z-index:4;pointer-events:none"></div>
+              <div ref="{{ op.ref }}" style="position:absolute;left:0;top:0;width:390px;height:300px;pointer-events:none;z-index:3"></div>
+              <button sc-camel-on-click="{{ op.tap }}" aria-label="Ouvrir Mìmir" style="position:absolute;left:199px;top:4px;width:40px;height:40px;border:0;border-radius:50%;background:transparent;cursor:pointer;z-index:5;pointer-events:{{ op.hitPe }}"></button>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ op.steps }}" as="stp" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:999px;background:var(--color-bg);font-size:12px;font-weight:700"><span style="color:var(--color-accent-700)">{{ stp.t }}</span>{{ stp.n }}</span></sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px"><button class="btn btn-secondary" sc-camel-on-click="{{ op.tap }}" style="height:42px;font-size:13.5px">{{ op.btn }}</button><span style="font-size:12.5px;color:var(--color-neutral-700)">{{ op.sum }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="t1" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:var(--font-heading);font-size:30px">Tour 1</span><span style="font-size:14px;color:var(--color-neutral-700)">Refonte de la barre et de l’étoile</span></div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <div style="display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--color-bg);box-shadow:var(--shadow-sm)">
+        <sc-for list="{{ barStates }}" as="bs" hint-placeholder-count="6">
+          <button sc-camel-on-click="{{ bs.go }}" style="height:38px;padding:0 16px;border:0;border-radius:999px;background:{{ bs.bg }};color:{{ bs.ink }};font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap">{{ bs.n }}</button>
+        </sc-for>
+      </div>
+      <button class="btn btn-secondary" sc-camel-on-click="{{ toggleAuto }}" style="height:46px;font-size:13.5px;background:{{ autoBg }}">{{ autoLbl }}</button>
+      <span style="font-size:13px;line-height:1.4;color:var(--color-neutral-700);max-width:420px">Touchez une barre : petite réaction. Deux fois : saut de joie. Appui long : Mìmir écoute.</span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+      <sc-for list="{{ skins }}" as="sk" hint-placeholder-count="3">
+        <div id="{{ sk.id }}" style="width:410px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="padding:4px 10px;border-radius:999px;background:var(--color-text);color:var(--color-bg);font-size:12px;font-weight:700">{{ sk.id }}</span><span style="font-family:var(--font-heading);font-size:22px;line-height:1">{{ sk.n }}</span></div>
+          <span style="min-height:40px;font-size:13.5px;line-height:1.45;color:var(--color-neutral-800);text-wrap:pretty">{{ sk.d }}</span>
+          <div style="width:390px;height:540px;padding:10px;border-radius:62px;background:#1b1918;box-shadow:inset 0 0 0 1px #34302d,0 30px 60px -30px rgba(46,43,37,.5)">
+            <div style="position:relative;width:390px;height:540px;border-radius:52px;overflow:hidden;background:{{ wpBg }};isolation:isolate">
+              <div style="position:absolute;left:0;right:0;top:96px;display:flex;flex-direction:column;align-items:center;gap:6px;color:{{ wpInk }}"><span style="font-size:76px;line-height:1;letter-spacing:-.03em">14:36</span><span style="font-size:16px;font-weight:700">Dimanche 4 octobre</span></div>
+              <div style="position:absolute;left:128px;bottom:8px;width:134px;height:5px;border-radius:3px;background:{{ wpInk }};opacity:.45"></div>
+              <sc-if value="{{ sk.side }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:110px;top:12px;width:84px;height:35px;padding-left:16px;box-sizing:border-box;border-radius:999px;background:var(--color-text);color:var(--color-bg);display:flex;flex-direction:column;justify-content:center;z-index:2;animation:bmIn .35s .1s both"><span style="font-size:10px;font-weight:700;line-height:1.1;color:var(--color-neutral-500)">Résumé</span><span style="font-size:13px;font-weight:700;line-height:1.2">{{ progTxt }}</span></div>
+              </sc-if>
+              <div sc-camel-on-pointer-down="{{ sk.down }}" sc-camel-on-pointer-up="{{ sk.up }}" sc-camel-on-pointer-leave="{{ sk.leave }}" style="position:absolute;left:{{ sk.l }};top:{{ sk.t }};width:{{ sk.w }};height:{{ sk.h }};border-radius:{{ sk.r }};background:{{ sk.bg }};box-shadow:{{ sk.sh }};overflow:hidden;cursor:pointer;z-index:2;touch-action:manipulation;transition:left .55s cubic-bezier(.3,1.25,.5,1),top .55s cubic-bezier(.3,1.25,.5,1),width .55s cubic-bezier(.3,1.25,.5,1),height .55s cubic-bezier(.3,1.25,.5,1),border-radius .55s ease,background .4s ease">
+                <div style="position:absolute;left:{{ sk.ox }};top:{{ sk.oy }};width:390px;height:300px;transition:left .55s cubic-bezier(.3,1.25,.5,1),top .55s cubic-bezier(.3,1.25,.5,1)">
+                  <sc-if value="{{ sk.isNotif }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;left:84px;top:21px;font-size:12.5px;font-weight:700;line-height:16px;color:{{ sk.ink }};white-space:nowrap;animation:bmIn .35s .15s both">Nouveau message</span>
+                    <span style="position:absolute;left:252px;top:21px;width:100px;text-align:right;font-size:11.5px;font-weight:700;line-height:16px;color:{{ sk.sub }};animation:bmIn .35s .15s both">maintenant</span>
+                    <span style="position:absolute;left:84px;top:43px;width:268px;font-size:14px;line-height:19px;color:{{ sk.ink }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:bmIn .35s .22s both">Léa : on se voit à 19 h ?</span>
+                  </sc-if>
+                  <sc-if value="{{ sk.isListen }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:112px;top:21px;height:24px;display:flex;align-items:center;gap:9px;animation:bmIn .3s .12s both">
+                      <span style="width:6px;height:24px;border-radius:3px;background:{{ sk.bars }};animation:bmBar .9s 0s infinite ease-in-out"></span>
+                      <span style="width:6px;height:24px;border-radius:3px;background:{{ sk.bars }};animation:bmBar .7s .15s infinite ease-in-out"></span>
+                      <span style="width:6px;height:24px;border-radius:3px;background:{{ sk.bars }};animation:bmBar 1s .3s infinite ease-in-out"></span>
+                      <span style="width:6px;height:24px;border-radius:3px;background:{{ sk.bars }};animation:bmBar .8s .1s infinite ease-in-out"></span>
+                      <span style="width:6px;height:24px;border-radius:3px;background:{{ sk.bars }};animation:bmBar .95s .25s infinite ease-in-out"></span>
+                    </div>
+                    <span style="position:absolute;left:246px;top:25px;font-size:12.5px;font-weight:700;line-height:16px;color:{{ sk.ink }};animation:bmIn .3s .15s both">J’écoute</span>
+                  </sc-if>
+                  <sc-if value="{{ sk.isThink }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;left:106px;top:25px;font-size:12.5px;font-weight:700;line-height:16px;color:{{ sk.ink }};white-space:nowrap;animation:bmIn .3s .15s both">Je réfléchis</span>
+                    <div style="position:absolute;left:250px;top:30px;display:flex;gap:6px;animation:bmIn .3s .15s both">
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ sk.sub }};animation:bmDot 1.2s 0s infinite ease-in-out"></span>
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ sk.sub }};animation:bmDot 1.2s .2s infinite ease-in-out"></span>
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ sk.sub }};animation:bmDot 1.2s .4s infinite ease-in-out"></span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ sk.isRead }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;left:72px;top:30px;font-family:var(--font-heading);font-size:17px;line-height:22px;color:{{ sk.ink }};animation:bmIn .35s .2s both">Mìmir</span>
+                    <span style="position:absolute;left:250px;top:34px;width:110px;text-align:right;font-size:11.5px;font-weight:700;line-height:14px;color:{{ sk.sub }};animation:bmIn .35s .2s both">Sur l’appareil</span>
+                    <span style="position:absolute;left:32px;top:72px;width:326px;font-size:14.5px;line-height:21px;color:{{ sk.ink }};text-wrap:pretty;animation:bmIn .4s .28s both">Votre train part à 18 h 42, voie 3. Il vous reste 12 minutes : partez maintenant et vous serez à l’heure.</span>
+                    <div style="position:absolute;left:32px;top:178px;display:flex;gap:8px;animation:bmIn .4s .34s both">
+                      <button sc-camel-on-click="{{ sk.open }}" style="height:40px;padding:0 18px;border:0;border-radius:999px;background:{{ sk.b1 }};color:{{ sk.b1i }};font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer">Ouvrir dans MiMai</button>
+                      <button sc-camel-on-click="{{ sk.thanks }}" style="height:40px;padding:0 16px;border:0;border-radius:999px;background:transparent;box-shadow:inset 0 0 0 2px {{ sk.b2 }};color:{{ sk.ink }};font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer">Merci</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ sk.isTask }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:62px;top:31px;width:140px;height:4px;border-radius:2px;background:{{ sk.track }};overflow:hidden;animation:bmIn .3s .1s both"><div style="width:{{ progW }};height:100%;border-radius:2px;background:{{ sk.fill }}"></div></div>
+                    <span style="position:absolute;left:246px;top:18px;font-size:10.5px;font-weight:700;line-height:13px;color:{{ sk.sub }};animation:bmIn .3s .12s both">Résumé</span>
+                    <span style="position:absolute;left:246px;top:31px;font-size:13.5px;font-weight:700;line-height:17px;color:{{ sk.ink }};animation:bmIn .3s .12s both">{{ progTxt }}</span>
+                  </sc-if>
+                  <sc-if value="{{ sk.isRing }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:207px;top:7.5px;width:44px;height:44px;border-radius:50%;background:var(--color-text)"></div>
+                  </sc-if>
+                </div>
+              </div>
+              <div style="position:absolute;left:222.5px;top:23px;width:13px;height:13px;border-radius:50%;background:#2b2826;box-shadow:inset 0 0 0 3px #3b3734;z-index:4;pointer-events:none"></div>
+              <div ref="{{ sk.ref }}" style="position:absolute;left:0;top:0;width:390px;height:300px;pointer-events:none;z-index:3"></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ sk.pts }}" as="pt" hint-placeholder-count="3"><span style="display:flex;gap:8px;font-size:13px;line-height:1.4"><span style="width:6px;height:6px;flex:none;margin-top:7px;border-radius:50%;background:var(--color-accent)"></span>{{ pt }}</span></sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div id="1d" style="width:1302px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="padding:4px 10px;border-radius:999px;background:var(--color-text);color:var(--color-bg);font-size:12px;font-weight:700">1d</span><span style="font-family:var(--font-heading);font-size:22px;line-height:1">L’étoile : 156 animations</span><span style="font-size:13.5px;color:var(--color-neutral-700)">12 familles de 13. Mouvement, couleur, regard et petits effets, toujours en moins de 2,8 s.</span></div>
+      <div style="border-radius:32px;background:var(--color-bg);box-shadow:var(--shadow-md);padding:24px;display:flex;flex-direction:column;gap:24px">
+        <div style="display:grid;grid-template-columns:420px minmax(0,1fr) 300px;gap:26px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="position:relative;height:320px;border-radius:28px;background:var(--color-accent-100);overflow:hidden">
+              <div style="position:absolute;left:95px;top:45px;width:230px;height:230px;border-radius:50%;background:var(--color-bg)"></div>
+              <div ref="{{ rPlayer }}" style="position:absolute;left:0;top:0;width:420px;height:320px"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:24px;background:var(--color-surface)">
+              <div style="position:relative;width:126px;height:37px;flex:none;border-radius:999px;background:var(--color-text)">
+                <div ref="{{ rMini }}" style="position:absolute;left:-40px;top:-40px;width:206px;height:117px;pointer-events:none;z-index:1"></div>
+                <span style="position:absolute;left:97px;top:12px;width:13px;height:13px;border-radius:50%;background:#2b2826;box-shadow:inset 0 0 0 3px #3b3734;z-index:2"></span>
+              </div>
+              <span style="font-size:12.5px;line-height:1.35;color:var(--color-neutral-800)">À taille réelle, dans la barre au repos.</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="tag tag-neutral" style="font-weight:700">{{ curNum }}</span>
+              <span style="display:flex;align-items:center;gap:6px;padding:4px 12px 4px 10px;border-radius:999px;background:var(--color-surface);font-size:12.5px;font-weight:700"><span style="width:9px;height:9px;border-radius:50%;background:{{ curDot }}"></span>{{ curFam }}</span>
+              <span style="font-size:12.5px;font-weight:700;color:var(--color-neutral-700)">{{ curDur }}</span>
+            </div>
+            <span style="font-family:var(--font-heading);font-size:40px;line-height:1.05">{{ curName }}</span>
+            <span style="font-size:14.5px;line-height:1.45;color:var(--color-neutral-800)"><b>Quand :</b> {{ curWhen }}</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+              <button class="btn btn-secondary btn-icon" sc-camel-on-click="{{ prev }}" aria-label="Animation précédente"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+              <button class="btn btn-primary" sc-camel-on-click="{{ replay }}" style="height:44px;font-size:14px">Rejouer</button>
+              <button class="btn btn-secondary btn-icon" sc-camel-on-click="{{ next }}" aria-label="Animation suivante"><svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+              <button class="btn btn-secondary" sc-camel-on-click="{{ shuffle }}" style="height:44px;font-size:14px">Au hasard</button>
+              <button class="btn btn-secondary" sc-camel-on-click="{{ toggleChain }}" style="height:44px;font-size:14px;background:{{ chainBg }}">{{ chainLbl }}</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+              <span style="font-size:12.5px;font-weight:700;color:var(--color-neutral-700)">Vitesse</span>
+              <div style="display:flex;gap:3px;padding:3px;border-radius:999px;background:var(--color-surface)">
+                <sc-for list="{{ speeds }}" as="sp" hint-placeholder-count="3"><button sc-camel-on-click="{{ sp.go }}" style="height:30px;padding:0 12px;border:0;border-radius:999px;background:{{ sp.bg }};box-shadow:{{ sp.sh }};font-family:var(--font-body);font-size:12.5px;font-weight:700;color:var(--color-text);cursor:pointer">{{ sp.n }}</button></sc-for>
+              </div>
+              <button sc-camel-on-click="{{ toggleReduce }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 6px;border:0;border-radius:999px;background:var(--color-surface);cursor:pointer;font-family:var(--font-body);font-size:12.5px;font-weight:700;color:var(--color-text)"><span style="width:38px;height:24px;padding:3px;box-sizing:border-box;border-radius:999px;background:{{ redBg }};display:flex;justify-content:{{ redJ }}"><span style="width:18px;height:18px;border-radius:50%;background:var(--color-bg)"></span></span>Réduire les animations</button>
+            </div>
+          </div>
+          <div style="padding:16px 18px;border-radius:24px;background:var(--color-accent-2-100);display:flex;flex-direction:column;gap:7px;font-size:12.5px;line-height:1.45;color:var(--color-accent-2-900)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Règles de la charte, appliquées partout</span>
+            <span>Chaque animation dure 2,8 s au plus et revient au repos.</span>
+            <span>Jamais deux animations à la fois : la nouvelle remplace l’ancienne en 0,16 s.</span>
+            <span>La forme ne se déforme jamais de plus de 20 %.</span>
+            <span>Pendant la lecture d’une réponse, l’étoile reste calme.</span>
+            <span>« Réduire les animations » : seulement des fondus de couleur.</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px">
+          <sc-for list="{{ fams }}" as="fm" hint-placeholder-count="12">
+            <div style="min-width:0;border-radius:24px;background:var(--color-surface);padding:12px 8px 10px;display:flex;flex-direction:column;gap:6px">
+              <button sc-camel-on-click="{{ fm.go }}" style="display:flex;align-items:center;gap:8px;padding:0 6px;border:0;background:transparent;cursor:pointer;font-family:var(--font-body);color:var(--color-text);text-align:left"><span style="width:10px;height:10px;flex:none;border-radius:50%;background:{{ fm.dot }}"></span><span style="flex:1;min-width:0;font-family:var(--font-heading);font-size:16px;line-height:1.1">{{ fm.n }}</span><span style="font-size:11.5px;font-weight:700;color:var(--color-neutral-700)">13</span></button>
+              <span style="min-height:32px;padding:0 6px;font-size:11.5px;line-height:1.35;color:var(--color-neutral-800)">{{ fm.d }}</span>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ fm.items }}" as="it" hint-placeholder-count="13">
+                  <button sc-camel-on-click="{{ it.go }}" title="{{ it.w }}" style="height:27px;min-width:0;display:flex;align-items:center;gap:6px;padding:0 8px;border:0;border-radius:999px;background:{{ it.bg }};box-shadow:{{ it.ring }};cursor:pointer;font-family:var(--font-body);color:var(--color-text);text-align:left" style-hover="background:var(--color-neutral-300)"><span style="width:24px;flex:none;font-size:10.5px;font-weight:700;color:var(--color-neutral-600)">{{ it.num }}</span><span style="min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.n }}</span></button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div id="1e" style="width:1302px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="padding:4px 10px;border-radius:999px;background:var(--color-text);color:var(--color-bg);font-size:12px;font-weight:700">1e</span><span style="font-family:var(--font-heading);font-size:22px;line-height:1">Mouvements du téléphone</span><span style="font-size:13.5px;color:var(--color-neutral-700)">L’étoile a un corps : elle roule, a le vertige, s’endort. Les trois barres ci-dessus réagissent aussi.</span></div>
+      <div style="border-radius:32px;background:var(--color-bg);box-shadow:var(--shadow-md);padding:24px;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:28px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:22px;min-width:0">
+          <div style="position:relative;height:216px;border-radius:28px;background:var(--color-accent-2-200);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <div sc-camel-on-pointer-down="{{ labDown }}" sc-camel-on-pointer-move="{{ labMove }}" sc-camel-on-pointer-up="{{ labUp }}" sc-camel-on-pointer-cancel="{{ labUp }}" style="position:relative;width:620px;height:104px;flex:none;border-radius:999px;background:var(--color-text);touch-action:none;cursor:grab;box-shadow:0 24px 50px -24px rgba(32,30,29,.6)">
+              <div ref="{{ rLab }}" style="position:absolute;left:-40px;top:-60px;width:700px;height:224px;pointer-events:none;z-index:1"></div>
+              <span style="position:absolute;right:32px;top:32px;width:40px;height:40px;border-radius:50%;background:#2b2826;box-shadow:inset 0 0 0 8px #3b3734;z-index:2;pointer-events:none"></span>
+            </div>
+            <span style="position:absolute;left:22px;bottom:14px;font-size:12px;font-weight:700;color:var(--color-accent-2-900)">Glissez l’étoile du doigt. Touchez, touchez deux fois, appuyez longtemps.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:26px;align-items:center">
+            <div sc-camel-on-pointer-down="{{ padDown }}" sc-camel-on-pointer-move="{{ padMove }}" sc-camel-on-pointer-up="{{ padUp }}" sc-camel-on-pointer-cancel="{{ padUp }}" sc-camel-on-double-click="{{ flat }}" style="position:relative;width:200px;height:200px;border-radius:50%;background:var(--color-surface);box-shadow:inset 0 0 0 2px var(--color-neutral-300);touch-action:none;cursor:grab">
+              <span style="position:absolute;left:50px;top:50px;width:100px;height:100px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--color-neutral-300)"></span>
+              <span style="position:absolute;left:99px;top:18px;width:2px;height:164px;border-radius:1px;background:var(--color-neutral-300)"></span>
+              <span style="position:absolute;left:18px;top:99px;width:164px;height:2px;border-radius:1px;background:var(--color-neutral-300)"></span>
+              <span ref="{{ rKnob }}" style="position:absolute;left:78px;top:78px;width:44px;height:44px;border-radius:50%;background:var(--color-accent);box-shadow:var(--shadow-md);pointer-events:none"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="min-width:120px;padding:10px 16px;border-radius:20px;background:var(--color-surface);display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-700)">Gauche-droite</span><span ref="{{ rG }}" style="font-family:var(--font-heading);font-size:24px;line-height:1.1">0°</span></div>
+                <div style="min-width:120px;padding:10px 16px;border-radius:20px;background:var(--color-surface);display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-700)">Avant-arrière</span><span ref="{{ rB }}" style="font-family:var(--font-heading);font-size:24px;line-height:1.1">0°</span></div>
+                <div style="min-width:150px;padding:10px 16px;border-radius:20px;background:var(--color-surface);display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-700)">Téléphone</span><span ref="{{ rS }}" style="font-family:var(--font-heading);font-size:20px;line-height:1.25">À plat</span></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <button class="btn btn-primary" sc-camel-on-click="{{ enableSens }}" style="height:44px;font-size:14px">Activer les capteurs</button>
+                <button class="btn btn-secondary" sc-camel-on-click="{{ shake }}" style="height:44px;font-size:14px">Secouer</button>
+                <button class="btn btn-secondary" sc-camel-on-click="{{ flip }}" style="height:44px;font-size:14px">{{ flipLbl }}</button>
+                <button class="btn btn-secondary" sc-camel-on-click="{{ drop }}" style="height:44px;font-size:14px">Lâcher</button>
+                <button class="btn btn-ghost" sc-camel-on-click="{{ flat }}" style="height:44px;font-size:14px">À plat</button>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <button sc-camel-on-click="{{ toggleChamel }}" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 6px;border:0;border-radius:999px;background:var(--color-surface);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--color-text)"><span style="width:40px;height:26px;padding:3px;box-sizing:border-box;border-radius:999px;background:{{ chBg }};display:flex;justify-content:{{ chJ }}"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-bg)"></span></span>Couleur selon la pente</button>
+                <button sc-camel-on-click="{{ toggleFollow }}" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 6px;border:0;border-radius:999px;background:var(--color-surface);cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--color-text)"><span style="width:40px;height:26px;padding:3px;box-sizing:border-box;border-radius:999px;background:{{ foBg }};display:flex;justify-content:{{ foJ }}"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-bg)"></span></span>Les yeux suivent la pente</button>
+              </div>
+              <span style="font-size:12.5px;line-height:1.45;color:var(--color-neutral-800)">{{ sensMsg }}</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700)">Ce que l’étoile ressent</span>
+          <sc-for list="{{ behaviors }}" as="bh" hint-placeholder-count="8">
+            <button sc-camel-on-click="{{ bh.go }}" style="display:flex;align-items:center;gap:12px;padding:8px 14px 8px 8px;border:0;border-radius:22px;background:var(--color-surface);text-align:left;cursor:pointer;font-family:var(--font-body);color:var(--color-text)" style-hover="background:var(--color-neutral-300)">
+              <span style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ bh.bg }};color:{{ bh.ink }};display:grid;place-items:center;font-family:var(--font-heading);font-size:15px">{{ bh.k }}</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-weight:700;font-size:13.5px;line-height:1.3">{{ bh.t }}</span><span style="font-size:12px;line-height:1.35;color:var(--color-neutral-800)">{{ bh.d }}</span></span>
+              <span style="font-size:12px;font-weight:700;color:var(--color-accent-700);white-space:nowrap">Essayer</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;ambient&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Barre&quot;},&quot;wallpaper&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Sauge&quot;,&quot;Crème&quot;,&quot;Terre&quot;,&quot;Nuit&quot;],&quot;default&quot;:&quot;Sauge&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Barre&quot;}}">
+const CAM = { x: 229, y: 29.5 };
+const SKINS = [
+  { id: '1a', key: 'a', n: 'Île', d: 'Une pilule sombre autour de la caméra, dans le prolongement du bord de l’écran.', pts: ['L’étoile vit à gauche et roule jusqu’à la caméra.', 'S’élargit pour prévenir, s’ouvre en carte pour répondre.', 'Discrète sur tous les fonds d’écran.'] },
+  { id: '1b', key: 'b', n: 'Orbite', d: 'Au repos, un simple anneau autour de la caméra. L’étoile est son satellite.', pts: ['Elle tourne autour de la caméra quand Mìmir réfléchit.', 'Une tâche en cours fait le tour de l’anneau.', 'Posée sur le fond d’écran : la plus vivante.'] },
+  { id: '1c', key: 'c', n: 'Goutte', d: 'Une goutte terre cuite qui pend du bord de l’écran, avec une étoile crème.', pts: ['La marque se reconnaît au premier coup d’œil.', 'Pour lire une réponse, elle devient une feuille crème.', 'La plus chaleureuse et la plus visible.'] }
+];
+const STATES = [['repos', 'Repos'], ['notif', 'Notification'], ['ecoute', 'Écoute'], ['reflexion', 'Réflexion'], ['reponse', 'Réponse'], ['activite', 'Activité']];
+const SEQ = [['repos', 3600], ['notif', 4200], ['ecoute', 4000], ['reflexion', 3600], ['reponse', 5600], ['activite', 6600]];
+const ENTRY = { notif: 'message', ecoute: 'ecoute', reponse: 'eureka' };
+const WP = { 'Sauge': ['var(--color-accent-2-300)', 'var(--color-accent-2-900)'], 'Crème': ['var(--color-bg)', 'var(--color-text)'], 'Terre': ['var(--color-accent-200)', 'var(--color-accent-900)'], 'Nuit': ['var(--color-text)', 'var(--color-bg)'] };
+const REST = { x: 219, y: 24, s: 15 };
+const OPV = [
+  { id: '2a', n: 'Bond', d: 'Elle s’éveille, bondit par-dessus la caméra en pirouette et se pose à gauche. La bulle s’ouvre à côté d’elle.', star: { x: 52, y: 100, s: 40 }, open: [[0, 'eveil'], [.45, 'envol', { d: .7, cx: 150, cy: -30, ex: 'io', ey: 'io', es: 'ob' }], [1.15, 'atterrit', null, true], [1.75, 'salut']], bub: { l: 86, t: 64, w: 286, o: '0% 32%', tail: 'left' } },
+  { id: '2b', n: 'Éclosion', d: 'Elle grandit sur place dans un anneau de lumière, puis glisse sous la batterie. La bulle s’ouvre vers la gauche.', star: { x: 330, y: 96, s: 40 }, open: [[0, 'eveil'], [.45, 'eclot'], [1.05, 'plane', { d: .55, cx: 300, cy: 30, ex: 'io', ey: 'io', es: 'ob' }], [1.6, 'atterrit', null, true], [2.1, 'clin']], bub: { l: 18, t: 70, w: 278, o: '100% 22%', tail: 'right' } },
+  { id: '2c', n: 'Chute', d: 'Comme dans la charte : elle tombe, rebondit et salue. La bulle s’ouvre juste en dessous.', star: { x: 195, y: 104, s: 40 }, open: [[0, 'eveil'], [.45, 'chute', { d: 1, cx: 207, cy: 64, ex: 'io', ey: 'bo', es: 'oc' }], [1.45, 'salut', null, true]], bub: { l: 30, t: 140, w: 330, o: '50% 0%', tail: 'top' } }
+];
+const LBL = { eveil: 'S’éveille', envol: 'Bondit', eclot: 'Éclot', plane: 'Glisse', chute: 'Tombe', atterrit: 'Atterrit', salut: 'Salue', clin: 'Clin d’œil' };
+const fmtS = x => (x === 0 ? '0' : String(Math.round(x * 100) / 100).replace('.', ',')) + ' s';
+const CV = k => k === 'a' ? 'var(--color-accent)' : k === 'w' ? 'var(--color-bg)' : 'var(--color-' + ({ a: 'accent', g: 'accent-2', n: 'neutral' })[k[0]] + '-' + k.slice(1) + '00)';
+
+function layout(k, st, prog) {
+  const R = (l, t, w, h, r) => ({ l, t, w, h, r });
+  const px = 62 + prog * 140;
+  if (k === 'b' && (st === 'repos' || st === 'reflexion')) return { p: R(210, 10.5, 38, 38, 19), x: 192, y: 29.5, s: st === 'repos' ? 18 : 15, tr: st === 'repos' ? [184, 196] : [192, 192], m: st === 'repos' ? 'idle' : 'think', orb: st === 'reflexion' ? { cx: CAM.x, cy: CAM.y, r: 29, period: 2.2 } : null };
+  if (k === 'b' && st === 'activite') return { p: R(203, 3.5, 52, 52, 26), x: CAM.x, y: CAM.y - 32, s: 15, tr: null, m: 'idle', orb: { cx: CAM.x, cy: CAM.y, r: 32, angle: -Math.PI / 2 + prog * Math.PI * 2 }, ring: true, side: true };
+  const c = k === 'c';
+  const P = {
+    repos: c ? R(135, -26, 120, 64, 32) : R(132, 11, 126, 37, 18.5),
+    notif: c ? R(16, -30, 358, 112, 40) : R(16, 9, 358, 74, 37),
+    ecoute: c ? R(60, -24, 270, 79, 36) : R(60, 11, 270, 44, 22),
+    reflexion: c ? R(60, -24, 270, 79, 36) : R(60, 11, 270, 44, 22),
+    reponse: c ? R(12, -30, 366, 271, 40) : R(12, 9, 366, 232, 38),
+    activite: c ? R(40, -24, 310, 79, 36) : R(40, 11, 310, 44, 22)
+  }[st];
+  const S = {
+    repos: c ? [158, 19, 20, [156, 204]] : [151, 29.5, 20, [148, 206]],
+    notif: [50, 46, 30, [46, 58]],
+    ecoute: [84, 33, 24, [82, 98]],
+    reflexion: [84, 33, 24, [84, 84]],
+    reponse: [46, 42, 32, [46, 46]],
+    activite: [px, 33, 20, [px, px]]
+  }[st];
+  return { p: P, x: S[0], y: S[1], s: S[2], tr: S[3], m: st === 'ecoute' ? 'listen' : st === 'reflexion' ? 'think' : st === 'reponse' ? 'read' : 'idle', orb: null };
+}
+function skinColors(k, st, prog) {
+  const dark = { bg: 'var(--color-text)', sh: 'none', ink: 'var(--color-bg)', sub: 'var(--color-neutral-500)', bars: 'var(--color-accent-2-400)', track: 'var(--color-neutral-800)', fill: 'var(--color-accent-2-500)', b1: 'var(--color-bg)', b1i: 'var(--color-text)', b2: 'var(--color-neutral-700)', base: 'a' };
+  if (k !== 'c') {
+    if (k === 'b' && st === 'activite') return Object.assign({}, dark, { bg: 'conic-gradient(var(--color-accent-2-500) ' + Math.round(prog * 360) + 'deg, var(--color-neutral-800) 0)' });
+    return Object.assign({}, dark, { sh: st === 'repos' || (k === 'b' && st === 'reflexion') ? 'none' : '0 18px 40px -18px rgba(32,30,29,.6)' });
+  }
+  if (st === 'reponse') return { bg: 'var(--color-bg)', sh: 'var(--shadow-lg)', ink: 'var(--color-text)', sub: 'var(--color-neutral-700)', bars: 'var(--color-accent)', track: 'var(--color-neutral-300)', fill: 'var(--color-accent)', b1: 'var(--color-accent)', b1i: 'var(--color-bg)', b2: 'var(--color-neutral-400)', base: 'a' };
+  return { bg: st === 'repos' ? 'var(--color-accent)' : 'var(--color-accent-700)', sh: 'var(--shadow-md)', ink: 'var(--color-bg)', sub: 'var(--color-accent-200)', bars: 'var(--color-bg)', track: 'var(--color-accent-800)', fill: 'var(--color-bg)', b1: 'var(--color-bg)', b1i: 'var(--color-text)', b2: 'var(--color-accent-400)', base: 'w' };
+}
+
+class Component extends DCLogic {
+  state = { ready: false, bar: 'repos', auto: false, prog: 0, done: false, cur: 0, chain: true, speed: 1, reduce: false, sens: '', face: false, chamel: false, follow: true, opOpen: [false, false, false], opSpeed: 1, conv: [{}, {}, {}] };
+  stages = {}; els = {}; fns = {}; T = {}; taps = {}; opT = {}; opState = [false, false, false]; inEls = {};
+  componentDidMount() {
+    const boot = () => {
+      if (!window.ETOILE) { this.T.boot = setTimeout(boot, 60); return; }
+      const S = window.ETOILE.sensors;
+      this.sensFn = type => { if (type === 'tilt' || type === 'flip' || type === 'unflip') this.paintSens(); if (type === 'flip' || type === 'unflip') this.setState({ face: S.face }); };
+      S.listeners.add(this.sensFn);
+      this.setState({ ready: true }, () => { Object.keys(this.els).forEach(n => this.ensure(n)); this.paintSens(); this.T.first = setTimeout(() => this.playAt(this.state.cur), 700); });
+    };
+    boot();
+  }
+  componentWillUnmount() { Object.keys(this.opT).forEach(k => (this.opT[k] || []).forEach(clearTimeout)); Object.keys(this.T).forEach(k => { clearTimeout(this.T[k]); clearInterval(this.T[k]); }); Object.keys(this.stages).forEach(k => this.stages[k].destroy()); this.stages = {}; if (this.sensFn && window.ETOILE) window.ETOILE.sensors.listeners.delete(this.sensFn); }
+  componentDidUpdate(pp) { if (pp.ambient !== this.props.ambient) ['ph0', 'ph1', 'ph2', 'op0', 'op1', 'op2'].forEach(k => { const s = this.stages[k]; if (s) s.set({ ambient: this.props.ambient ?? true }); }); }
+  rf(name) {
+    if (!this.fns[name]) this.fns[name] = el => {
+      const old = this.stages[name];
+      if (old && old.host !== el) { old.destroy(); delete this.stages[name]; }
+      if (el) { this.els[name] = el; this.ensure(name); } else delete this.els[name];
+    };
+    return this.fns[name];
+  }
+  ensure(name) { const el = this.els[name]; if (!el || this.stages[name] || !window.ETOILE) return; const o = this.opts(name); const st = window.ETOILE.mount(el, o); st._base = o.base; this.stages[name] = st; }
+  opts(name) {
+    const s = this.state;
+    if (name.slice(0, 2) === 'ph') { const i = +name.slice(2), k = SKINS[i].key, L = layout(k, s.bar, s.prog), c = skinColors(k, s.bar, s.prog); return { w: 390, h: 300, x: L.x, y: L.y, size: L.s, track: L.tr || [L.x, L.x], base: c.base, motion: true, react: true, ambient: this.props.ambient ?? true, follow: s.follow, chamel: s.chamel, mode: L.m, orbit: L.orb }; }
+    if (name.slice(0, 2) === 'op') return { w: 390, h: 300, x: REST.x, y: REST.y, size: REST.s, track: [REST.x, REST.x], base: 'a', motion: true, react: true, ambient: this.props.ambient ?? true, follow: s.follow, chamel: false, speed: s.opSpeed };
+    if (name === 'player') return { w: 420, h: 320, x: 210, y: 160, size: 112, base: 'a', motion: false, react: false, speed: s.speed, onEnd: id => this.onEnd(id) };
+    if (name === 'mini') return { w: 206, h: 117, x: 59, y: 58.5, size: 19, base: 'a', motion: false, react: false, speed: s.speed };
+    return { w: 700, h: 224, x: 130, y: 112, size: 52, track: [92, 560], base: 'a', motion: true, react: true, follow: s.follow, chamel: s.chamel };
+  }
+  syncOne(i) {
+    const st = this.stages['ph' + i]; if (!st) return;
+    const s = this.state, k = SKINS[i].key, L = layout(k, s.bar, s.prog), c = skinColors(k, s.bar, s.prog);
+    st.setOrbit(L.orb); st.setAnchor(L.x, L.y, L.s); st.setTrack(L.tr ? L.tr[0] : L.x, L.tr ? L.tr[1] : L.x); st.setMode(L.m);
+    if (st._base !== c.base) { st.setBase(c.base); st._base = c.base; }
+  }
+  sync() { [0, 1, 2].forEach(i => this.syncOne(i)); }
+  eachPhone(fn) { [0, 1, 2].forEach(i => { const st = this.stages['ph' + i]; if (st) fn(st, i); }); }
+  setBar = (b, keepAuto) => {
+    if (!keepAuto && this.state.auto) this.stopAuto();
+    if (this.T.task) { clearInterval(this.T.task); delete this.T.task; }
+    const prev = this.state.bar;
+    this.setState({ bar: b, prog: 0, done: false }, () => {
+      this.sync();
+      this.eachPhone((st, i) => { const e = ENTRY[b]; if (e) st.play(e); else if (b === 'repos' && prev !== 'repos') st.play('sourire'); });
+      if (b === 'activite') {
+        const t0 = Date.now();
+        this.T.task = setInterval(() => {
+          const p = Math.min(1, (Date.now() - t0) / 4600);
+          this.setState({ prog: p }, () => this.sync());
+          if (p >= 1) { clearInterval(this.T.task); delete this.T.task; this.setState({ done: true }); this.eachPhone(st => st.play('termine')); }
+        }, 110);
+      }
+    });
+  };
+  toggleAuto = () => {
+    if (this.state.auto) { this.stopAuto(); return; }
+    this.setState({ auto: true });
+    let i = 0;
+    const step = () => { const sq = SEQ[i % SEQ.length]; this.setBar(sq[0], true); i++; this.T.auto = setTimeout(step, sq[1]); };
+    step();
+  };
+  stopAuto() { clearTimeout(this.T.auto); delete this.T.auto; this.setState({ auto: false }); }
+  down = i => e => {
+    if (e.target && e.target.closest && e.target.closest('button')) return;
+    this.press = { i, lp: false }; clearTimeout(this.T.lp);
+    this.T.lp = setTimeout(() => { if (this.press && this.press.i === i) { this.press.lp = true; this.setBar('ecoute'); } }, 480);
+  };
+  up = i => e => {
+    clearTimeout(this.T.lp); const pr = this.press; this.press = null;
+    if (!pr || pr.i !== i || pr.lp) return;
+    const st = this.stages['ph' + i], now = Date.now();
+    if (now - (this.taps[i] || 0) < 320) { this.taps[i] = 0; if (st) st.play('saut'); return; }
+    this.taps[i] = now;
+    if (this.state.bar !== 'repos') { this.setBar('repos'); return; }
+    if (st) { const L = window.ETOILE.TAP; st.play(L[Math.floor(Math.random() * L.length)]); }
+  };
+  leave = () => { clearTimeout(this.T.lp); this.press = null; };
+  playAt = i => { if (!window.ETOILE) return; const L = window.ETOILE.LIST, n = ((i % L.length) + L.length) % L.length, id = L[n].id; this.setState({ cur: n }); ['player', 'mini'].forEach(k => { if (this.stages[k]) this.stages[k].play(id); }); };
+  onEnd = id => { if (!this.state.chain) return; const L = window.ETOILE.LIST; if (L[this.state.cur].id !== id) return; clearTimeout(this.T.chain); this.T.chain = setTimeout(() => { if (this.state.chain) this.playAt(this.state.cur + 1); }, 420); };
+  paintSens() {
+    if (!window.ETOILE) return;
+    const S = window.ETOILE.sensors, g = Math.max(-70, Math.min(70, S.gamma)), b = Math.max(-70, Math.min(70, S.beta));
+    if (this.knob) this.knob.style.transform = 'translate(' + (g / 70 * 78).toFixed(1) + 'px,' + (b / 70 * 78).toFixed(1) + 'px)';
+    if (this.roG) this.roG.textContent = Math.round(S.gamma) + '°';
+    if (this.roB) this.roB.textContent = Math.round(S.beta) + '°';
+    if (this.roS) this.roS.textContent = S.face ? 'Retourné' : Math.abs(S.gamma) > 8 ? (S.gamma > 0 ? 'Penché à droite' : 'Penché à gauche') : 'À plat';
+  }
+  rKnob = el => { this.knob = el; if (el) this.paintSens(); };
+  rG = el => { this.roG = el; };
+  rB = el => { this.roB = el; };
+  rS = el => { this.roS = el; };
+  labDown = e => {
+    const el = e.currentTarget; try { el.setPointerCapture(e.pointerId); } catch (x) { }
+    const r = el.getBoundingClientRect();
+    this.g = { x0: e.clientX, drag: false, long: false, r, sc: r.width / 620 || 1 };
+    clearTimeout(this.T.lpl);
+    this.T.lpl = setTimeout(() => { if (this.g && !this.g.drag) { this.g.long = true; this.listenDemo(); } }, 480);
+  };
+  labMove = e => {
+    const g = this.g; if (!g) return;
+    const dx = (e.clientX - g.x0) / g.sc;
+    if (!g.drag && Math.abs(dx) > 6) { g.drag = true; clearTimeout(this.T.lpl); }
+    if (g.drag && this.stages.lab) this.stages.lab.dragTo((e.clientX - g.r.left) / g.sc + 40 - 130);
+  };
+  labUp = () => {
+    clearTimeout(this.T.lpl); const g = this.g; this.g = null; const st = this.stages.lab;
+    if (!g || !st) return;
+    if (g.drag) { st.release(); return; }
+    if (g.long) return;
+    const now = Date.now();
+    if (now - (this.labTap || 0) < 320) { this.labTap = 0; st.play('saut'); return; }
+    this.labTap = now; const L = window.ETOILE.TAP; st.play(L[Math.floor(Math.random() * L.length)]);
+  };
+  padDown = e => { const el = e.currentTarget; try { el.setPointerCapture(e.pointerId); } catch (x) { } this.pad = el.getBoundingClientRect(); this.padMove(e); };
+  padMove = e => {
+    const r = this.pad; if (!r || !window.ETOILE) return;
+    const sc = r.width / 200 || 1; let nx = ((e.clientX - r.left) / sc - 100) / 78, ny = ((e.clientY - r.top) / sc - 100) / 78;
+    const L = Math.hypot(nx, ny); if (L > 1) { nx /= L; ny /= L; }
+    window.ETOILE.sensors.sim(ny * 70, nx * 70);
+  };
+  padUp = () => { this.pad = null; };
+  flat = () => { if (window.ETOILE) window.ETOILE.sensors.sim(0, 0); };
+  shake = () => { if (window.ETOILE) window.ETOILE.sensors.shake(); };
+  drop = () => { if (window.ETOILE) window.ETOILE.sensors.drop(); };
+  flip = () => { if (!window.ETOILE) return; const S = window.ETOILE.sensors; S.sim(S.face ? 0 : 175, 0); };
+  enableSens = () => { if (!window.ETOILE) return; this.setState({ sens: 'wait' }); window.ETOILE.sensors.enable().then(r => this.setState({ sens: r })); };
+  setOpt(o) { this.setState(o); ['ph0', 'ph1', 'ph2', 'lab', 'op0', 'op1', 'op2'].forEach(k => { if (this.stages[k]) this.stages[k].set(o); }); }
+  tiltDemo() { if (!window.ETOILE) return; const S = window.ETOILE.sensors; clearTimeout(this.T.td1); clearTimeout(this.T.td2); S.sim(0, 38); this.T.td1 = setTimeout(() => S.sim(0, -38), 1500); this.T.td2 = setTimeout(() => S.sim(0, 0), 3000); }
+  flipDemo() { if (!window.ETOILE) return; const S = window.ETOILE.sensors; clearTimeout(this.T.fd); S.sim(175, 0); this.T.fd = setTimeout(() => S.sim(0, 0), 2600); }
+  listenDemo() { const st = this.stages.lab; if (!st) return; st.setMode('listen'); st.play('ecoute'); clearTimeout(this.T.lst); this.T.lst = setTimeout(() => st.setMode('idle'), 2600); }
+  dragDemo() {
+    const st = this.stages.lab; if (!st) return; clearInterval(this.T.dd); const t0 = Date.now();
+    this.T.dd = setInterval(() => { const q = Math.min(1, (Date.now() - t0) / 600); st.dragTo(330 * (1 - Math.pow(1 - q, 3))); if (q >= 1) { clearInterval(this.T.dd); delete this.T.dd; this.T.dr = setTimeout(() => st.release(), 250); } }, 30);
+  }
+  runSeq(i, steps) {
+    (this.opT[i] || []).forEach(clearTimeout); this.opT[i] = [];
+    const sp = this.state.opSpeed || 1;
+    steps.forEach(stp => { this.opT[i].push(setTimeout(() => { const st = this.stages['op' + i]; if (!st) return; if (stp.fly) st.fly(stp.fly()); if (stp.clip) st.play(stp.clip); if (stp.open != null) { this.setState(ps => { const a = ps.opOpen.slice(); a[i] = stp.open; return { opOpen: a }; }); if (stp.open) { clearTimeout(this.T['fo' + i]); this.T['fo' + i] = setTimeout(() => { const el = this.inEls[i]; if (el && this.opState[i]) { try { el.focus({ preventScroll: true }); } catch (x) { } } }, 480 / sp); } } }, stp.at * 1000 / sp)); });
+  }
+  openOp(i) { const v = OPV[i]; this.opState[i] = true; this.runSeq(i, v.open.map(s => ({ at: s[0], clip: s[1], fly: s[2] ? () => Object.assign({ x: v.star.x, y: v.star.y, size: v.star.s }, s[2]) : null, open: s[3] ? true : null }))); }
+  closeOp(i) { const v = OPV[i]; this.opState[i] = false; const st0 = this.stages['op' + i]; if (st0) st0.setMode('idle'); clearTimeout(this.T['cv' + i]); this.T['cv' + i] = setTimeout(() => { if (!this.opState[i]) this.setConv(i, { q: '', a: '', busy: false }); }, 400); this.runSeq(i, [{ at: 0, open: false }, { at: .2, clip: 'envol', fly: () => ({ x: REST.x, y: REST.y, size: REST.s, d: .6, cx: (v.star.x + REST.x) / 2, cy: Math.min(v.star.y, REST.y) - 36, ex: 'io', ey: 'io', es: 'io' }) }, { at: .82, clip: 'pose' }]); }
+  setConv(i, o) { this.setState(ps => { const c = ps.conv.slice(); c[i] = Object.assign({}, c[i], o); return { conv: c }; }); }
+  async askOp(i, text) {
+    const q = String(text || '').trim(); if (!q || (this.state.conv[i] || {}).busy) return;
+    const st = this.stages['op' + i], id = (this.reqId = (this.reqId || 0) + 1);
+    this.setConv(i, { q, a: '', busy: true, draft: '' });
+    if (st) { st.play('compris'); st.setMode('think'); }
+    let a = '';
+    try { a = window.MIMAI ? await window.MIMAI.ask([{ role: 'user', content: q }], {}) : ''; } catch (x) { a = ''; }
+    if (!a) a = 'Je m’en occupe. Dans cette version de test, mes réponses sont préparées à l’avance : le vrai modèle tournera sur votre téléphone, sans Internet.';
+    if (!this.opState[i] || this.reqId !== id && (this.state.conv[i] || {}).q !== q) return;
+    this.setConv(i, { a, busy: false });
+    if (st) { st.setMode('read'); st.play('eureka'); }
+  }
+  toggleOp(i) { if (this.opState[i]) this.closeOp(i); else this.openOp(i); }
+  renderVals() {
+    const s = this.state, E = s.ready ? window.ETOILE : null, wp = WP[this.props.wallpaper] || WP['Sauge'];
+    const skins = SKINS.map((sk, i) => {
+      const L = layout(sk.key, s.bar, s.prog), c = skinColors(sk.key, s.bar, s.prog), p = L.p;
+      return { id: sk.id, n: sk.n, d: sk.d, pts: sk.pts, l: p.l + 'px', t: p.t + 'px', w: p.w + 'px', h: p.h + 'px', r: p.r + 'px', ox: (-p.l) + 'px', oy: (-p.t) + 'px', bg: c.bg, sh: c.sh, ink: c.ink, sub: c.sub, bars: c.bars, track: c.track, fill: c.fill, b1: c.b1, b1i: c.b1i, b2: c.b2,
+        isNotif: s.bar === 'notif', isListen: s.bar === 'ecoute', isThink: s.bar === 'reflexion' && sk.key !== 'b', isRead: s.bar === 'reponse', isTask: s.bar === 'activite' && sk.key !== 'b', isRing: !!L.ring, side: !!L.side,
+        ref: this.rf('ph' + i), down: this.down(i), up: this.up(i), leave: this.leave, open: () => this.setBar('repos'),
+        thanks: () => { this.setBar('repos'); clearTimeout(this.T['th' + i]); this.T['th' + i] = setTimeout(() => { const st = this.stages['ph' + i]; if (st) st.play('merci'); }, 80); } };
+    });
+    const LIST = E ? E.LIST : [], FAMS = E ? E.FAMS : [], cur = LIST[s.cur], fam = cur ? FAMS.find(f => f.id === cur.fam) : null;
+    const fams = FAMS.map(f => ({ n: f.n, d: f.d, dot: CV(f.c), go: () => this.playAt(LIST.findIndex(a => a.fam === f.id)), items: LIST.filter(a => a.fam === f.id).map(a => { const on = a.num - 1 === s.cur; return { num: String(a.num).padStart(3, '0'), n: a.n, w: a.w, go: () => this.playAt(a.num - 1), bg: on ? 'var(--color-bg)' : 'transparent', ring: on ? 'inset 0 0 0 2px var(--color-accent)' : 'none' }; }) }));
+    const sw = on => ({ bg: on ? 'var(--color-accent-2-600)' : 'var(--color-neutral-400)', j: on ? 'flex-end' : 'flex-start' });
+    const red = sw(s.reduce), ch = sw(s.chamel), fo = sw(s.follow);
+    const SM = { '': 'Sur ordinateur, le plateau simule l’inclinaison. Ouvrez cette page sur un téléphone et activez les capteurs pour le vrai ressenti.', wait: 'Demande d’accès aux capteurs…', ok: 'Capteurs actifs : penchez, secouez ou retournez votre téléphone.', absent: 'Aucun capteur détecté ici. Ouvrez cette page sur un téléphone, ou utilisez le plateau.', refus: 'Accès refusé. Autorisez « Mouvement et orientation » dans les réglages du navigateur.' };
+    const tap = () => { const st = this.stages.lab; if (st && E) st.play(E.TAP[Math.floor(Math.random() * E.TAP.length)]); };
+    const behaviors = [
+      ['Pencher', 'Elle roule vers le côté bas et rebondit contre la caméra.', () => this.tiltDemo()],
+      ['Secouer', 'Vertige : elle tourne, les yeux en spirale, puis se reprend.', this.shake],
+      ['Retourner l’écran', 'Elle s’endort. Remettez le téléphone à l’endroit : elle se réveille.', () => this.flipDemo()],
+      ['Lâcher', 'Chute libre : apesanteur, elle flotte un instant.', this.drop],
+      ['Toucher', 'Une petite réaction au hasard, parmi 8.', tap],
+      ['Toucher deux fois', 'Saut de joie.', () => { const st = this.stages.lab; if (st) st.play('saut'); }],
+      ['Appui long', 'Mìmir écoute : l’étoile passe au vert sauge.', () => this.listenDemo()],
+      ['Glisser', 'Elle suit le doigt, puis revient à sa place.', () => this.dragDemo()]
+    ].map((b, i) => ({ k: String(i + 1), t: b[0], d: b[1], go: b[2], bg: i < 4 ? 'var(--color-accent-2-200)' : 'var(--color-accent-200)', ink: i < 4 ? 'var(--color-accent-2-900)' : 'var(--color-accent-900)' }));
+    return {
+      wpBg: wp[0], wpInk: wp[1], skins,
+      barStates: STATES.map(st => ({ n: st[1], go: () => this.setBar(st[0]), bg: s.bar === st[0] ? 'var(--color-text)' : 'transparent', ink: s.bar === st[0] ? 'var(--color-bg)' : 'var(--color-text)' })),
+      toggleAuto: this.toggleAuto, autoLbl: s.auto ? 'Arrêter la démo' : 'Démo automatique', autoBg: s.auto ? 'var(--color-accent-2-200)' : '',
+      progW: Math.round(s.prog * 100) + '%', progTxt: s.done ? 'Terminé' : Math.round(s.prog * 100) + ' %',
+      rPlayer: this.rf('player'), rMini: this.rf('mini'), rLab: this.rf('lab'),
+      curNum: cur ? String(cur.num).padStart(3, '0') + ' / ' + LIST.length : '— / 156', curName: cur ? cur.n : 'Chargement…', curWhen: cur ? cur.w : '', curDur: cur ? cur.d.toFixed(1).replace('.', ',') + ' s' : '', curFam: fam ? fam.n : '', curDot: fam ? CV(fam.c) : 'var(--color-neutral-400)',
+      prev: () => this.playAt(s.cur - 1), next: () => this.playAt(s.cur + 1), replay: () => this.playAt(s.cur), shuffle: () => this.playAt(Math.floor(Math.random() * (LIST.length || 1))),
+      toggleChain: () => { const on = !this.state.chain; this.setState({ chain: on }); if (on) this.playAt(this.state.cur); }, chainLbl: s.chain ? 'Enchaînement en cours' : 'Tout enchaîner', chainBg: s.chain ? 'var(--color-accent-2-200)' : '',
+      speeds: [[.25, '×0,25'], [.5, '×0,5'], [1, '×1']].map(v => ({ n: v[1], bg: s.speed === v[0] ? 'var(--color-bg)' : 'transparent', sh: s.speed === v[0] ? 'var(--shadow-sm)' : 'none', go: () => { this.setState({ speed: v[0] }); ['player', 'mini'].forEach(k => { if (this.stages[k]) this.stages[k].set({ speed: v[0] }); }); } })),
+      toggleReduce: () => { const v = !this.state.reduce; if (window.ETOILE) window.ETOILE.setReduce(v); this.setState({ reduce: v }); }, redBg: red.bg, redJ: red.j,
+      fams,
+      labDown: this.labDown, labMove: this.labMove, labUp: this.labUp, padDown: this.padDown, padMove: this.padMove, padUp: this.padUp,
+      rKnob: this.rKnob, rG: this.rG, rB: this.rB, rS: this.rS,
+      enableSens: this.enableSens, shake: this.shake, flip: this.flip, drop: this.drop, flat: this.flat, flipLbl: s.face ? 'Remettre à l’endroit' : 'Retourner',
+      toggleChamel: () => this.setOpt({ chamel: !this.state.chamel }), chBg: ch.bg, chJ: ch.j,
+      toggleFollow: () => this.setOpt({ follow: !this.state.follow }), foBg: fo.bg, foJ: fo.j,
+      sensMsg: SM[s.sens] || SM[''], behaviors,
+      ops: OPV.map((v, i) => { const open = s.opOpen[i], b = v.bub, sp = s.opSpeed || 1, tail = b.tail === 'left' ? ['-7px', '26px'] : b.tail === 'right' ? [(b.w - 9) + 'px', '22px'] : [(b.w / 2 - 8) + 'px', '-7px'], ob = v.open.find(x => x[3]);
+        const cv = s.conv[i] || {}, dr = cv.draft || '';
+        if (!this.inFns) this.inFns = {}; if (!this.inFns[i]) this.inFns[i] = el => { this.inEls[i] = el; };
+        return { id: v.id, n: v.n, d: v.d, ref: this.rf('op' + i), stop: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); },
+          fresh: !cv.q, asked: !!cv.q, q: cv.q || '', busy: !!cv.busy, hasA: !!cv.a, paras: (cv.a || '').split(/\n{2,}/).filter(Boolean), draft: dr, inRef: this.inFns[i],
+          chips: ['Résumer l’écran', 'Répondre à Léa', 'Traduire'].map(t => ({ n: t, go: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.askOp(i, t); } })),
+          setDraft: ev => this.setConv(i, { draft: ev.target.value }), onKey: ev => { if (ev.key === 'Enter') this.askOp(i, ev.target.value); if (ev.key === 'Escape') this.closeOp(i); },
+          send: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.askOp(i, (this.state.conv[i] || {}).draft); }, sendBg: dr.trim() && !cv.busy ? 'var(--color-accent)' : 'var(--color-neutral-200)', sendInk: dr.trim() && !cv.busy ? 'var(--color-bg)' : 'var(--color-neutral-600)', tap: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.toggleOp(i); }, bgTap: () => { if (this.opState[i]) this.closeOp(i); }, close: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.closeOp(i); },
+          bl: b.l + 'px', bt: b.t + 'px', bw: b.w + 'px', bo: b.o, btf: open ? 'scale(1)' : 'scale(.12)', bop: open ? '1' : '0', btr: open ? 'transform ' + (.45 / sp).toFixed(2) + 's cubic-bezier(.3,1.35,.5,1), opacity ' + (.2 / sp).toFixed(2) + 's ease' : 'transform ' + (.22 / sp).toFixed(2) + 's ease-in, opacity ' + (.18 / sp).toFixed(2) + 's ease-in', bpe: open ? 'auto' : 'none', tl: tail[0], tt: tail[1], hitPe: open ? 'none' : 'auto', btn: open ? 'Fermer' : 'Ouvrir',
+          steps: v.open.map(x => ({ t: fmtS(x[0]), n: (LBL[x[1]] || x[1]) + (x[3] ? ' · bulle' : '') })), sum: 'Bulle ouverte en ' + fmtS(ob ? ob[0] : 0) }; }),
+      opAll: () => { const any = this.opState.some(Boolean); [0, 1, 2].forEach(i => { if (any) this.closeOp(i); else this.openOp(i); }); }, opAllLbl: s.opOpen.some(Boolean) ? 'Tout fermer' : 'Tout ouvrir',
+      opSpeeds: [[1, 'Vitesse normale'], [.25, 'Ralenti ×0,25']].map(v => ({ n: v[1], bg: s.opSpeed === v[0] ? 'var(--color-text)' : 'transparent', ink: s.opSpeed === v[0] ? 'var(--color-bg)' : 'var(--color-text)', go: () => { this.setState({ opSpeed: v[0] }); ['op0', 'op1', 'op2'].forEach(k => { if (this.stages[k]) this.stages[k].set({ speed: v[0] }); }); } }))
+    };
+  }
+}
+</script>
+
+
+</body></html>

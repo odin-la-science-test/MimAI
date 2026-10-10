@@ -67,6 +67,7 @@
     spring: (h = .4, n = 3) => p => { const v = sin(TAU * n * p) * (1 - p) * min(1, p / .05); return { y: -h * v, sx: 1 - .06 * v, sy: 1 + .06 * v }; },
     wall: (d = .6) => p => { const q = bell(p, .3, .07); return { x: p < .3 ? d * oc(p / .3) : d * (1 - oe((p - .3) / .7)), sx: 1 - .1 * q, sy: 1 + .05 * q }; },
     inflate: () => p => ({ s: p < .55 ? 1 + .3 * ss(p / .55) : 1.3 - .3 * oc((p - .55) / .45) }),
+    land: () => p => { const v = .1 * Math.exp(-5 * p) * cos(18 * p) * (1 - p); return { sx: 1 + v, sy: 1 - v }; },
     hold: (dx = .5, dy = 0) => p => { const g = ss(seg(p, .08, .16)) * (1 - ss(seg(p, .82, .94))); return { x: dx * g, y: dy * g }; }
   };
   const E = (...a) => { if (a.length === 1) return a[0]; const o = [[0, a[0]]]; for (let i = 1; i < a.length; i += 2) o.push([a[i], a[i + 1]]); return o; };
@@ -287,6 +288,14 @@
   ];
   const TAP = ['salut', 'clin', 'rire', 'surpris', 'malicieux', 'sourire', 'coucou', 'gelee'];
   const AMB = LIST.filter(a => a.fam === 'repos').map(a => a.id).concat(['clin', 'scintille']);
+  function X(id, d, t, e, c, x) { const o = { fam: 'extra', id, n: id, d, w: '', t: t || [], e: e || 'open', c: c || null, x: x || [], trail: 0, num: 0 }; o.x.forEach(f => { if (f.k === 'tr') o.trail = f.n; }); BY[id] = o; }
+  X('eveil', .45, [T.grw(.2, .55, .45)], E('closed', .35, 'wide'), C.to('a3', .55, .45, 1), [F.tw(3, 'a3', .45)]);
+  X('envol', .7, [T.spin(1, 'io')], 'happy', null, [F.tr(3)]);
+  X('plane', .55, [T.tilt(-14), T.strch(.06)], 'wide', null, [F.tr(2)]);
+  X('eclot', .6, [T.grw(.35, .5, .5)], E('wide', .6, 'happy'), C.to('a3', .5, .5, 1), [F.ring('a3', .15, .7, 2.6), F.rays(10, 'a3', .2, .7, 40)]);
+  X('atterrit', .6, [T.land()], E('happy', .85, 'open'), null, [F.b(7, 'star', 'a3', 1.4, .28, 0, .7)]);
+  X('chute', 1.0, [T.strch(.06, .2, .2)], E('wide', .7, 'happy'));
+  X('pose', .45, [T.land()], E('closed', .3, 'open'));
 
   /* ---------- formes des effets (rayon 10) ---------- */
   const SH = {
@@ -471,6 +480,7 @@
     set(o) { Object.assign(this.o, o); }
     dragTo(dx) { this.drag = dx; }
     release() { this.drag = null; }
+    fly(o, cb) { this.flight = { x0: this.ax.v, y0: this.ay.v, s0: this.as.v, x1: o.x, y1: o.y, s1: o.size || this.as.v, cx: o.cx == null ? (this.ax.v + o.x) / 2 : o.cx, cy: o.cy == null ? (this.ay.v + o.y) / 2 : o.cy, d: o.d || .6, ex: o.ex || 'io', ey: o.ey || o.ex || 'io', es: o.es || 'io', t0: this.t, cb }; this.trk = o.track || [o.x, o.x]; this.off = 0; this.vel = 0; }
     destroy() { this.dead = true; STAGES.delete(this); if (this.sub) SENS.listeners.delete(this.sub); if (this.io) this.io.disconnect(); if (this.svg.parentNode) this.svg.parentNode.removeChild(this.svg); }
     onSens(type) {
       if (this.dead || !this.o.motion) return;
@@ -482,11 +492,12 @@
     tick(dt) {
       const o = this.o, Q = pal(), red = REDUCE || o.reduce, sdt = dt * (o.speed || 1);
       this.t += sdt; const t = this.t;
+      if (this.flight) { const f = this.flight, q = cl((t - f.t0) / f.d, 0, 1), ex = EZ[f.ex](q), ey = EZ[f.ey](q), u = 1 - ex, v = 1 - ey; this.ax.to(u * u * f.x0 + 2 * u * ex * f.cx + ex * ex * f.x1, true); this.ay.to(v * v * f.y0 + 2 * v * ey * f.cy + ey * ey * f.y1, true); this.as.to(f.s0 + (f.s1 - f.s0) * EZ[f.es](q), true); if (q >= 1) { this.flight = null; if (f.cb) { try { f.cb(); } catch (x) { } } } }
       if (this.orbit) { const ob = this.orbit; let a; if (ob.angle != null) a = ob.angle; else { this.oAng += sdt * TAU / (ob.period || 2.4); a = this.oAng; } this.ax.to(ob.cx + cos(a) * ob.r); this.ay.to(ob.cy + sin(a) * ob.r); }
       const ax = this.ax.step(sdt), ay = this.ay.step(sdt), S = max(4, this.as.step(sdt));
       let gx = 0, gy = 0;
       if (!SENS.face) { gx = sin(cl(SENS.gamma, -80, 80) * PI / 180); gy = sin(cl(SENS.beta, -80, 80) * PI / 180); }
-      const phys = o.motion && !red && this.mode !== 'read' && !this.orbit;
+      const phys = o.motion && !red && this.mode !== 'read' && !this.orbit && !this.flight;
       if (phys) {
         const lo = this.trk[0] - this.ax.t, hi = this.trk[1] - this.ax.t;
         if (this.drag != null) { const tg = cl(this.drag, lo - S * .3, hi + S * .3); this.vel = this.vel * .5 + (tg - this.off) / max(sdt, .001) * .5; this.off = tg; }

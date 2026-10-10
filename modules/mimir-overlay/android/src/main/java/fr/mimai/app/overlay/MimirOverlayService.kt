@@ -41,6 +41,9 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.PathInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -77,8 +80,9 @@ class MimirOverlayService : Service() {
   private var lastNotifAt = 0L
   private var lastAnswer: String? = null
 
-  /* racine de la fenêtre : la touche Retour la ferme */
-  private class PanelRoot(ctx: Context, val onBack: () -> Unit) : LinearLayout(ctx) {
+  /* racine de la fenêtre : un cadre transparent contenant la carte et la petite flèche vers l'étoile.
+     La touche Retour et un toucher en dehors de la bulle la ferment (comme dans la maquette). */
+  private class PanelRoot(ctx: Context, val onBack: () -> Unit) : FrameLayout(ctx) {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
       if (event.keyCode == KeyEvent.KEYCODE_BACK) {
         if (event.action == KeyEvent.ACTION_UP) onBack()
@@ -86,7 +90,18 @@ class MimirOverlayService : Service() {
       }
       return super.dispatchKeyEvent(event)
     }
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+      if (event.action == MotionEvent.ACTION_OUTSIDE) { onBack(); return true }
+      return super.onTouchEvent(event)
+    }
   }
+
+  /* ouverture choisie dans l'app : 2a Bond, 2b Éclosion, 2c Chute (par défaut) */
+  private fun openVariant(): String {
+    val v = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("open", "2c")
+    return if (v == "2a" || v == "2b") v else "2c"
+  }
+  private var shownVariant = "2c"
 
   override fun onCreate() {
     super.onCreate()
@@ -204,7 +219,7 @@ class MimirOverlayService : Service() {
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())   /* bas de la barre d'état : Mìmir se tient juste en dessous */
     val cy = if (cut != null) cut.exactCenterY() else sb / 2f
     val atCam = posPref() == "camera"
-    val b = MimirBar(this, w, d, cx, cy, top, atCam, { togglePanel() }, { togglePanel(true) })
+    val b = MimirBar(this, w, d, cx, cy, top, !atCam, { togglePanel() }, { togglePanel(true) })
     if (!b.show()) return false
     animBar = b
     barBottom = b.bottomPx()
@@ -331,7 +346,18 @@ class MimirOverlayService : Service() {
   /* un toucher sur la barre ouvre la bulle (un second toucher la ferme) ; mic = elle démarre directement l'écoute */
   private fun togglePanel(mic: Boolean = false) {
     if (panel != null) { if (mic) sinkAction?.invoke("mic", "") else closePanel(); return }
-    openPanel()
+    val b = animBar
+    val v = openVariant()
+    if (b != null) {
+      if (b.isOpen) return                     /* la séquence d'ouverture est déjà en cours */
+      /* l'étoile s'éveille et vole ; la bulle s'ouvre au moment prévu par la séquence */
+      b.open(v) { openPanel(v); if (panel == null) b.close(v) else afterOpen(mic) }   /* bulle refusée : l'étoile revient */
+    } else {
+      openPanel(v); afterOpen(mic)
+    }
+  }
+
+  private fun afterOpen(mic: Boolean) {
     if (panel == null) return
     if (sinkSend == null) {
       lastEvent = "bulle ouverte, mais le moteur de l'app n'est pas actif"
@@ -345,10 +371,10 @@ class MimirOverlayService : Service() {
 
   private fun styleChip(tv: TextView, on: Boolean) {
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (on) "#C67139" else "#2E2A26"))
+    bg.setColor(Color.parseColor(if (on) "#C67139" else "#EBDDC5"))
     bg.cornerRadius = dp(15f).toFloat()
     tv.background = bg
-    tv.setTextColor(if (on) Color.WHITE else Color.parseColor("#F5EAD8"))
+    tv.setTextColor(if (on) Color.WHITE else Color.parseColor("#201E1D"))
   }
 
   private fun chip(label: String, on: Boolean, click: () -> Unit): TextView {
@@ -365,7 +391,7 @@ class MimirOverlayService : Service() {
     val tv = TextView(this)
     tv.text = label
     tv.textSize = 12f
-    tv.setTextColor(Color.parseColor("#C67139"))
+    tv.setTextColor(Color.parseColor("#8C491A"))
     tv.setPadding(dp(6f), dp(6f), dp(10f), dp(6f))
     tv.setOnClickListener { click() }
     return tv
@@ -419,12 +445,12 @@ class MimirOverlayService : Service() {
     val maxW = (resources.displayMetrics.widthPixels * 0.94f * 0.78f).toInt()
     val tv = TextView(this)
     tv.text = text
-    tv.setTextColor(if (mine) Color.WHITE else Color.parseColor("#F5EAD8"))
+    tv.setTextColor(if (mine) Color.WHITE else Color.parseColor("#201E1D"))
     tv.textSize = 15f
     tv.maxWidth = maxW
     tv.setTextIsSelectable(true)
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (mine) "#C67139" else "#2E2A26"))
+    bg.setColor(Color.parseColor(if (mine) "#C67139" else "#EBDDC5"))
     bg.cornerRadius = dp(18f).toFloat()
     tv.background = bg
     tv.setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
@@ -468,7 +494,7 @@ class MimirOverlayService : Service() {
   private fun styleMic() {
     val m = micView ?: return
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (listening) "#D23F3F" else "#2E2A26"))
+    bg.setColor(Color.parseColor(if (listening) "#D23F3F" else "#EBDDC5"))
     bg.shape = GradientDrawable.OVAL
     m.background = bg
     m.text = if (listening) "■" else "🎤"
@@ -524,21 +550,47 @@ class MimirOverlayService : Service() {
     va.start()
   }
 
-  private fun openPanel() {
+  private fun openPanel(variant: String) {
     val w = wm ?: return
     val sw = resources.displayMetrics.widthPixels
     val sh = resources.displayMetrics.heightPixels
-    val pw = (sw * 0.94f).toInt()
-    val ph = (sh * (if (expanded) 0.78f else 0.52f)).toInt()
+    shownVariant = variant
+    val m = dp(10f)                                   /* marge transparente autour de la carte : la flèche y dépasse */
+    val star = animBar?.openStar(variant) ?: floatArrayOf(sw / 2f, anchorBottom().toFloat(), dp(40f).toFloat())
+    val sx = star[0]
+    val sy = star[1]
+    /* emplacement de la carte selon l'ouverture (maquette, tour 2) : à droite de l'étoile (2a), à sa gauche (2b), dessous (2c) */
+    var kind = variant
+    var cw: Int
+    var cl: Int
+    var ct: Int
+    var pivX: Float
+    var pivY: Float
+    if (kind == "2a") {
+      cw = Math.min(dp(286f), sw - (sx + dp(34f)).toInt() - dp(12f)); cl = (sx + dp(34f)).toInt(); ct = (sy - dp(36f)).toInt(); pivX = 0f; pivY = 0.32f
+      if (cw < dp(220f)) kind = "2c"
+    } else if (kind == "2b") {
+      cw = Math.min(dp(278f), (sx - dp(34f)).toInt() - dp(12f)); cl = (sx - dp(34f)).toInt() - cw; ct = (sy - dp(26f)).toInt(); pivX = 1f; pivY = 0.22f
+      if (cw < dp(220f)) kind = "2c"
+    } else { cw = 0; cl = 0; ct = 0; pivX = 0.5f; pivY = 0f }
+    if (kind == "2c") {
+      cw = Math.min(dp(330f), sw - dp(24f)); cl = Math.max(dp(12f), Math.min(sw - dp(12f) - cw, (sx - cw / 2f).toInt())); ct = (sy + dp(36f)).toInt()
+      pivX = Math.max(0.05f, Math.min(0.95f, (sx - cl) / cw)); pivY = 0f
+    }
+    var ch = Math.min((sh * (if (expanded) 0.78f else 0.5f)).toInt(), dp(400f))
+    if (ct + ch > sh - dp(24f)) ch = Math.max(dp(240f), sh - dp(24f) - ct)
+    val pw = cw + 2 * m
+    val ph = ch + 2 * m
 
-    val root = PanelRoot(this) { closePanel() }
+    val root = LinearLayout(this)
     root.orientation = LinearLayout.VERTICAL
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor("#181614"))
-    bg.cornerRadius = dp(26f).toFloat()
-    bg.setStroke(dp(1f), Color.parseColor("#3A342E"))
+    bg.setColor(Color.parseColor("#201E1D"))
+    bg.cornerRadius = dp(28f).toFloat()
+    bg.setStroke(dp(1f), Color.parseColor("#E2D5BC"))
     root.background = bg
-    root.setPadding(dp(12f), dp(10f), dp(12f), dp(10f))
+    root.setPadding(dp(14f), dp(12f), dp(14f), dp(12f))
+    root.elevation = dp(10f).toFloat()
 
     /* en-tête : étoile, titre + moteur de la discussion, nouvelle discussion, taille, fermer */
     val head = LinearLayout(this)
@@ -549,12 +601,12 @@ class MimirOverlayService : Service() {
     titles.orientation = LinearLayout.VERTICAL
     val title = TextView(this)
     title.text = "Mìmir"
-    title.setTextColor(Color.parseColor("#F5EAD8"))
+    title.setTextColor(Color.parseColor("#201E1D"))
     title.textSize = 16f
     title.typeface = Typeface.DEFAULT_BOLD
     titles.addView(title)
     val sub = TextView(this)
-    sub.setTextColor(Color.parseColor("#A39A8F"))
+    sub.setTextColor(Color.parseColor("#645C50"))
     sub.textSize = 11.5f
     sub.maxLines = 1
     sub.ellipsize = android.text.TextUtils.TruncateAt.END
@@ -569,7 +621,7 @@ class MimirOverlayService : Service() {
     head.addView(size)
     val close = TextView(this)
     close.text = "✕"
-    close.setTextColor(Color.parseColor("#F5EAD8"))
+    close.setTextColor(Color.parseColor("#201E1D"))
     close.textSize = 18f
     close.contentDescription = "Fermer la bulle"
     close.setPadding(dp(8f), dp(6f), dp(4f), dp(6f))
@@ -632,26 +684,46 @@ class MimirOverlayService : Service() {
     row.addView(photo, lpWrap(0, 0))
     val input = EditText(this)
     input.hint = "Écrire à Mìmir…"
-    input.setHintTextColor(Color.parseColor("#8A8178"))
-    input.setTextColor(Color.parseColor("#F5EAD8"))
+    input.setHintTextColor(Color.parseColor("#A19786"))
+    input.setTextColor(Color.parseColor("#201E1D"))
     input.textSize = 15f
     input.maxLines = 3
     input.imeOptions = EditorInfo.IME_ACTION_SEND
     input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
     val ibg = GradientDrawable()
-    ibg.setColor(Color.parseColor("#2E2A26"))
-    ibg.cornerRadius = dp(20f).toFloat()
+    ibg.setColor(Color.parseColor("#F9F4ED"))
+    ibg.setStroke(dp(1f), Color.parseColor("#DCD3C4"))
+    ibg.cornerRadius = dp(22f).toFloat()
     input.background = ibg
     input.setPadding(dp(14f), dp(8f), dp(14f), dp(8f))
     val il = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
     il.leftMargin = dp(6f)
     row.addView(input, il)
-    val mic = roundButton("🎤", "#2E2A26") { sinkAction?.invoke("mic", "") }
+    val mic = roundButton("🎤", "#EBDDC5") { sinkAction?.invoke("mic", "") }
     micView = mic
     row.addView(mic, lpWrap(dp(6f), 0).also { it.width = dp(40f); it.height = dp(40f) })
     val send = roundButton("↑", "#C67139") { sendFromPanel() }
     row.addView(send, lpWrap(dp(6f), 0).also { it.width = dp(40f); it.height = dp(40f) })
     root.addView(row, lpWrap(0, dp(8f)).also { it.width = LinearLayout.LayoutParams.MATCH_PARENT })
+
+    /* cadre transparent : carte + petite flèche (losange crème) qui montre l'étoile */
+    val frame = PanelRoot(this) { closePanel() }
+    val cardLp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+    cardLp.setMargins(m, m, m, m)
+    frame.addView(root, cardLp)
+    val tail = View(this)
+    val tbg = GradientDrawable()
+    tbg.setColor(Color.parseColor("#201E1D"))
+    tbg.cornerRadius = dp(3f).toFloat()
+    tail.background = tbg
+    tail.rotation = 45f
+    val tailLp = FrameLayout.LayoutParams(dp(16f), dp(16f))
+    if (kind == "2a") { tailLp.leftMargin = m - dp(8f) - dp(1f); tailLp.topMargin = m + dp(26f) - dp(8f) }
+    else if (kind == "2b") { tailLp.leftMargin = m + cw - dp(8f) + dp(1f); tailLp.topMargin = m + dp(22f) - dp(8f) }
+    else { tailLp.leftMargin = m + (sx - cl).toInt() - dp(8f); tailLp.topMargin = m - dp(8f) - dp(1f) }
+    frame.addView(tail, tailLp)
+    frame.pivotX = m + pivX * cw
+    frame.pivotY = m + pivY * ch
 
     val lt = LayoutTransition()
     lt.enableTransitionType(LayoutTransition.CHANGING)
@@ -663,7 +735,7 @@ class MimirOverlayService : Service() {
     lt2.disableTransitionType(LayoutTransition.APPEARING)      // les bulles s'animent elles-mêmes
     lt2.disableTransitionType(LayoutTransition.DISAPPEARING)
     list.layoutTransition = lt2
-    panel = root; panelList = list; panelScroll = scroll; panelInput = input; typing = null; waiting = false; regenView = null
+    panel = frame; panelList = list; panelScroll = scroll; panelInput = input; typing = null; waiting = false; regenView = null
     listening = false
     styleMic()
     input.setOnEditorActionListener { _, action, _ ->
@@ -673,17 +745,18 @@ class MimirOverlayService : Service() {
     val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE
     /* fenêtre prenant le focus (clavier) mais laissant passer les touches hors de la fenêtre */
-    val lp = WindowManager.LayoutParams(pw, ph, type, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT)
-    lp.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-    lp.y = anchorBottom() + dp(8f)
+    val lp = WindowManager.LayoutParams(pw, ph, type, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH, PixelFormat.TRANSLUCENT)
+    lp.gravity = Gravity.TOP or Gravity.START
+    lp.x = cl - m
+    lp.y = ct - m
     lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
     panelLp = lp
     try {
-      w.addView(root, lp)
-      root.pivotX = pw / 2f
-      root.pivotY = 0f
-      root.alpha = 0f; root.scaleX = 0.9f; root.scaleY = 0.9f; root.translationY = -dp(14f).toFloat()
-      root.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f).setDuration(300).setInterpolator(OvershootInterpolator(1.15f)).start()
+      w.addView(frame, lp)
+      /* ouverture de la maquette : la carte « sort » de l'étoile (échelle .12 → 1, léger rebond, 0,45 s) */
+      frame.alpha = 0f; frame.scaleX = 0.12f; frame.scaleY = 0.12f
+      frame.animate().scaleX(1f).scaleY(1f).setDuration(450).setInterpolator(PathInterpolator(0.3f, 1.35f, 0.5f, 1f)).start()
+      android.animation.ObjectAnimator.ofFloat(frame, View.ALPHA, 0f, 1f).setDuration(200).start()
       lastEvent = "bulle ouverte"
       sinkOpen?.invoke()   /* l'app répond avec le moteur, les modèles et l'historique (applyState) */
       input.postDelayed({
@@ -726,7 +799,7 @@ class MimirOverlayService : Service() {
             val id = m.optString("id")
             val row = TextView(this)
             row.text = (if (m.optString("name") == modelName) "✓ " else "   ") + m.optString("name")
-            row.setTextColor(Color.parseColor("#F5EAD8"))
+            row.setTextColor(Color.parseColor("#201E1D"))
             row.textSize = 13.5f
             row.setPadding(dp(8f), dp(7f), dp(8f), dp(7f))
             row.setOnClickListener { modelList?.visibility = View.GONE; sinkAction?.invoke("model", id) }
@@ -822,8 +895,9 @@ class MimirOverlayService : Service() {
     try { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(p.windowToken, 0) } catch (e: Exception) { /* ignoré */ }
     panel = null
     val manager = wm
-    p.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationY(-dp(10f).toFloat()).setDuration(170).setInterpolator(DecelerateInterpolator())
+    p.animate().alpha(0f).scaleX(0.12f).scaleY(0.12f).setDuration(220).setInterpolator(AccelerateInterpolator())
       .withEndAction { try { manager?.removeView(p) } catch (e: Exception) { /* déjà retirée */ } }.start()
+    animBar?.close(shownVariant)
     panelList = null; panelScroll = null; panelInput = null; typing = null; waiting = false
     modeViews = emptyMap(); modelView = null; modelList = null; optionsBox = null; subtitle = null; sizeView = null
     regenView = null; micView = null; photoBtn = null; thumbRow = null; pendingPhoto = null; listening = false; panelLp = null

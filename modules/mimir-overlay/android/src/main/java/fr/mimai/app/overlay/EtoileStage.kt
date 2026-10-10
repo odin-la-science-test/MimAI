@@ -69,6 +69,37 @@ class EtoileStage(private val d: EtoileData) {
   var ambient = true
   var onEnd: ((String) -> Unit)? = null
 
+  /* vol de l'étoile (maquette « tour 2 ») : trajet en courbe de Bézier entre la place actuelle et (x1, y1), avec une courbe
+     d'accélération par axe (ex, ey) et pour la taille (es) ; cb est appelé à l'arrivée. Positions en pixels, repère de la vue. */
+  private class Flight(
+    val x0: Float, val y0: Float, val s0: Float, val x1: Float, val y1: Float, val s1: Float,
+    val cx: Float, val cy: Float, val d: Float, val ex: String, val ey: String, val es: String, val t0: Float, val cb: (() -> Unit)?
+  )
+  private var flight: Flight? = null
+
+  fun fly(x1: Float, y1: Float, s1: Float, cx: Float?, cy: Float?, d: Float, ex: String, ey: String?, es: String, cb: (() -> Unit)?) {
+    flight = Flight(ax.v, ay.v, asz.v, x1, y1, if (s1 > 0f) s1 else asz.v, cx ?: ((ax.v + x1) / 2f), cy ?: ((ay.v + y1) / 2f), if (d > 0f) d else 0.6f, ex, ey ?: ex, es, t, cb)
+  }
+
+  /* place l'étoile tout de suite (sans ressort) */
+  fun place(x: Float, y: Float, size: Float) { flight = null; ax.to(x, true); ay.to(y, true); asz.to(size, true) }
+
+  private fun ez(name: String, q: Float): Float = when (name) {
+    "oc" -> 1f - Math.pow((1f - q).toDouble(), 3.0).toFloat()
+    "ob" -> { val c = 1.70158f; 1f + (c + 1f) * Math.pow((q - 1f).toDouble(), 3.0).toFloat() + c * Math.pow((q - 1f).toDouble(), 2.0).toFloat() }
+    "oe" -> if (q <= 0f) 0f else if (q >= 1f) 1f else (Math.pow(2.0, -10.0 * q) * Math.sin((q * 10.0 - 0.75) * 2.0 * Math.PI / 3.0)).toFloat() + 1f
+    "bo" -> {
+      val n = 7.5625f; val dd = 2.75f; var u = q
+      if (u < 1f / dd) n * u * u
+      else if (u < 2f / dd) { u -= 1.5f / dd; n * u * u + 0.75f }
+      else if (u < 2.5f / dd) { u -= 2.25f / dd; n * u * u + 0.9375f }
+      else { u -= 2.625f / dd; n * u * u + 0.984375f }
+    }
+    "ss" -> q * q * (3f - 2f * q)
+    "lin" -> q
+    else -> if (q < 0.5f) 4f * q * q * q else 1f - (Math.pow((-2f * q + 2f).toDouble(), 3.0).toFloat()) / 2f
+  }
+
   private val qA = d.labs[d.key("a")]
   private val qA3 = d.labs[d.key("a3")]
   private val qG5 = d.labs[d.key("g5")]
@@ -119,7 +150,7 @@ class EtoileStage(private val d: EtoileData) {
   }
 
   /* vrai tant que quelque chose bouge : la barre garde alors la cadence maximale */
-  fun busy(): Boolean = clip != null || (t - mT0) < 0.5f || ax.moving() || ay.moving() || asz.moving()
+  fun busy(): Boolean = clip != null || flight != null || (t - mT0) < 0.5f || ax.moving() || ay.moving() || asz.moving()
 
   private fun modeFrame(m: String, tt: Float, out: Fr) {
     out.reset(base, eyeOpen)
@@ -228,6 +259,16 @@ class EtoileStage(private val d: EtoileData) {
   fun tick(dtRaw: Float) {
     val dt = Math.min(0.05f, Math.max(0f, dtRaw))
     t += dt
+    val fl = flight
+    if (fl != null) {
+      val q = cl((t - fl.t0) / fl.d, 0f, 1f)
+      val ex = ez(fl.ex, q); val ey = ez(fl.ey, q)
+      val u = 1f - ex; val v = 1f - ey
+      ax.to(u * u * fl.x0 + 2f * u * ex * fl.cx + ex * ex * fl.x1, true)
+      ay.to(v * v * fl.y0 + 2f * v * ey * fl.cy + ey * ey * fl.y1, true)
+      asz.to(fl.s0 + (fl.s1 - fl.s0) * ez(fl.es, q), true)
+      if (q >= 1f) { flight = null; fl.cb?.invoke() }
+    }
     X = ax.step(dt); Y = ay.step(dt); S = Math.max(4f, asz.step(dt))
     modeFrame(mode, t, fr)
     if (t - mT0 < 0.45f) {

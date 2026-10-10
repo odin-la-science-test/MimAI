@@ -160,11 +160,11 @@ class MimirBar(
         stateT0 = System.currentTimeMillis()
         shiftDp = shiftFor(layout(s))
         when (s) {
-          "ecoute" -> { stage.setMode("listen"); stage.play("ecoute") }
-          "reflexion" -> { stage.setMode("think"); stage.play("reflechit") }
-          "notif" -> { stage.setMode("idle"); stage.play("message") }
-          "activite" -> { stage.setMode("idle") }
-          else -> stage.setMode("idle")
+          "ecoute" -> { stage.switchMode("listen"); stage.play("ecoute") }
+          "reflexion" -> { stage.switchMode("think"); stage.play("reflechit") }
+          "notif" -> { stage.switchMode("idle"); stage.play("message") }
+          "activite" -> { stage.switchMode("idle") }
+          else -> stage.switchMode("idle")
         }
       }
       applyTarget(false)

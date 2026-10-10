@@ -112,7 +112,7 @@ class EtoileStage(private val d: EtoileData) {
 
   fun playRandomTap() { val l = d.tap; if (l.isNotEmpty()) play(l[(Math.random() * l.size).toInt()]) }
 
-  fun setMode(m: String) {
+  fun switchMode(m: String) {
     if (m == mode) return
     if (m != "idle" && m != "listen" && m != "think" && m != "read" && m != "sleep") return
     mPrev = mode; mode = m; mT0 = t

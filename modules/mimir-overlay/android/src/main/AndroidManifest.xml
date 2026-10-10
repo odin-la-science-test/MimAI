@@ -17,6 +17,8 @@
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="assistant_bubble_overlay" />
     </service>
+    <!-- choix d'une photo depuis la bulle de discussion (transparente) -->
+    <activity android:name="fr.mimai.app.overlay.MimirPickActivity" android:exported="false" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <!-- réponse rapide écrite dans la notification -->
     <receiver android:name="fr.mimai.app.overlay.MimirReplyReceiver" android:exported="false" />
   </application>

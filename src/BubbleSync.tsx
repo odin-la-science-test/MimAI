@@ -12,7 +12,7 @@ export function BubbleSync() {
   const want = useRef(false);
   want.current = !!(data.settings.comp.on && data.settings.comp.overlay);
   const bar = useRef(false);
-  bar.current = !!data.settings.comp.bar;
+  bar.current = data.settings.comp.bar !== false;   /* la barre autour de la caméra est affichée par défaut */
 
   useEffect(() => {
     if (!overlayAvailable()) return;

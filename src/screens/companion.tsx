@@ -44,7 +44,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     lines.push('Module natif chargé : ' + (native ? 'oui' : 'non'));
     if (native) {
       const before = overlayStatus();
-      if (before?.permission) { await overlayShow(!!c.bar); await new Promise(r => setTimeout(r, 1500)); }
+      if (before?.permission) { await overlayShow(c.bar !== false); await new Promise(r => setTimeout(r, 1500)); }
       const s = overlayStatus();
       if (s) {
         lines.push('Android : API ' + s.sdk + ' · ' + s.fabricant + ' ' + s.modele);
@@ -60,7 +60,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       } else lines.push('État natif illisible.');
     }
     lines.push('Réglage MiMai : activée = ' + (c.on && c.overlay ? 'oui' : 'non'));
-    lines.push('Barre noire dessinée : ' + (c.bar ? 'oui' : 'non (puce seule)'));
+    lines.push('Barre noire dessinée : ' + (c.bar !== false ? 'oui' : 'non (puce seule)'));
     lines.push('Mode compatibilité : ' + (data.settings.compat ? 'oui' : 'non'));
     /* pourquoi Android a fermé MiMai ces dernières fois */
     const exits = appExits();
@@ -91,7 +91,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
   }, [navigation]);
   /* si activé et autorisé : la bulle est (re)affichée à l'ouverture de l'app */
   useEffect(() => {
-    if (native && c.on && c.overlay && granted) { void overlayShow(!!c.bar); }
+    if (native && c.on && c.overlay && granted) { void overlayShow(c.bar !== false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [native, c.on, c.overlay, granted, c.bar]);
 
@@ -103,7 +103,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     }
     const g = await overlayGranted();
     if (!g) { pendingEnable.current = true; overlayRequest(); toast('Autorisez « Afficher par-dessus » puis revenez ici : la barre s’affichera toute seule.'); setGranted(null); return; }
-    const ok = await overlayShow(!!c.bar);
+    const ok = await overlayShow(c.bar !== false);
     if (ok) {
       patchData(d => { d.settings.comp.on = true; d.settings.comp.overlay = true; });
       toast('Mìmir est présent dans toutes vos applis.');
@@ -164,10 +164,10 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
               <AvatarIc name="layers" size={36} tone="g" />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14.5 }}>Barre noire autour de la caméra</Text>
-                <Text style={{ fontSize: 12.5, color: C.n700 }}>Facultative : une barre dessinée en plus de la puce. Désactivée par défaut.</Text>
+                <Text style={{ fontSize: 12.5, color: C.n700 }}>Une barre dessinée autour de la caméra, en plus de la puce. Activée par défaut.</Text>
               </View>
-              <Toggle label="Afficher la barre noire autour de la caméra" on={!!c.bar}
-                onChange={() => { const v = !c.bar; patchData(d => { d.settings.comp.bar = v; }); void overlayShow(v); }} />
+              <Toggle label="Afficher la barre noire autour de la caméra" on={c.bar !== false}
+                onChange={() => { const v = c.bar === false; patchData(d => { d.settings.comp.bar = v; }); void overlayShow(v); }} />
             </Row>
           </>
         ) : null}

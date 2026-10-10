@@ -25,7 +25,7 @@ class MimirOverlayModule : Module() {
     Events("onChatSend", "onChatOpen", "onChatAction")
 
     OnCreate {
-      MimirOverlayService.sinkSend = { text -> sendEvent("onChatSend", mapOf("text" to text)) }
+      MimirOverlayService.sinkSend = { text, image -> sendEvent("onChatSend", mapOf("text" to text, "image" to (image ?: ""))) }
       MimirOverlayService.sinkOpen = { sendEvent("onChatOpen", mapOf<String, Any?>()) }
       MimirOverlayService.sinkAction = { type, arg -> sendEvent("onChatAction", mapOf("type" to type, "arg" to arg)) }
     }
@@ -34,6 +34,17 @@ class MimirOverlayModule : Module() {
       MimirOverlayService.sinkSend = null
       MimirOverlayService.sinkOpen = null
       MimirOverlayService.sinkAction = null
+    }
+
+    /* texte dicté, affiché dans la zone de saisie de la bulle ; état du micro */
+    Function("chatInput") { text: String ->
+      MimirOverlayService.instance?.setInput(text)
+      true
+    }
+
+    Function("chatMic") { on: Boolean ->
+      MimirOverlayService.instance?.setMic(on)
+      true
     }
 
     /* modèle, mode et conversation à afficher dans la fenêtre flottante (JSON) */

@@ -44,7 +44,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
     lines.push('Module natif chargé : ' + (native ? 'oui' : 'non'));
     if (native) {
       const before = overlayStatus();
-      if (before?.permission) { await overlayShow(c.bar !== false); await new Promise(r => setTimeout(r, 1500)); }
+      if (before?.permission) { await overlayShow(c.bar !== false, c.pos === 'camera' ? 'camera' : 'below'); await new Promise(r => setTimeout(r, 1500)); }
       const s = overlayStatus();
       if (s) {
         lines.push('Android : API ' + s.sdk + ' · ' + s.fabricant + ' ' + s.modele);
@@ -94,7 +94,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
   useEffect(() => {
     if (native && c.on && c.overlay && granted) { void overlayShow(c.bar !== false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [native, c.on, c.overlay, granted, c.bar]);
+  }, [native, c.on, c.overlay, granted, c.bar, c.pos]);
 
   const enableOverlay = async () => {
     if (!native) {
@@ -161,6 +161,21 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
               </View>
             </Row>
             <Btn kind="secondary" title="Régler la puce (notifications)" height={44} fontSize={13.5} style={{ marginTop: 6 }} onPress={() => overlayNotifSettings(true)} />
+            <View style={{ paddingHorizontal: 4, paddingVertical: 8, gap: 8 }}>
+              <Text style={{ fontSize: 14.5, fontWeight: '700' }}>Où se tient Mìmir ?</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {([['below', 'Sous la barre d’état (touchable partout)'], ['camera', 'À côté de la caméra (décor)']] as const).map(([id, label]) => {
+                  const on = (c.pos === 'camera' ? 'camera' : 'below') === id;
+                  return (
+                    <TouchableOpacity key={id} onPress={() => { patchData(d => { d.settings.comp.pos = id; }); void overlayShow(c.bar !== false, id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                      style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: on ? C.a200 : C.n100, justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 13, fontWeight: on ? '700' : '500', color: on ? C.a800 : C.n800 }}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>Sur certains téléphones (Samsung notamment), Android garde les touchers de la barre d’état : Mìmir y est visible mais on ne peut pas le toucher. « Sous la barre d’état » marche partout.</Text>
+            </View>
             <Row>
               <AvatarIc name="layers" size={36} tone="g" />
               <View style={{ flex: 1 }}>

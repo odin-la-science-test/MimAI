@@ -10,7 +10,7 @@
 import { AppState } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { trailNative, readTrailNative, clearTrailNative, appExits } from './overlay';
+import { trailNative, readTrailNative, clearTrailNative, appExits, overlayStatus } from './overlay';
 import type { AppData } from './db';
 
 const ring: string[] = [];
@@ -70,6 +70,8 @@ export function buildReport(data: AppData | null, extra: string[] = []): string 
   L.push('Version : ' + (cfg?.version ?? '?') + ' · code ' + ((cfg?.android as { versionCode?: number } | undefined)?.versionCode ?? '?'));
   L.push('Appareil : ' + (Device.manufacturer ?? '?') + ' ' + (Device.modelName ?? '?') + ' · Android ' + (Device.osVersion ?? '?') + ' · mémoire totale ' + (Device.totalMemory ? Math.round(Device.totalMemory / 1024 ** 2) + ' Mo' : '?'));
   extra.forEach(x => L.push(x));
+  const o = overlayStatus();
+  if (o) L.push('Mìmir près de la caméra : permission ' + (o.permission ? 'oui' : 'NON') + ' · service ' + (o.serviceActif ? 'actif' : 'arrêté') + ' · étoile ' + (o.etoile ?? '?') + ' · caméra ' + o.encoche + ' · notifications ' + (o.notifications === undefined ? '?' : o.notifications ? 'oui' : 'NON') + ' · dernier événement : ' + o.dernierEvenement);
   if (data) {
     const s = data.settings;
     L.push('Modèle actif : ' + s.activeModel + ' · installés : ' + (s.installed.join(', ') || 'aucun'));

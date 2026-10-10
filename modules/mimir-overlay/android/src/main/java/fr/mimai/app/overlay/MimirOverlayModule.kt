@@ -104,19 +104,8 @@ class MimirOverlayModule : Module() {
        passait juste avant un plantage natif ; aucun texte de conversation n'y est écrit */
     Function("trail") { text: String ->
       val ctx = appContext.reactContext ?: return@Function false
-      try {
-        synchronized(TRAIL_LOCK) {
-          val f = java.io.File(ctx.filesDir, "mimai-trail.txt")
-          if (f.exists() && f.length() > 60000) f.writeText(f.readText().takeLast(30000))
-          val ts = java.text.SimpleDateFormat("dd/MM HH:mm:ss.SSS", java.util.Locale.FRANCE).format(java.util.Date())
-          val mb = android.os.Debug.getNativeHeapAllocatedSize() / (1024 * 1024)
-          java.io.FileOutputStream(f, true).use { os ->
-            os.write((ts + " [natif " + mb + " Mo] " + text + "\n").toByteArray())
-            os.fd.sync()
-          }
-        }
-        true
-      } catch (e: Exception) { false }
+      Trail.add(ctx, text)
+      true
     }
 
     Function("readTrail") {
@@ -187,6 +176,14 @@ class MimirOverlayModule : Module() {
     }
 
     /* barre noire dessinée autour de la caméra : facultative */
+    /* position de Mìmir : "below" (sous la barre d'état, touchable partout) ou "camera" (à côté de la caméra) */
+    Function("setPos") { pos: String ->
+      val ctx = appContext.reactContext ?: return@Function false
+      ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putString("pos", if (pos == "camera") "camera" else "below").apply()
+      MimirOverlayService.instance?.applyBarPref()
+      true
+    }
+
     Function("setBar") { on: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()

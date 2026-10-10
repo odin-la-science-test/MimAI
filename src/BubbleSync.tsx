@@ -12,18 +12,20 @@ export function BubbleSync() {
   const want = useRef(false);
   want.current = !!(data.settings.comp.on && data.settings.comp.overlay);
   const bar = useRef(false);
-  bar.current = data.settings.comp.bar !== false;   /* la barre autour de la caméra est affichée par défaut */
+  bar.current = data.settings.comp.bar !== false;
+  const pos = useRef<'below' | 'camera'>('below');
+  pos.current = data.settings.comp.pos === 'camera' ? 'camera' : 'below';   /* la barre autour de la caméra est affichée par défaut */
 
   useEffect(() => {
     if (!overlayAvailable()) return;
     const sync = async () => {
       if (!want.current) return;
-      if (await overlayGranted()) await overlayShow(bar.current);
+      if (await overlayGranted()) await overlayShow(bar.current, pos.current);
     };
     if (ready) void sync();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') void sync(); });
     return () => sub.remove();
-  }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar]);
+  }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar, data.settings.comp.pos]);
 
   return null;
 }

@@ -30,7 +30,9 @@ class MimirBar(
   private val wm: WindowManager,
   private val data: EtoileData,
   private val camXpx: Float,
+  private val camYpx: Float,
   private val topPx: Float,
+  private val atCamera: Boolean,
   private val onTap: () -> Unit,
   private val onLong: () -> Unit
 ) {
@@ -51,11 +53,13 @@ class MimirBar(
   private var lastNs = 0L
   private var skip = false
 
-  /* position de l'étoile : sous la caméra, JUSTE EN DESSOUS de la barre d'état. Les fenêtres « par-dessus les autres applis »
+  /* position de l'étoile. Par défaut : sous la caméra, JUSTE EN DESSOUS de la barre d'état (réglage « sous la barre »).
+     Option « à côté de la caméra » : dans la barre d'état, à gauche de la caméra — plus joli, mais le système peut y garder les touchers.
+     Ci-dessous, la raison du choix par défaut : Les fenêtres « par-dessus les autres applis »
      sont placées sous la barre d'état du système, qui garde les touchers de sa zone (Samsung notamment) : une étoile placée
      dans la barre d'état s'afficherait mais ne pourrait pas être touchée. */
-  private val starX: Float get() = Math.max(34f * dp, Math.min(screenW - 34f * dp, camXpx))
-  private val starY: Float get() = topPx + 18f * dp
+  private val starX: Float get() = if (atCamera) Math.max(26f * dp, camXpx - 34f * dp) else Math.max(34f * dp, Math.min(screenW - 34f * dp, camXpx))
+  private val starY: Float get() = if (atCamera) Math.max(16f * dp, camYpx) else topPx + 18f * dp
   private val starSize: Float get() = 26f * dp
 
   private val screenReceiver = object : BroadcastReceiver() {
@@ -83,17 +87,19 @@ class MimirBar(
       fxv = fx
 
       // fenêtre tactile : un carré autour de l'étoile, rien d'autre
-      val side = (52f * dp).toInt()
+      val tw = (56f * dp).toInt()
+      val th = (72f * dp).toInt()      // descend sous l'étoile : une partie est sûrement hors de la zone de la barre d'état
       val tv = TouchView(ctx)
-      val tlp = WindowManager.LayoutParams(side, side, type, common, PixelFormat.TRANSLUCENT)
+      val tlp = WindowManager.LayoutParams(tw, th, type, common, PixelFormat.TRANSLUCENT)
       tlp.gravity = Gravity.TOP or Gravity.START
-      tlp.x = Math.max(0, (starX - side / 2f).toInt())
-      tlp.y = Math.max(0, (starY - side / 2f).toInt())
+      tlp.x = Math.max(0, (starX - tw / 2f).toInt())
+      tlp.y = Math.max(0, (starY - 26f * dp).toInt())
       cutoutAlways(tlp)
       touchV = tv
 
       wm.addView(fx, flp)
       wm.addView(tv, tlp)    // ajoutée en dernier : elle reçoit les touchers
+      MimirOverlayService.lastEvent = "Mìmir animé affiché : étoile en (" + starX.toInt() + "," + starY.toInt() + "), zone tactile " + tw + "x" + th + " en (" + tlp.x + "," + tlp.y + ")"
       stage.ambient = true
       stage.play("coucou")
       try { ctx.registerReceiver(screenReceiver, IntentFilter().also { it.addAction(Intent.ACTION_SCREEN_OFF); it.addAction(Intent.ACTION_SCREEN_ON) }) } catch (e: Exception) { /* facultatif */ }
@@ -168,12 +174,13 @@ class MimirBar(
     if (longState && !stage.busy() && skip) { Choreographer.getInstance().postFrameCallback(cb); return }
     val dt = if (lastNs == 0L) 0.016f else ((ns - lastNs) / 1_000_000_000f)
     lastNs = ns
-    stage.tick(dt)
+    var left = Math.min(dt, 0.5f)
+    while (left > 0.0001f) { val step = Math.min(0.05f, left); stage.tick(step); left -= step }
     fxv?.invalidate()
     if (!screenOn) { running = false; return }
     val busy = stage.busy() || state != "repos" || (System.currentTimeMillis() - stateT0) < 800
     if (busy) Choreographer.getInstance().postFrameCallback(cb)
-    else ui.postDelayed({ if (running) { lastNs = 0L; Choreographer.getInstance().postFrameCallback(cb) } }, 110)
+    else ui.postDelayed({ if (running) Choreographer.getInstance().postFrameCallback(cb) }, 110)
   }
 
   /* ───────── vues ───────── */
@@ -211,6 +218,7 @@ class MimirBar(
     override fun onTouchEvent(ev: MotionEvent): Boolean {
       when (ev.actionMasked) {
         MotionEvent.ACTION_DOWN -> {
+          MimirOverlayService.lastEvent = "toucher reçu sur Mìmir (" + ev.x.toInt() + "," + ev.y.toInt() + ")"
           longFired = false
           stage.playRandomTap(); kick()
           ui.postDelayed(longRun, 500)
@@ -218,7 +226,7 @@ class MimirBar(
         }
         MotionEvent.ACTION_UP -> {
           ui.removeCallbacks(longRun)
-          if (!longFired) onTap()
+          if (!longFired) { MimirOverlayService.lastEvent = "toucher court : ouverture de la bulle"; onTap() }
           return true
         }
         MotionEvent.ACTION_CANCEL -> { ui.removeCallbacks(longRun); return true }

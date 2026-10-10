@@ -91,6 +91,7 @@ class MimirOverlayService : Service() {
   override fun onCreate() {
     super.onCreate()
     instance = this
+    appCtx = applicationContext
     wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
   }
 
@@ -193,7 +194,9 @@ class MimirOverlayService : Service() {
     val sb = if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * resources.displayMetrics.density).toInt()
     val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())   /* bas de la barre d'état : Mìmir se tient juste en dessous */
-    val b = MimirBar(this, w, d, cx, top, { togglePanel() }, { togglePanel(true) })
+    val cy = if (cut != null) cut.exactCenterY() else sb / 2f
+    val atCam = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("pos", "below") == "camera"
+    val b = MimirBar(this, w, d, cx, cy, top, atCam, { togglePanel() }, { togglePanel(true) })
     if (!b.show()) return false
     animBar = b
     barBottom = b.bottomPx()
@@ -219,8 +222,10 @@ class MimirOverlayService : Service() {
     val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())
     val size = (44 * dp).toInt()
-    val x = Math.max(0, (cx - size / 2f).toInt())
-    val y = Math.max(0, (top + 18 * dp - size / 2f).toInt())
+    val atCam = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getString("pos", "below") == "camera"
+    val cy = if (cut != null) cut.exactCenterY() else sb / 2f
+    val x = Math.max(0, (if (atCam) Math.max(26 * dp, cx - 34 * dp) - size / 2f else cx - size / 2f).toInt())
+    val y = Math.max(0, ((if (atCam) cy else top + 18 * dp) - size / 2f).toInt())
     barBottom = y + size
 
     val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -918,7 +923,10 @@ class MimirOverlayService : Service() {
   companion object {
     const val TAG = "MiMaiOverlay"
     /* état lisible par l'écran de diagnostic de l'app */
+    @Volatile var appCtx: Context? = null
+    /* chaque événement de la barre est aussi écrit dans le fil d'Ariane (lisible dans Menu → Rapport de plantage) */
     @Volatile var lastEvent: String = "le service n'a jamais été démarré"
+      set(v) { field = v; appCtx?.let { Trail.add(it, "[barre] " + v) } }
     @Volatile var running: Boolean = false
     @Volatile var instance: MimirOverlayService? = null
     /* animations de l'étoile, chargées une seule fois */

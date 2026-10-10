@@ -49,6 +49,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       if (s) {
         lines.push('Android : API ' + s.sdk + ' · ' + s.fabricant + ' ' + s.modele);
         lines.push('Permission « Afficher par-dessus » : ' + (s.permission ? 'accordée' : 'NON accordée'));
+        if (s.etoile) lines.push('Étoile animée (156 animations) : ' + s.etoile);
         lines.push('Service de la barre actif : ' + (s.serviceActif ? 'oui' : 'non'));
         lines.push('Notifications autorisées : ' + (s.notifications === undefined ? '?' : s.notifications ? 'oui' : 'NON (la puce ne peut pas s\u2019afficher)'));
         lines.push('Puce dans la barre d\u2019état (mises à jour en direct, Android 16) : ' + (s.puceAutorisee === undefined ? '?' : s.puceAutorisee ? 'autorisée' : 'non autorisée ou non disponible'));

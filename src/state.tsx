@@ -14,6 +14,7 @@ import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompa
 import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
+import { barThink, barDone, barProgress } from './services/bar';
 import { appExits } from './services/overlay';
 import { modelForMode, isVisionModel } from './services/modes';
 import { extractMemory } from './services/memory';
@@ -209,6 +210,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const mode = (existing && existing.msgs.length > 0 && existing.mode) ? existing.mode : data.settings.mode;
     const wanted = (existing && existing.msgs.length > 0 && existing.model && data.settings.installed.includes(existing.model)) ? existing.model : null;
     const modelId = wanted ?? modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, mode);
+    barThink(true);
     trail('question reçue : ' + text.length + ' car., mode ' + mode + ', modèle ' + modelId + (image ? ', avec photo' : ''));
 
     const convId = e.chatId || uid('c');
@@ -287,6 +289,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (runToken.current === token) {
         set(s => ({ ...s, busy: false, thinking: false, stream: null, streamSource: null }));
         toast('Mìmir n’a pas pu répondre. Réessayez.');
+        barDone('confus');
         onErr('Génération : ' + (err instanceof Error ? err.message : String(err)));
         recordJsError('génération', err);
       }
@@ -306,6 +309,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     set(s => ({ ...s, busy: false, thinking: false, stream: null, streamSource: null }));
     trail('réponse enregistrée (' + answer.length + ' car.)');
+    barDone('eureka');
   };
 
   const newChat = () => set(s => ({ ...s, chatId: null, draft: '', stream: null, thinking: false, busy: false }));
@@ -373,6 +377,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     set(s => ({ ...s, dl: { id, phase: 'download', pct: 0 } }));
     try {
       const manifest = await installModel(id, (phase, pct, info) => {
+        barProgress(phase === 'download' ? 'Téléchargement' : 'Vérification', phase === 'download' ? pct / 100 : phase === 'sha' ? pct / 100 : 1);
         set(s => ({ ...s, dl: { id, phase, pct, info } }));
         onPhase(phase, pct, info);
       }, { wifiOnly: data.settings.wifiOnly });
@@ -384,7 +389,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } else d.settings.activeModel = id;
       });
       toast(MODELS[id].name + ' installé et vérifié');
+      barDone('termine');
       return manifest;
+    } catch (err) {
+      barDone('erreur');
+      throw err;
     } finally {
       set(s => ({ ...s, dl: null }));
       NET.block(); /* ceinture et bretelles : retour au mode bloqué quoi qu'il arrive */
@@ -407,7 +416,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   /* ─────────── entraînement ─────────── */
   const runTraining = async (goal: string, opts: { useExamples: boolean; useConvs: boolean; useDocs: boolean }, onTick: (p: number, step: number) => void) => {
-    const result = await trainAndEvaluate(data, goal, opts, onTick);
+    const result = await trainAndEvaluate(data, goal, opts, (p, ph) => { barProgress('Entraînement', p / 100); onTick(p, ph); });
+    barDone('termine');
     patchData(d => { applyOutcome(d, result); });
   };
   const snapshot = async (label: string, onTick: (pct: number) => void): Promise<boolean> => {

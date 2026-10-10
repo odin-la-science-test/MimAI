@@ -16,6 +16,7 @@ import { IconBtn, Tag, Composer, Ico, MenuSheet, useTopPad } from '../ui';
 import { FeedbackBar, CorrectionDialog } from '../feedback';
 import { listen, voiceAvailable, describeVoiceFailure } from '../services/voice';
 import { speak, stopSpeaking, speakAvailable } from '../services/speak';
+import { barListen } from '../services/bar';
 import type { Listening } from '../services/voice';
 import type { Msg } from '../services/db';
 
@@ -82,10 +83,11 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
     if (e.busy) return;
     if (!voiceAvailable()) { toast(describeVoiceFailure('unavailable')); return; }
     setListening(true);
+    barListen(true);
     session.current = await listen({
       onPartial: t => set(s => ({ ...s, draft: t })),
       onFinal: t => { if (t) { voiceTurn.current = true; stopSpeaking(); set(s => ({ ...s, draft: '' })); void sendMessage(t); } },
-      onEnd: () => { setListening(false); session.current = null; },
+      onEnd: () => { setListening(false); session.current = null; if (!e.busy) barListen(false); },
       onFail: r => { setListening(false); set(s => ({ ...s, draft: '' })); toast(describeVoiceFailure(r)); },
     });
   };

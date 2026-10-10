@@ -36,6 +36,17 @@ class MimirOverlayModule : Module() {
       MimirOverlayService.sinkAction = null
     }
 
+    /* barre animée : état (repos, notif, ecoute, reflexion, activite) et animation de l'étoile à jouer */
+    Function("barState") { state: String, title: String, body: String, label: String, prog: Double ->
+      MimirOverlayService.instance?.barState(state, title, body, label, prog.toFloat())
+      true
+    }
+
+    Function("barPlay") { id: String ->
+      MimirOverlayService.instance?.barPlay(id)
+      true
+    }
+
     /* texte dicté, affiché dans la zone de saisie de la bulle ; état du micro */
     Function("chatInput") { text: String ->
       MimirOverlayService.instance?.setInput(text)
@@ -169,6 +180,7 @@ class MimirOverlayModule : Module() {
         "serviceActif" to MimirOverlayService.running,
         "dernierEvenement" to MimirOverlayService.lastEvent,
         "encoche" to (cut?.toShortString() ?: "non détectée"),
+        "etoile" to (if (MimirOverlayService.etoile != null) "chargée (" + MimirOverlayService.etoile!!.anims.size + " animations)" else if (MimirOverlayService.etoileError.isNotEmpty()) "ERREUR " + MimirOverlayService.etoileError else "non chargée"),
         "notifications" to (ctx != null && notifEnabled(ctx)),
         "puceAutorisee" to (ctx != null && promotedAllowed(ctx))
       )

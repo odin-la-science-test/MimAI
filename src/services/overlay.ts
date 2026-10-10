@@ -22,6 +22,8 @@ type NativeOverlay = {
   chatText?(text: string, done: boolean): unknown;
   lastExit?(): ExitInfo[];
   chatState?(json: string): boolean;
+  barState?(state: string, title: string, body: string, label: string, prog: number): boolean;
+  barPlay?(id: string): boolean;
   chatInput?(text: string): boolean;
   chatMic?(on: boolean): boolean;
   setBar?(on: boolean): boolean;
@@ -36,7 +38,7 @@ type NativeOverlay = {
 export interface OverlayStatus {
   sdk: number; fabricant: string; modele: string; permission: boolean;
   serviceActif: boolean; dernierEvenement: string; encoche: string;
-  notifications?: boolean; puceAutorisee?: boolean;
+  notifications?: boolean; puceAutorisee?: boolean; etoile?: string;
 }
 
 let M: NativeOverlay | null = null;
@@ -76,6 +78,11 @@ export function overlayChatOn(onOpen: () => void, onSend: (text: string, image?:
     return () => { try { a?.remove(); b?.remove(); c?.remove(); } catch { /* déjà retiré */ } };
   } catch { return () => undefined; }
 }
+/* barre animée : état (repos, notif, ecoute, reflexion, activite) et animation de l'étoile (156 : voir assets/design) */
+export function overlayBarState(state: string, o: { title?: string; body?: string; label?: string; prog?: number } = {}): void {
+  try { M?.barState?.(state, o.title ?? '', o.body ?? '', o.label ?? '', o.prog ?? 0); } catch { /* indisponible */ }
+}
+export function overlayBarPlay(id: string): void { try { M?.barPlay?.(id); } catch { /* indisponible */ } }
 export function overlayChatState(json: string): void { try { M?.chatState?.(json); } catch { /* indisponible */ } }
 export function overlayChatInput(text: string): void { try { M?.chatInput?.(text); } catch { /* indisponible */ } }
 export function overlayChatMic(on: boolean): void { try { M?.chatMic?.(on); } catch { /* indisponible */ } }

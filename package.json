@@ -25,6 +25,7 @@
     "bench:motion": "node scripts/motion-bench.mjs",
     "catalog:build": "node scripts/build-catalog.mjs",
     "vision:build": "node scripts/build-vision.mjs",
+    "etoile:bake": "node scripts/bake-etoile.mjs",
     "catalog:check": "node --test scripts/catalog.test.mjs",
     "test:advisor": "node --test scripts/advisor.test.cjs",
     "test:speak": "node --test scripts/speak.test.cjs",
@@ -33,7 +34,8 @@
     "test:gameai": "node --test scripts/gameAi.test.cjs",
     "test:installed": "node --test scripts/installed.test.cjs",
     "test:speed": "node --test scripts/speed.test.cjs",
-    "test:modes": "node --test scripts/modes.test.cjs"
+    "test:modes": "node --test scripts/modes.test.cjs",
+    "test:etoile": "node --test scripts/etoile.test.cjs"
   },
   "dependencies": {
     "@react-navigation/native": "^7.0.14",

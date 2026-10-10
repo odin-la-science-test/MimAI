@@ -16,6 +16,7 @@ import { speak, stopSpeaking, speakAvailable } from './services/speak';
 import { listen, voiceAvailable, describeVoiceFailure } from './services/voice';
 import type { Listening } from './services/voice';
 import { trail } from './services/crashlog';
+import { barThink, barListen, barDone } from './services/bar';
 import { overlayAvailable, overlayChatOn, overlayChatText, overlayChatState, overlayChatInput, overlayChatMic } from './services/overlay';
 
 type Mode = 'rapide' | 'reflexion' | 'vision' | 'outils';
@@ -70,6 +71,7 @@ export function OverlayChat() {
     if (isNew || !convMode.current) { convMode.current = curMode(); convModel.current = curModel(); pushState(false); }   /* premier message : on fige le moteur */
     const mode = curMode();
     const photo = mode === 'vision' && image ? image : null;
+    barThink(true);
     trail('bulle : question ' + text.length + ' car., mode ' + mode + (photo ? ', avec photo' : '') + (regen ? ' (régénération)' : ''));
     const prev = regen ? hist.current.slice(0, -1) : hist.current;   /* en régénération, la question est déjà la dernière */
     if (!regen) {
@@ -92,9 +94,11 @@ export function OverlayChat() {
       hist.current = [...hist.current, am];
       patchRef.current(x => { const c = x.convs.find(v => v.id === id); if (c) c.msgs.push(am); });
       overlayChatText(info.text, true);
+      barDone('eureka');
       if ((voiceTurn.current || dataRef.current.settings.comp.speak) && speakAvailable()) speak(info.text);
     } catch {
       overlayChatText('Mìmir n’a pas pu répondre. Réessayez.', true);
+      barDone('confus');
     }
     voiceTurn.current = false;
     busy.current = false;
@@ -106,10 +110,11 @@ export function OverlayChat() {
     if (busy.current) return;
     if (!voiceAvailable()) { overlayChatText(describeVoiceFailure('unavailable'), true); return; }
     overlayChatMic(true);
+    barListen(true);
     session.current = await listen({
       onPartial: t => overlayChatInput(t),
       onFinal: t => { if (t) { overlayChatInput(''); voiceTurn.current = true; stopSpeaking(); void answer(t); } },
-      onEnd: () => { session.current = null; overlayChatMic(false); },
+      onEnd: () => { session.current = null; overlayChatMic(false); if (!busy.current) barListen(false); },
       onFail: r => {
         session.current = null; overlayChatMic(false);
         overlayChatText(describeVoiceFailure(r) + ' Sur certains téléphones, le micro ne marche que si MiMai est ouvert : touchez « Ouvrir MiMai » pour dicter.', true);

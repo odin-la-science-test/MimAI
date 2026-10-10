@@ -23,7 +23,11 @@ import android.graphics.RectF
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Build
+import android.animation.LayoutTransition
+import android.animation.ValueAnimator
 import android.os.Handler
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
@@ -51,6 +55,8 @@ class MimirOverlayService : Service() {
 
   private var wm: WindowManager? = null
   private var bar: ImageView? = null
+  /* barre animée (pilule + étoile vivante) ; la barre dessinée ci-dessous ne sert que de repli */
+  private var animBar: MimirBar? = null
   private val ui = Handler(Looper.getMainLooper())
 
   /* fenêtre de discussion flottante (ouverte par un toucher sur la barre) */
@@ -62,6 +68,7 @@ class MimirOverlayService : Service() {
   private var waiting = false
   private var barBottom = 0
   private var curMode = "rapide"
+  private var replyStarted = false
   /* le mode et le modèle d'une discussion sont fixés dès son premier message */
   private var modeLocked = false
 
@@ -147,7 +154,7 @@ class MimirOverlayService : Service() {
 
   /* bas de la zone caméra / barre d'état : la fenêtre de discussion s'ouvre juste en dessous */
   private fun anchorBottom(): Int {
-    if (barBottom > 0 && bar != null) return barBottom
+    if (barBottom > 0 && (bar != null || animBar != null)) return barBottom
     val cut = cutoutRect(this)
     if (cut != null) return cut.bottom
     val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
@@ -162,8 +169,42 @@ class MimirOverlayService : Service() {
       Log.i(TAG, lastEvent)
       return
     }
-    addBar()
+    if (!addAnimatedBar()) addBar()
   }
+
+  /* barre animée : demande les données de l'étoile (1 Mo, lues hors du fil d'affichage la première fois) */
+  private fun addAnimatedBar(): Boolean {
+    val d = etoile
+    if (d == null) {
+      if (!etoileLoading) {
+        etoileLoading = true
+        Thread {
+          try { etoile = EtoileData.load(applicationContext); etoileError = "" }
+          catch (e: Exception) { etoileError = e.javaClass.simpleName + " " + (e.message ?: ""); Log.e(TAG, "animations de l'étoile illisibles", e) }
+          etoileLoading = false
+          ui.post { if (running && etoile != null && bar != null) refreshBar() }   /* remplace la barre de repli */
+        }.start()
+      }
+      return false
+    }
+    val w = wm ?: return false
+    val cut = cameraCutout()
+    val sbId = resources.getIdentifier("status_bar_height", "dimen", "android")
+    val sb = if (sbId > 0) resources.getDimensionPixelSize(sbId) else (24 * resources.displayMetrics.density).toInt()
+    val cx = if (cut != null) cut.exactCenterX() else resources.displayMetrics.widthPixels / 2f
+    val cy = if (cut != null) cut.exactCenterY() else sb / 2f
+    val b = MimirBar(this, w, d, cx, cy, { togglePanel() }, { togglePanel(true) })
+    if (!b.show()) return false
+    animBar = b
+    barBottom = b.bottomPx()
+    lastEvent = "barre animée affichée (caméra " + (if (cut != null) cut.toShortString() else "non détectée") + ")"
+    Log.i(TAG, lastEvent)
+    return true
+  }
+
+  /* état de la barre demandé par l'app : repos, notif, ecoute, reflexion, activite */
+  fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, title, body, label, prog) }
+  fun barPlay(id: String) { animBar?.play(id) }
 
   /* rectangle de la caméra (encoche / trou) en pixels écran, ou null si inconnu ou absent */
   private fun cameraCutout(): android.graphics.Rect? = cutoutRect(this)
@@ -398,7 +439,10 @@ class MimirOverlayService : Service() {
     tv.setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
     val lp = lpWrap(0, dp(6f))
     lp.gravity = if (mine) Gravity.END else Gravity.START
+    tv.alpha = 0f
+    tv.translationY = dp(10f).toFloat()
     panelList?.addView(tv, lp)
+    tv.animate().alpha(1f).translationY(0f).setDuration(240).setInterpolator(DecelerateInterpolator()).start()
     scrollDown()
     return tv
   }
@@ -476,9 +520,17 @@ class MimirOverlayService : Service() {
     expanded = !expanded
     val p = panel ?: return
     val lp = panelLp ?: return
-    lp.height = (resources.displayMetrics.heightPixels * (if (expanded) 0.78f else 0.52f)).toInt()
+    val from = lp.height
+    val to = (resources.displayMetrics.heightPixels * (if (expanded) 0.78f else 0.52f)).toInt()
     sizeView?.text = if (expanded) "Réduire" else "Agrandir"
-    try { wm?.updateViewLayout(p, lp) } catch (e: Exception) { Log.w(TAG, "taille impossible", e) }
+    val va = ValueAnimator.ofInt(from, to)
+    va.duration = 260
+    va.interpolator = DecelerateInterpolator()
+    va.addUpdateListener { a ->
+      lp.height = a.animatedValue as Int
+      try { wm?.updateViewLayout(p, lp) } catch (e: Exception) { /* fenêtre fermée pendant l'animation */ }
+    }
+    va.start()
   }
 
   private fun openPanel() {
@@ -610,6 +662,16 @@ class MimirOverlayService : Service() {
     row.addView(send, lpWrap(dp(6f), 0).also { it.width = dp(40f); it.height = dp(40f) })
     root.addView(row, lpWrap(0, dp(8f)).also { it.width = LinearLayout.LayoutParams.MATCH_PARENT })
 
+    val lt = LayoutTransition()
+    lt.enableTransitionType(LayoutTransition.CHANGING)
+    lt.setDuration(220)
+    root.layoutTransition = lt
+    val lt2 = LayoutTransition()
+    lt2.enableTransitionType(LayoutTransition.CHANGING)
+    lt2.setDuration(200)
+    lt2.disableTransitionType(LayoutTransition.APPEARING)      // les bulles s'animent elles-mêmes
+    lt2.disableTransitionType(LayoutTransition.DISAPPEARING)
+    list.layoutTransition = lt2
     panel = root; panelList = list; panelScroll = scroll; panelInput = input; typing = null; waiting = false; regenView = null
     listening = false
     styleMic()
@@ -627,6 +689,10 @@ class MimirOverlayService : Service() {
     panelLp = lp
     try {
       w.addView(root, lp)
+      root.pivotX = pw / 2f
+      root.pivotY = 0f
+      root.alpha = 0f; root.scaleX = 0.9f; root.scaleY = 0.9f; root.translationY = -dp(14f).toFloat()
+      root.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0f).setDuration(300).setInterpolator(OvershootInterpolator(1.15f)).start()
       lastEvent = "bulle ouverte"
       sinkOpen?.invoke()   /* l'app répond avec le moteur, les modèles et l'historique (applyState) */
       input.postDelayed({
@@ -718,11 +784,28 @@ class MimirOverlayService : Service() {
     regenView?.visibility = View.GONE
     bubble(if (t.isEmpty()) "Décris cette image." else t, true, photo)
     clearPhoto()
-    typing = bubble("…", false, null)
+    replyStarted = false
+    typing = bubble("•", false, null)
+    typing?.let { animateTyping(it) }
     waiting = true
     val send = sinkSend
     if (send == null) updateReply("Ouvrez MiMai une fois pour activer la bulle de discussion.", true)
     else send(t, photo)
+  }
+
+  /* trois points qui se remplissent tant que la réponse n'a pas commencé */
+  private fun animateTyping(tv: TextView) {
+    val frames = arrayOf("•", "• •", "• • •")
+    var i = 0
+    val r = object : Runnable {
+      override fun run() {
+        if (typing !== tv || replyStarted) return
+        i = (i + 1) % frames.size
+        tv.text = frames[i]
+        ui.postDelayed(this, 330)
+      }
+    }
+    ui.postDelayed(r, 330)
   }
 
   /* appelé par le module (réponse du moteur de l'app) : texte courant de la réponse, done = réponse terminée */
@@ -734,6 +817,7 @@ class MimirOverlayService : Service() {
         if (done) notifWaiting = false
       }
       if (panel == null) return@post
+      replyStarted = true
       val v = typing ?: bubble("", false, null).also { typing = it }
       v.text = text
       scrollDown()
@@ -745,13 +829,18 @@ class MimirOverlayService : Service() {
     val p = panel ?: return
     if (listening) sinkAction?.invoke("mic", "")   /* coupe l'écoute en fermant */
     try { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(p.windowToken, 0) } catch (e: Exception) { /* ignoré */ }
-    try { wm?.removeView(p) } catch (e: Exception) { /* déjà retirée */ }
-    panel = null; panelList = null; panelScroll = null; panelInput = null; typing = null; waiting = false
+    panel = null
+    val manager = wm
+    p.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationY(-dp(10f).toFloat()).setDuration(170).setInterpolator(DecelerateInterpolator())
+      .withEndAction { try { manager?.removeView(p) } catch (e: Exception) { /* déjà retirée */ } }.start()
+    panelList = null; panelScroll = null; panelInput = null; typing = null; waiting = false
     modeViews = emptyMap(); modelView = null; modelList = null; optionsBox = null; subtitle = null; sizeView = null
     regenView = null; micView = null; photoBtn = null; thumbRow = null; pendingPhoto = null; listening = false; panelLp = null
   }
 
   private fun removeBar() {
+    animBar?.dispose()
+    animBar = null
     bar?.let { try { wm?.removeView(it) } catch (e: Exception) { /* déjà retirée */ } }
     bar = null
   }
@@ -862,6 +951,10 @@ class MimirOverlayService : Service() {
     @Volatile var lastEvent: String = "le service n'a jamais été démarré"
     @Volatile var running: Boolean = false
     @Volatile var instance: MimirOverlayService? = null
+    /* animations de l'étoile, chargées une seule fois */
+    @Volatile var etoile: EtoileData? = null
+    @Volatile var etoileLoading: Boolean = false
+    @Volatile var etoileError: String = ""
     /* branchés par le module JavaScript : envoi d'un message / ouverture d'une nouvelle discussion */
     @Volatile var sinkSend: ((String, String?) -> Unit)? = null
     @Volatile var sinkOpen: (() -> Unit)? = null

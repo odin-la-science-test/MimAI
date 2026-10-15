@@ -31,6 +31,7 @@ class MimirBar(
   private val ctx: Context,
   private val wm: WindowManager,
   private val data: EtoileData,
+  private var esprit: EspritData?,
   private val camXpx: Float,
   private val camYpx: Float,
   private val topPx: Float,
@@ -41,7 +42,10 @@ class MimirBar(
   private val ui = Handler(Looper.getMainLooper())
   private val dp = ctx.resources.displayMetrics.density
   private val screenW = ctx.resources.displayMetrics.widthPixels
-  private val stage = EtoileStage(data)
+  /* hors ligne : l'étoile de Mìmir ; en mode en ligne : l'esprit gardien (si ses animations sont chargées) */
+  private var stage: Being = if (MimirTheme.online && esprit != null) EspritStage(esprit!!) else EtoileStage(data)
+  private var swapping = false
+  private var pendingSwap = false
   private var touchV: TouchView? = null
   private var touchLp: WindowManager.LayoutParams? = null
   private var touchFlags = 0
@@ -65,9 +69,10 @@ class MimirBar(
 
   /* place de repos : à côté de la caméra, côté batterie (petite) — ou juste sous la barre d'état sur les téléphones où
      le système y garde les touchers (Samsung) ; l'étoile y est alors un peu plus grande */
-  private val restX: Float get() = if (below) Math.max(34f * dp, Math.min(screenW - 34f * dp, camXpx)) else mx(219f)
-  private val restY: Float get() = if (below) topPx + 20f * dp else my(24f)
-  private val restS: Float get() = if (below) 24f * dp else 16f * dp
+  private val restX: Float get() = Math.max(34f * dp, Math.min(screenW - 34f * dp, camXpx))
+  private val restY: Float get() = topPx + (if (stage is EspritStage) 24f else 20f) * dp
+  private fun sizeFor(b: Being): Float = (if (b is EspritStage) 30f else 24f) * dp
+  private val restS: Float get() = sizeFor(stage)
 
   private val screenReceiver = object : BroadcastReceiver() {
     override fun onReceive(c: Context?, i: Intent?) {
@@ -95,7 +100,7 @@ class MimirBar(
       fxv = fx
 
       // fenêtre tactile : un carré autour de l'étoile au repos
-      val side = (46f * dp).toInt()
+      val side = (52f * dp).toInt()
       val tv = TouchView(ctx)
       val tlp = WindowManager.LayoutParams(side, side, type, common, PixelFormat.TRANSLUCENT)
       tlp.gravity = Gravity.TOP or Gravity.START
@@ -108,7 +113,7 @@ class MimirBar(
       wm.addView(tv, tlp)    // ajoutée en dernier : elle reçoit les touchers
       MimirOverlayService.lastEvent = "Mìmir affiché au repos en (" + restX.toInt() + "," + restY.toInt() + "), zone tactile " + side + " px"
       stage.ambient = true
-      stage.play("coucou")
+      stage.play(stage.clipFor("hello"))
       try { ctx.registerReceiver(screenReceiver, IntentFilter().also { it.addAction(Intent.ACTION_SCREEN_OFF); it.addAction(Intent.ACTION_SCREEN_ON) }) } catch (e: Exception) { /* facultatif */ }
       kick()
       true
@@ -146,13 +151,20 @@ class MimirBar(
   private class Step(val at: Float, val clip: String, val fly: FloatArray?, val ease: Array<String>?, val bubble: Boolean)
 
   /* position finale de l'étoile quand la bulle est ouverte : x, y, taille (pixels) */
-  fun openStar(variant: String): FloatArray = when (variant) {
-    "2a" -> floatArrayOf(mx(52f), my(100f), 40f * dp)
-    "2b" -> floatArrayOf(mx(330f), my(96f), 40f * dp)
-    else -> floatArrayOf(mx(195f), my(104f), 40f * dp)
+  fun openStar(variant: String): FloatArray {
+    val big = (if (stage is EspritStage) 46f else 40f) * dp
+    return when (variant) {
+      "2a" -> floatArrayOf(mx(52f), my(100f), big)
+      "2b" -> floatArrayOf(mx(330f), my(96f), big)
+      else -> floatArrayOf(mx(195f), my(104f), big)
+    }
   }
 
-  private fun stepsFor(variant: String): List<Step> = when (variant) {
+  private fun stepsFor(variant: String): List<Step> = if (stage is EspritStage) listOf(
+    /* l'esprit gardien (maquette « L'esprit gardien », 1b) : il vole en battant des ailes, puis se pose à côté de sa bulle */
+    Step(0f, "vole_bulle", floatArrayOf(0.8f, mx(255f), my(36f)), arrayOf("io", "io", "io"), false),
+    Step(0.8f, "pose_bulle", null, null, true)
+  ) else when (variant) {
     "2a" -> listOf(
       Step(0f, "eveil", null, null, false),
       Step(0.45f, "envol", floatArrayOf(0.7f, mx(150f), my(-30f)), arrayOf("io", "io", "ob"), false),
@@ -205,21 +217,49 @@ class MimirBar(
       if (!isOpen) return@post
       cancelSeq()
       val s = openStar(variant)
+      val esp = stage is EspritStage
       val r1 = Runnable {
-        stage.play("envol")
-        stage.fly(restX - fxLeft + 0f, restY, restS, (s[0] + restX) / 2f, Math.min(s[1], restY) - 36f * dp, 0.6f, "io", "io", "io", null)
+        stage.play(if (esp) "rentre" else "envol")
+        stage.fly(restX - fxLeft + 0f, restY, restS, (s[0] + restX) / 2f, Math.min(s[1], restY) - 36f * dp, if (esp) 0.7f else 0.6f, "io", "io", "io", null)
         kick()
       }
-      val r2 = Runnable { stage.play("pose"); kick() }
-      val r3 = Runnable { isOpen = false; setHit(true); stage.switchMode("idle"); MimirOverlayService.lastEvent = "Mìmir revenu à sa place"; kick() }
+      val r2 = Runnable { if (!esp) stage.play("pose"); kick() }
+      val r3 = Runnable {
+        isOpen = false; setHit(true); stage.switchMode("idle"); MimirOverlayService.lastEvent = "Mìmir revenu à sa place"; kick()
+        if (pendingSwap) { pendingSwap = false; setOnline(MimirTheme.online) }
+      }
       seq.add(r1); seq.add(r2); seq.add(r3)
-      ui.postDelayed(r1, 200); ui.postDelayed(r2, 820); ui.postDelayed(r3, 1250)
+      ui.postDelayed(r1, 200); ui.postDelayed(r2, 820); ui.postDelayed(r3, if (esp) 1000 else 1250)
       kick()
     }
   }
 
   /* bas de la zone de l'étoile au repos (pixels) */
-  fun bottomPx(): Int = (restY + 30f * dp).toInt()
+  fun bottomPx(): Int = (restY + (if (stage is EspritStage) 36f else 30f) * dp).toInt()
+
+  /* mode en ligne : l'étoile s'efface, l'esprit gardien prend sa place (et inversement) */
+  fun attachEsprit(e: EspritData) { ui.post { esprit = e; setOnline(MimirTheme.online) } }
+
+  fun setOnline(on: Boolean) {
+    ui.post {
+      val wantEsprit = on && esprit != null
+      if ((stage is EspritStage) == wantEsprit || swapping) return@post
+      if (isOpen) { pendingSwap = true; return@post }   /* pas de changement pendant que la bulle est ouverte */
+      swapping = true
+      val old = stage
+      old.play(if (old is EspritStage) "depart" else "eveil")
+      kick()
+      ui.postDelayed({
+        val ns: Being = if (wantEsprit) EspritStage(esprit!!) else EtoileStage(data)
+        stage = ns
+        ns.place(restX - fxLeft, restY, sizeFor(ns))
+        ns.ambient = true
+        ns.play(ns.clipFor("arrive"))
+        swapping = false
+        kick()
+      }, 700)
+    }
+  }
 
   /* ───────── états (repos, notif, ecoute, reflexion, activite) ───────── */
   fun setState(s: String, p: Float) {
@@ -231,9 +271,9 @@ class MimirBar(
         state = s
         stateT0 = System.currentTimeMillis()
         when (s) {
-          "ecoute" -> { stage.switchMode("listen"); stage.play("ecoute") }
-          "reflexion" -> { stage.switchMode("think"); stage.play(if (isOpen) "compris" else "reflechit") }
-          "notif" -> { stage.switchMode("idle"); stage.play("message") }
+          "ecoute" -> { stage.switchMode("listen"); stage.play(stage.clipFor("listen")) }
+          "reflexion" -> { stage.switchMode("think"); stage.play(stage.clipFor(if (isOpen) "thinkOpen" else "think")) }
+          "notif" -> { stage.switchMode("idle"); stage.play(stage.clipFor("notif")) }
           else -> stage.switchMode(if (isOpen) "read" else "idle")   // bulle ouverte : elle « lit » la réponse
         }
       }
@@ -283,9 +323,10 @@ class MimirBar(
   private inner class FxView(c: Context) : View(c) {
     override fun onDraw(canvas: Canvas) {
       stage.draw(canvas, fxLeft.toFloat(), 0f)
-      val s = stage.S
-      val cx = stage.X + stage.cur.x * s - fxLeft
-      val cy = stage.Y + stage.cur.y * s
+      val st = stage
+      val s = st.sizePx
+      val cx = st.posX + st.offX * s - fxLeft
+      val cy = st.posY + st.offY * s
       if (state == "activite") {
         val r = s * 0.95f
         ring.strokeWidth = 2.4f * dp
@@ -303,7 +344,7 @@ class MimirBar(
 
   private inner class TouchView(c: Context) : View(c) {
     private var longFired = false
-    private val longRun = Runnable { longFired = true; stage.play("ecoute"); kick(); onLong() }
+    private val longRun = Runnable { longFired = true; stage.play(stage.clipFor("listen")); kick(); onLong() }
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
       when (ev.actionMasked) {

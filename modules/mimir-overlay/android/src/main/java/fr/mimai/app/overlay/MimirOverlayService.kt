@@ -220,14 +220,28 @@ class MimirOverlayService : Service() {
     val top = Math.max(sb.toFloat(), (cut?.bottom ?: 0).toFloat())   /* bas de la barre d'état : Mìmir se tient juste en dessous */
     val cy = if (cut != null) cut.exactCenterY() else sb / 2f
     val atCam = posPref() == "camera"
-    val b = MimirBar(this, w, d, cx, cy, top, !atCam, { togglePanel() }, { togglePanel(true) })
+    val b = MimirBar(this, w, d, esprit, cx, cy, top, !atCam, { togglePanel() }, { togglePanel(true) })
     if (!b.show()) return false
+    loadEsprit()
     animBar = b
     barBottom = b.bottomPx()
     lastEvent = "barre animée affichée (caméra " + (if (cut != null) cut.toShortString() else "non détectée") + ")"
     Log.i(TAG, lastEvent)
     return true
   }
+
+  /* l'esprit gardien (mode en ligne) : ses animations (1,8 Mo) sont lues hors du fil d'affichage, puis il remplace l'étoile si le mode en ligne est actif */
+  private fun loadEsprit() {
+    if (esprit != null || espritLoading) return
+    espritLoading = true
+    Thread {
+      try { val e = EspritData.load(applicationContext); esprit = e; espritError = ""; ui.post { animBar?.attachEsprit(e) } }
+      catch (e: Throwable) { espritError = e.javaClass.simpleName + " " + (e.message ?: ""); Log.e(TAG, "animations de l'esprit illisibles", e) }
+      espritLoading = false
+    }.start()
+  }
+
+  fun applyTheme(online: Boolean) { animBar?.setOnline(online) }
 
   /* état de la barre demandé par l'app : repos, notif, ecoute, reflexion, activite */
   fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, prog) }
@@ -1017,6 +1031,9 @@ class MimirOverlayService : Service() {
     @Volatile var etoile: EtoileData? = null
     @Volatile var etoileLoading: Boolean = false
     @Volatile var etoileError: String = ""
+    @Volatile var esprit: EspritData? = null
+    @Volatile var espritLoading: Boolean = false
+    @Volatile var espritError: String = ""
     /* branchés par le module JavaScript : envoi d'un message / ouverture d'une nouvelle discussion */
     @Volatile var sinkSend: ((String, String?) -> Unit)? = null
     @Volatile var sinkOpen: (() -> Unit)? = null

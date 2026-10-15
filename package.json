@@ -36,6 +36,8 @@
     "test:speed": "node --test scripts/speed.test.cjs",
     "test:modes": "node --test scripts/modes.test.cjs",
     "test:etoile": "node --test scripts/etoile.test.cjs",
+    "esprit:bake": "node scripts/bake-esprit.mjs",
+    "test:esprit": "node --test scripts/esprit.test.cjs",
     "test:cloud": "node --test scripts/cloud.test.cjs"
   },
   "dependencies": {

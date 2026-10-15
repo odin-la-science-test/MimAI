@@ -195,6 +195,7 @@ class MimirOverlayModule : Module() {
     Function("setTheme") { online: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       MimirTheme.set(ctx, online)
+      MimirOverlayService.instance?.applyTheme(online)
       true
     }
 

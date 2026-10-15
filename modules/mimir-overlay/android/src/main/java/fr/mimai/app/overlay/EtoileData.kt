@@ -71,7 +71,7 @@ class EtoileData(
       return (0xFF shl 24) or (r shl 16) or (g shl 8) or bl
     }
 
-    private fun pathFrom(ops: JSONArray): Path {
+    internal fun pathFrom(ops: JSONArray): Path {
       val p = Path()
       var i = 0
       val n = ops.length()

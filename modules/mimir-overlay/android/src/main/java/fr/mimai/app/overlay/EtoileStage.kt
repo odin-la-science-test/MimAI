@@ -46,7 +46,7 @@ class Fr {
 /* L'étoile de Mìmir : un petit être (corps en étoile, yeux, 156 animations). Port Kotlin du moteur de la maquette ;
    les animations elles-mêmes sont lues dans etoile.json (voir scripts/bake-etoile.mjs). Les capteurs de mouvement
    (roulis, vertige) ne sont pas repris : la barre reste immobile. */
-class EtoileStage(private val d: EtoileData) {
+class EtoileStage(private val d: EtoileData) : Being {
   var t = 0f
   val ax = Spr(0f)
   val ay = Spr(0f)
@@ -66,7 +66,7 @@ class EtoileStage(private val d: EtoileData) {
   private val f3 = Fr()
   private var blinkAt = 1.5f + Math.random().toFloat() * 3f
   private var ambAt = 6f + Math.random().toFloat() * 6f
-  var ambient = true
+  override var ambient = true
   var onEnd: ((String) -> Unit)? = null
 
   /* vol de l'étoile (maquette « tour 2 ») : trajet en courbe de Bézier entre la place actuelle et (x1, y1), avec une courbe
@@ -77,12 +77,12 @@ class EtoileStage(private val d: EtoileData) {
   )
   private var flight: Flight? = null
 
-  fun fly(x1: Float, y1: Float, s1: Float, cx: Float?, cy: Float?, d: Float, ex: String, ey: String?, es: String, cb: (() -> Unit)?) {
+  override fun fly(x1: Float, y1: Float, s1: Float, cx: Float?, cy: Float?, d: Float, ex: String, ey: String?, es: String, cb: (() -> Unit)?) {
     flight = Flight(ax.v, ay.v, asz.v, x1, y1, if (s1 > 0f) s1 else asz.v, cx ?: ((ax.v + x1) / 2f), cy ?: ((ay.v + y1) / 2f), if (d > 0f) d else 0.6f, ex, ey ?: ex, es, t, cb)
   }
 
   /* place l'étoile tout de suite (sans ressort) */
-  fun place(x: Float, y: Float, size: Float) { flight = null; ax.to(x, true); ay.to(y, true); asz.to(size, true) }
+  override fun place(x: Float, y: Float, size: Float) { flight = null; ax.to(x, true); ay.to(y, true); asz.to(size, true) }
 
   private fun ez(name: String, q: Float): Float = when (name) {
     "oc" -> 1f - Math.pow((1f - q).toDouble(), 3.0).toFloat()
@@ -133,7 +133,23 @@ class EtoileStage(private val d: EtoileData) {
     out[0] = a[0] + (b[0] - a[0]) * t; out[1] = a[1] + (b[1] - a[1]) * t; out[2] = a[2] + (b[2] - a[2]) * t
   }
 
-  fun play(id: String) {
+  override fun has(id: String): Boolean = d.byId.containsKey(id)
+
+  override val posX: Float get() = X
+  override val posY: Float get() = Y
+  override val sizePx: Float get() = S
+  override val offX: Float get() = cur.x
+  override val offY: Float get() = cur.y
+
+  override fun clipFor(role: String): String = when (role) {
+    "listen" -> "ecoute"
+    "think" -> "reflechit"
+    "thinkOpen" -> "compris"
+    "notif" -> "message"
+    else -> "coucou"
+  }
+
+  override fun play(id: String) {
     val a = d.byId[id] ?: return
     hasSnap = true
     snap.set(cur)
@@ -141,16 +157,16 @@ class EtoileStage(private val d: EtoileData) {
     clipT0 = t
   }
 
-  fun playRandomTap() { val l = d.tap; if (l.isNotEmpty()) play(l[(Math.random() * l.size).toInt()]) }
+  override fun playRandomTap() { val l = d.tap; if (l.isNotEmpty()) play(l[(Math.random() * l.size).toInt()]) }
 
-  fun switchMode(m: String) {
+  override fun switchMode(m: String) {
     if (m == mode) return
     if (m != "idle" && m != "listen" && m != "think" && m != "read" && m != "sleep") return
     mPrev = mode; mode = m; mT0 = t
   }
 
   /* vrai tant que quelque chose bouge : la barre garde alors la cadence maximale */
-  fun busy(): Boolean = clip != null || flight != null || (t - mT0) < 0.5f || ax.moving() || ay.moving() || asz.moving()
+  override fun busy(): Boolean = clip != null || flight != null || (t - mT0) < 0.5f || ax.moving() || ay.moving() || asz.moving()
 
   private fun modeFrame(m: String, tt: Float, out: Fr) {
     out.reset(base, eyeOpen)
@@ -256,7 +272,7 @@ class EtoileStage(private val d: EtoileData) {
     out.anim = c.anim; out.p = c.p
   }
 
-  fun tick(dtRaw: Float) {
+  override fun tick(dtRaw: Float) {
     val dt = Math.min(0.05f, Math.max(0f, dtRaw))
     t += dt
     val fl = flight
@@ -319,7 +335,7 @@ class EtoileStage(private val d: EtoileData) {
   private fun bodyColor(f: Fr): Int = DataLab.argb(f.col)
 
   /* dessine l'étoile et ses effets autour de (X, Y) ; (ox, oy) = origine de la vue dans le repère de l'étoile */
-  fun draw(c: Canvas, ox: Float, oy: Float) {
+  override fun draw(c: Canvas, ox: Float, oy: Float) {
     val f = cur
     val u = S / d.scale
     val px = X + f.x * S - ox

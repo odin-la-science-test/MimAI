@@ -78,6 +78,8 @@ export function Btn({ title, kind = 'primary', onPress, style, disabled, childre
 
 const ICON_LABELS: Record<string, string> = { back: 'Retour', dots: 'Plus d’options', plus: 'Ajouter', send: 'Envoyer', trash: 'Supprimer', x: 'Fermer', check: 'Valider' };
 export function IconBtn({ name, onPress, color, size = 18, bg, label }: { name: string; onPress?: () => void; color?: string; size?: number; bg?: string; label?: string }) {
+  /* « Retour » : cale invisible qui garde la mise en page ; le vrai bouton est FloatingBack (nav.tsx), toujours visible, même en défilant */
+  if (name === 'back') return <View style={s.iconBtn} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden />;
   return (
     <TouchableOpacity onPress={onPress} accessibilityRole="button" accessibilityLabel={label || ICON_LABELS[name] || name} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }} style={[s.iconBtn, bg ? { backgroundColor: bg } : { borderWidth: 1, borderColor: C.divider }]} activeOpacity={0.85}>
       <Ico name={name} size={size} color={color} />
@@ -176,24 +178,24 @@ export function Screen({ children, scroll = false, pad = true, style }: { childr
   const padStyle = { paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 30 + insets.bottom };
   /* tablette : contenu centré, largeur lisible */
   const col = { width: '100%' as const, maxWidth: 640, alignSelf: 'center' as const };
-  /* le bouton Retour reste TOUJOURS visible : il est sorti du contenu défilant et posé par-dessus ; une cale garde la mise en page */
-  let back: React.ReactElement | null = null;
-  let body: React.ReactNode = children;
-  if (scroll) {
-    const arr = React.Children.toArray(children);
-    const i = arr.findIndex(ch => React.isValidElement(ch) && (ch.type as unknown) === IconBtn && (ch.props as { name?: string }).name === 'back');
-    if (i >= 0) { back = arr[i] as React.ReactElement; arr[i] = <View key="back-gap" style={{ height: 40 }} />; body = arr; }
-  }
   return (
     <View style={[{ flex: 1, backgroundColor: C.bg }, style]}>
       {scroll
-        ? <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ flexGrow: 1 }, col, pad ? padStyle : null]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>{body}</ScrollView>
+        ? <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ flexGrow: 1 }, col, pad ? padStyle : null]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>{children}</ScrollView>
         : <View style={[{ flex: 1 }, col, pad ? padStyle : null]}>{children}</View>}
-      {back ? (
-        <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 12, left: 20, zIndex: 30 }}>
-          <View style={{ borderRadius: 22, backgroundColor: C.bg }}>{back}</View>
-        </View>
-      ) : null}
+    </View>
+  );
+}
+
+/* le bouton Retour unique de l'application : fixe en haut à gauche, par-dessus tous les écrans qui ont un retour possible */
+export function FloatingBack({ onPress }: { onPress: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 12, left: 18, zIndex: 100 }}>
+      <TouchableOpacity onPress={onPress} accessibilityRole="button" accessibilityLabel="Retour" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={[s.iconBtn, { backgroundColor: C.bg, borderWidth: 1, borderColor: C.divider, ...shadow(1) }]} activeOpacity={0.85}>
+        <Ico name="back" size={18} />
+      </TouchableOpacity>
     </View>
   );
 }

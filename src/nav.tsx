@@ -7,6 +7,7 @@ import { NavigationContainer, createNavigationContainerRef } from '@react-naviga
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './nav-types';
 import { C } from './theme';
+import { FloatingBack } from './ui';
 import { Splash, Welcome, Device, Download, Ready } from './screens/onboarding';
 import { Home } from './screens/home';
 import { Chat } from './screens/chat';
@@ -20,12 +21,14 @@ import { CrashLog } from './screens/crashlog';
 import { Cloud } from './screens/cloud';
 import { trail } from './services/crashlog';
 
+const NO_BACK = ['Splash', 'Welcome', 'Home', 'Ready'];
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNav() {
   const [ready, setReady] = useState(false);
+  const [routeName, setRouteName] = useState<string>('Splash');
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 600); /* laisse le splash s'afficher avant Mìmir */
     return () => clearTimeout(t);
@@ -47,7 +50,7 @@ export function RootNav() {
     return () => sub.remove();
   }, []);
   return (
-    <NavigationContainer ref={navigationRef} onStateChange={() => { const r = navigationRef.getCurrentRoute(); if (r) trail('écran ' + r.name); }} onReady={() => {
+    <NavigationContainer ref={navigationRef} onStateChange={() => { const r = navigationRef.getCurrentRoute(); if (r) { trail('écran ' + r.name); setRouteName(r.name); } }} onReady={() => {
       if (pendingLink.current) { pendingLink.current = false; navigationRef.navigate('Chat', { voice: pendingVoice.current }); pendingVoice.current = undefined; }
     }}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom', contentStyle: { backgroundColor: C.bg } }}>
@@ -74,6 +77,8 @@ export function RootNav() {
         <Stack.Screen name="Cloud" component={Cloud} />
       </Stack.Navigator>
       {ready ? <FloatingMimir /> : null}
+      {/* retour : un seul bouton, toujours présent sur chaque page qui a une page précédente (jamais sur l'accueil ni le démarrage) */}
+      {!NO_BACK.includes(routeName) ? <FloatingBack onPress={() => { if (navigationRef.isReady() && navigationRef.canGoBack()) navigationRef.goBack(); else if (navigationRef.isReady()) navigationRef.navigate('Home'); }} /> : null}
     </NavigationContainer>
   );
 }

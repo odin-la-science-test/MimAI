@@ -21,6 +21,8 @@ import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
 import { titleFrom, nowHM, fmtGo } from './theme';
+import { bindCloud, cloudEngine, cloudHook, loadCloudKeys, defaultCloud } from './services/cloud';
+import type { CloudSettings } from './services/cloud';
 
 export type DlState = { id: string; phase: string; pct: number; info?: PhaseInfo } | null;
 
@@ -101,6 +103,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const dataRef = useRef<AppData>(data);
   dataRef.current = data;
 
+  /* IA en ligne gratuite : le moteur lit/écrit ses réglages (et le suivi des limites) dans les réglages de l'app */
+  bindCloud(
+    () => dataRef.current.settings.cloud || defaultCloud(),
+    fn => setData(prev => { const copy: AppData = JSON.parse(JSON.stringify(prev)); const c: CloudSettings = copy.settings.cloud || defaultCloud(); fn(c); copy.settings.cloud = c; return copy; }),
+  );
+
   const onErr = (msg: string, stack?: string) => {
     setData(d => ({ ...d, crashes: [{ t: Date.now(), msg: msg.slice(0, 200), stack: (stack || '').slice(0, 600) }, ...d.crashes].slice(0, 10) }));
   };
@@ -129,6 +137,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         seedSpeed(loaded.settings.speed); /* vitesses mesurées lors des sessions précédentes : longueur de réponse adaptée dès la 1re question */
         /* « Wi-Fi uniquement » n'a aucune option dans l'app : une ancienne valeur true bloquerait la 4G/5G sans recours */
         loaded.settings.wifiOnly = false;
+        loaded.settings.cloud = { ...defaultCloud(), ...(loaded.settings.cloud || {}) };
+        await loadCloudKeys();
         loaded.settings.comp = { ...freshData().settings.comp, ...loaded.settings.comp }; /* nouveaux réglages (speak) pour les anciennes bases */
         if (!MODELS[loaded.settings.activeModel]) loaded.settings.activeModel = loaded.settings.installed[0] || DEFAULT_MODEL_ID;
         /* détection des modèles déjà présents : les FICHIERS font foi (mise à jour de l'app, réglages réinitialisés, fichier
@@ -182,6 +192,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
+
+  /* IA en ligne : liste des modèles remise à jour au plus une fois par jour et par fournisseur */
+  useEffect(() => { if (ready) void cloudEngine()?.refreshModels(false); }, [ready, data.settings.cloud?.enabled]);
 
   /* préchauffage : le modèle actif est chargé et son prompt système traité avant la première question */
   useEffect(() => {
@@ -265,21 +278,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     let answer: string;
     let usedRealModel = false;
+    let cloudLabel: string | null = null;
     try {
       const info = await generateDetailed({
         history: prevMsgs, userText: text, mode: mode as 'rapide', docs: data.docs,
         memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], examples: data.tex,
-        modelName: modelId, forcedDoc, onText, image: image || null,
+        modelName: modelId, forcedDoc, onText, image: image || null, cloud: cloudHook(),
       });
       answer = info.text;
       usedRealModel = info.real;
+      cloudLabel = info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : null;
       /* vitesse mesurée de ce modèle sur ce téléphone (affichée dans Modèles) */
-      if (info.real && info.tps && info.tps > 0) {
+      if (info.real && !info.cloud && info.tps && info.tps > 0) {
         const id = modelId, v = Math.round(info.tps * 10) / 10;
         patchData(d => { d.settings.speed = { ...(d.settings.speed || {}), [id]: v }; });
       }
       /* modèle installé mais en échec : on le dit, au lieu de répondre en silence avec le moteur intégré */
-      if (info.engineError && data.settings.installed.includes(modelId)) {
+      if (info.engineError && !info.cloud && data.settings.installed.includes(modelId)) {
         onErr('Modèle ' + modelId + ' : ' + info.engineError.slice(0, 200));
         toast('Le modèle n’a pas pu répondre : moteur intégré utilisé.');
       }
@@ -302,7 +317,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!usedRealModel) set(s => ({ ...s, thinking: false, stream: { text: answer } }));
 
     const doc = forcedDoc || null;
-    const am: Msg = { id: uid('m'), role: 'ai', text: answer, ts: Date.now(), feedback: null, source: doc ? doc.name : null, model: usedRealModel ? (MODELS[modelId]?.name || 'local') : 'Moteur intégré' };
+    const am: Msg = { id: uid('m'), role: 'ai', text: answer, ts: Date.now(), feedback: null, source: doc ? doc.name : null, model: cloudLabel ?? (usedRealModel ? (MODELS[modelId]?.name || 'local') : 'Moteur intégré') };
     patchData(d => {
       const c = d.convs.find(x => x.id === convId);
       if (c) c.msgs.push(am);

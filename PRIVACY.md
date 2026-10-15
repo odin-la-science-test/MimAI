@@ -25,12 +25,21 @@ conversations et messages, souvenirs (mémoire), documents que vous importez ou 
 ### Ce qui est envoyé sur Internet
 Le réseau est **bloqué par défaut**. Une seule opération l'ouvre, uniquement après votre action explicite : le **téléchargement d'un modèle d'IA** (fichier GGUF public) depuis `huggingface.co` (Hugging Face, Inc.). La fenêtre réseau dure 15 minutes au maximum et se referme dès la fin du téléchargement.
 
-- Aucune donnée personnelle, aucun contenu de conversation ni aucun document n'est envoyé.
+- Aucune donnée personnelle, aucun contenu de conversation ni aucun document n'est envoyé **lors de ce téléchargement**.
 - Comme toute requête Internet, le serveur de téléchargement voit votre **adresse IP** et les informations techniques standard de la connexion. Ces informations sont traitées par Hugging Face selon sa propre politique ; MiMai ne les reçoit pas.
 - Le fichier téléchargé est vérifié (taille et empreinte SHA-256) avant utilisation.
 
+### IA en ligne gratuite (facultative, désactivée par défaut)
+Dans **Menu → IA en ligne gratuite**, vous pouvez activer, après une confirmation, l'usage de modèles hébergés par des fournisseurs gratuits (Cerebras, Groq, Google Gemini, SambaNova, OpenRouter, Mistral AI, Cloudflare Workers AI). Cette fonction n'existe que si **vous** collez votre propre clé d'API : MiMai ne fournit aucune clé et n'a aucun serveur.
+
+- Quand elle est active, le **texte de vos questions** (et l'historique récent de la discussion) est envoyé directement de votre téléphone au fournisseur, sans passer par l'éditeur de MiMai. Votre **mémoire, vos documents et vos exemples d'entraînement** ne sont envoyés que si vous activez l'option « Mémoire, documents et exemples » ; vos **photos** (fonction Vision) ne sont envoyées que si vous activez « Photos ». Ces options sont désactivées par défaut.
+- Chaque fournisseur traite ces données selon ses propres conditions (certains niveaux gratuits peuvent les utiliser pour améliorer leurs produits) ; il voit aussi votre adresse IP.
+- Vos clés sont conservées dans le **coffre sécurisé Android** (Keystore), jamais dans la base de données, les sauvegardes ni les rapports. « Déconnecter » efface la clé.
+- MiMai suit localement l'usage de chaque fournisseur (jetons, requêtes, limites du jour) et passe automatiquement de l'un à l'autre ; ce suivi reste sur l'appareil et ne contient aucun contenu de conversation.
+- Si l'IA en ligne est désactivée, ou si aucun fournisseur ne répond, tout reste traité sur l'appareil.
+
 ### Autorisations Android
-- **Internet** : uniquement pour le téléchargement explicite d'un modèle.
+- **Internet** : pour le téléchargement explicite d'un modèle et, si vous l'activez, pour l'IA en ligne gratuite.
 - **Vibration** : retour haptique léger sur certains boutons. Aucune donnée n'est collectée.
 - **Micro** : uniquement quand vous touchez le bouton micro (commande vocale). La reconnaissance se fait **sur votre appareil** avec le service vocal d'Android ; MiMai refuse de la faire par Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.
 - **Jeu « La Garde des Étoiles »** : jeu intégré qui fonctionne entièrement **hors ligne** dans l'application (affichage par la WebView d'Android, sans accès réseau). Il ne demande aucune autorisation supplémentaire et n'envoie rien. Sa progression (étoiles, sorts) est conservée **sur votre appareil** et est effacée avec « Supprimer les données locales ».
@@ -39,7 +48,7 @@ Le réseau est **bloqué par défaut**. Une seule opération l'ouvre, uniquement
 - L'application n'accède ni aux contacts, ni à la localisation, ni à l'appareil photo, ni au stockage général : les fichiers que vous importez passent par le sélecteur de fichiers du système.
 
 ### Enfants
-MiMai ne collecte aucune donnée et n'est pas destinée à profiler des enfants. Tranche d'âge : tout public.
+MiMai (l'éditeur) ne collecte aucune donnée et n'est pas destinée à profiler des enfants. Tranche d'âge : tout public.
 
 ### Vos droits (RGPD)
 L'éditeur ne détenant aucune donnée vous concernant, il n'y a rien à lui demander d'accéder, de rectifier ou d'effacer : vous gardez la maîtrise complète de vos données sur votre appareil (suppression depuis l'application). Pour toute question : cells-atlas@gmail.com.

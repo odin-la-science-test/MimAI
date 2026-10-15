@@ -16,6 +16,7 @@ import { speak, stopSpeaking, speakAvailable } from './services/speak';
 import { listen, voiceAvailable, describeVoiceFailure } from './services/voice';
 import type { Listening } from './services/voice';
 import { trail } from './services/crashlog';
+import { cloudHook } from './services/cloud';
 import { barThink, barListen, barDone } from './services/bar';
 import { overlayAvailable, overlayChatOn, overlayChatText, overlayChatState, overlayChatInput, overlayChatMic } from './services/overlay';
 
@@ -87,10 +88,10 @@ export function OverlayChat() {
       const info = await generateDetailed({
         history: prev, userText: text, mode,
         docs: d.docs, memories: d.memories, adapterRules: activeAdapter(d)?.rules || [], examples: d.tex,
-        modelName: curModel(), image: photo,
+        modelName: curModel(), image: photo, cloud: cloudHook(),
         onText: t => { const n = Date.now(); if (n - lastSent > 120) { lastSent = n; overlayChatText(t, false); } },
       });
-      const am: Msg = { id: uid('m'), role: 'ai', text: info.text, ts: Date.now(), feedback: null, model: info.real ? (MODELS[curModel()]?.name || 'local') : 'Moteur intégré' };
+      const am: Msg = { id: uid('m'), role: 'ai', text: info.text, ts: Date.now(), feedback: null, model: info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : info.real ? (MODELS[curModel()]?.name || 'local') : 'Moteur intégré' };
       hist.current = [...hist.current, am];
       patchRef.current(x => { const c = x.convs.find(v => v.id === id); if (c) c.msgs.push(am); });
       overlayChatText(info.text, true);

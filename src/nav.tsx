@@ -18,6 +18,7 @@ import { Companion, FloatingMimir } from './screens/companion';
 import { Arena, Moves } from './screens/arena';
 import { Game } from './screens/game';
 import { CrashLog } from './screens/crashlog';
+import { Cloud } from './screens/cloud';
 import { trail } from './services/crashlog';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -74,6 +75,7 @@ export function RootNav() {
         <Stack.Screen name="Game" component={Game} options={{ animation: 'fade' }} />
         <Stack.Screen name="Moves" component={Moves} />
         <Stack.Screen name="CrashLog" component={CrashLog} />
+        <Stack.Screen name="Cloud" component={Cloud} />
       </Stack.Navigator>
       {ready ? <FloatingMimir /> : null}
     </NavigationContainer>

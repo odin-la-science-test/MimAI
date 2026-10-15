@@ -7,6 +7,7 @@
 import * as SQLite from 'expo-sqlite';
 import { encryptText, decryptText } from './crypto';
 import type { BenchSnapshot } from './bench';
+import type { CloudSettings } from './cloud/core.ts';
 
 export type Role = 'user' | 'ai';
 export interface Msg { id: string; role: Role; text: string; ts: number; source?: string | null; model?: string | null; feedback?: 'good' | 'bad' | null; image?: string | null; }
@@ -24,7 +25,7 @@ export interface Settings {
   onboarded: boolean; installed: string[]; activeModel: string; mode: 'rapide' | 'reflexion' | 'vision' | 'outils';
   wifiOnly: boolean; speed?: Record<string, number>; compat?: boolean; crashSeen?: number;
   /* un moteur d'IA par fonction (Rapide, Réflexion, Outils, Vision) ; sans choix : le modèle actif */
-  modeModels?: Partial<Record<'rapide' | 'reflexion' | 'outils' | 'vision', string>>; voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
+  modeModels?: Partial<Record<'rapide' | 'reflexion' | 'outils' | 'vision', string>>; cloud?: CloudSettings; /* IA en ligne gratuite (optionnelle) : réglages et suivi des limites ; les clés sont dans le coffre Android, jamais ici */ voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
   comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean; bar?: boolean; pos?: 'below' | 'camera'; open?: '2a' | '2b' | '2c' };
 }
 export interface AppData {

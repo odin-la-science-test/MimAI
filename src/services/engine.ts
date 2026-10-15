@@ -16,6 +16,7 @@ import type { TrainPair, ChatMsg, Evaluator, AdapterRef } from './training';
 import { trail } from './crashlog';
 import { classify, maxTokensFor, lengthHint, trimToSentence, historyWindow, fewShotCount, BUDGET_MS } from './speedplan';
 import type { Kind } from './speedplan';
+import type { CloudAnswer, CloudRequest, Policy } from './cloud/core.ts';
 
 export interface GenerateCtx {
   history: Msg[];
@@ -31,6 +32,17 @@ export interface GenerateCtx {
   image?: string | null;
   /* texte de la réponse au fur et à mesure de sa production (affichage en direct) */
   onText?: (text: string) => void;
+  /* IA en ligne gratuite, si activée : essayée selon la politique choisie, avec repli silencieux sur le modèle local */
+  cloud?: CloudHook;
+}
+
+/* IA en ligne gratuite (optionnelle) : fournie par state.tsx quand l'utilisateur l'a activée */
+export interface CloudHook {
+  policy: Policy;
+  shareContext: boolean;   /* mémoire, bibliothèque et exemples d'entraînement partagés avec le fournisseur */
+  sharePhotos: boolean;    /* photos (fonction Vision) envoyées au fournisseur */
+  available(kind: Kind, vision: boolean, promptChars: number, maxTokens: number): boolean;
+  run(req: CloudRequest): Promise<CloudAnswer | null>;
 }
 
 export type Step = string;
@@ -369,7 +381,7 @@ function integratedAnswer(ctx: GenerateCtx, seed: number): string {
 }
 
 /* ─────────── API du moteur ─────────── */
-export interface GenerateInfo { tps?: number; text: string; real: boolean; adapterApplied: string | null; fewShots: number; adapterError?: string; engineError?: string; kind?: Kind; cut?: boolean; ms?: number; ttftMs?: number | null }
+export interface GenerateInfo { tps?: number; text: string; real: boolean; adapterApplied: string | null; fewShots: number; adapterError?: string; engineError?: string; kind?: Kind; cut?: boolean; ms?: number; ttftMs?: number | null; cloud?: { provider: string; model: string; tokens: number; ms: number } }
 
 const toPair = (e: TEx): TrainPair => ({ id: e.id, q: e.q, a: e.target, src: 'example', weight: 2, tags: e.tags || [], ts: e.ts });
 
@@ -386,11 +398,51 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
   const def = MODELS[ctx.modelName];
   const kind = classify(ctx.userText, ctx.mode);
   const withImage = !!ctx.image;
+  const shotsAll = withImage ? [] : fewShotsFor(ctx, fewShotCount(kind));
+
+  /* IA en ligne gratuite : meilleur (fournisseur, modèle) du moment, bascule automatique au moindre refus ; null = on continue en local */
+  const tryCloud = async (): Promise<GenerateInfo | null> => {
+    const h = ctx.cloud;
+    if (!h) return null;
+    if (withImage && !h.sharePhotos) return null;
+    try {
+      const personal = h.shareContext;
+      const cShots = personal ? shotsAll : [];
+      const msgs = buildMessages(ctx, cShots, kind, withImage, personal);
+      const cMax = withImage ? 400 : kind === 'court' ? 180 : kind === 'moyen' ? 520 : 900;
+      const promptChars = JSON.stringify(msgs).length;
+      if (!h.available(kind, withImage, promptChars, cMax)) return null;
+      let payload: unknown[] = msgs;
+      if (withImage) {
+        const path = String(ctx.image).replace(/^file:\/\//, '');
+        const b64 = await FileSystem.readAsStringAsync(path, { encoding: FileSystem.EncodingType.Base64 });
+        const mime = /\.png$/i.test(path) ? 'image/png' : /\.webp$/i.test(path) ? 'image/webp' : /\.gif$/i.test(path) ? 'image/gif' : 'image/jpeg';
+        payload = msgs.map((m, i) => (i === msgs.length - 1 && m.role === 'user'
+          ? { role: 'user', content: [{ type: 'text', text: m.content }, { type: 'image_url', image_url: { url: 'data:' + mime + ';base64,' + b64 } }] }
+          : m));
+      }
+      const ans = await h.run({
+        messages: payload, kind, needVision: withImage, maxTokens: cMax, promptChars,
+        onText: ctx.onText ? t => ctx.onText!(clean(t)) : undefined,
+        budgetMs: BUDGET_MS[kind] + (withImage ? 40000 : 4000),
+      });
+      if (!ans) return null;
+      trail('IA en ligne : ' + ans.provider + ' / ' + ans.model + ', ' + ans.tokens + ' jetons, ' + ans.ms + ' ms' + (ans.tried > 1 ? ' (après ' + (ans.tried - 1) + ' refus)' : ''));
+      return { text: trimToSentence(clean(ans.text), ans.cut), real: true, adapterApplied: null, fewShots: cShots.length, kind, ms: ans.ms, cloud: { provider: ans.provider, model: ans.model, tokens: ans.tokens, ms: ans.ms } };
+    } catch (e) {
+      trail('IA en ligne : erreur interne ignorée (' + (e instanceof Error ? e.message : String(e)).slice(0, 80) + ')');
+      return null;
+    }
+  };
+  const cloudFirst = !!ctx.cloud && ctx.cloud.policy !== 'local-first';
+  if (cloudFirst) { const c = await tryCloud(); if (c) return c; }
+
   if (withImage && !def?.mmproj) {
+    if (ctx.cloud && !cloudFirst) { const c = await tryCloud(); if (c) return c; }
     /* modèle sans module image : on le dit clairement plutôt que de répondre à côté */
     return { text: 'Le modèle choisi pour la fonction Vision ne sait pas lire les images. Installez un modèle de vision (Modèles → Un moteur par fonction) puis réessayez.', real: false, adapterApplied: null, fewShots: 0, kind };
   }
-  const shots = withImage ? [] : fewShotsFor(ctx, fewShotCount(kind));
+  const shots = shotsAll;
   const messages = buildMessages(ctx, shots, kind, withImage);
   /* une photo coûte du temps de calcul (le codeur d'image tourne sur le processeur) : délai de 90 s, longueur plafonnée */
   const maxTokens = withImage ? Math.min(320, maxTokensFor('moyen', speedOf(ctx.modelName)) + 60) : maxTokensFor(kind, speedOf(ctx.modelName));
@@ -419,6 +471,8 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
     if (real.tps) knownSpeed[ctx.modelName] = Math.round(real.tps * 10) / 10;
     return { tps: real.tps ?? undefined, text: trimToSentence(clean(real.text), real.cut), real: true, adapterApplied: adapter && !adapterError ? meta!.file! : null, fewShots: shots.length, adapterError, kind, cut: real.cut, ms: real.ms, ttftMs: real.ttftMs };
   }
+  /* « local d'abord » : le modèle local n'a pas répondu (absent ou en échec) → l'IA en ligne prend le relais */
+  if (ctx.cloud && !cloudFirst) { const c = await tryCloud(); if (c) return c; }
   const seed = hash(ctx.userText + ctx.history.length);
   const fallback = integratedAnswer(ctx, seed);
   return { text: fallback, real: false, adapterApplied: null, fewShots: 0, engineError, kind };
@@ -428,16 +482,16 @@ export async function generate(ctx: GenerateCtx): Promise<string> {
   return (await generateDetailed(ctx)).text;
 }
 
-function buildSystemPrompt(ctx: GenerateCtx): string {
-  const rules = visibleRules(ctx.adapterRules);
+function buildSystemPrompt(ctx: GenerateCtx, personal = true): string {
+  const rules = personal ? visibleRules(ctx.adapterRules) : [];
   const lines: string[] = [
     EXPORT_SYSTEM,
     'Pas de markdown, pas d’emoji.' + (rules.some(r => /tutoy/i.test(r)) ? '' : ' Vouvoie l’utilisateur.'),
   ];
-  const mems = memoryLines(ctx.memories);
+  const mems = personal ? memoryLines(ctx.memories) : [];
   if (mems.length) lines.push('Mémoire locale de l’utilisateur :\n' + mems.join('\n'));
   if (rules.length) lines.push('Style personnel appris :\n' + rules.map(r => '- ' + r).join('\n'));
-  const doc = ctx.forcedDoc || RAG.findDocByName(ctx.userText, ctx.docs);
+  const doc = personal ? (ctx.forcedDoc || RAG.findDocByName(ctx.userText, ctx.docs)) : null;
   if (doc) {
     const hits = RAG.retrieve(ctx.userText, [doc], 2);
     if (hits.length) lines.push('Extraits de la bibliothèque locale (' + doc.name + ') :\n' + hits.map(h => '[' + h.chunk.page + '] ' + h.chunk.text).join('\n'));
@@ -446,8 +500,8 @@ function buildSystemPrompt(ctx: GenerateCtx): string {
 }
 
 /* messages de chat (gabarit du modèle appliqué par llama.rn) : système + exemples pertinents + historique + question */
-function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false): ChatMsg[] {
-  const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx) }];
+function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false, personal = true): ChatMsg[] {
+  const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx, personal) }];
   shots.forEach(p => { out.push({ role: 'user', content: p.q }, { role: 'assistant', content: p.a }); });
   ctx.history.slice(-historyWindow(kind)).forEach(m => out.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
   /* la consigne de longueur est collée à la question : le prompt système reste identique d'une demande à l'autre */

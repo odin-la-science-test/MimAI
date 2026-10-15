@@ -426,3 +426,13 @@ test('création : bascule vers le fournisseur suivant, limites comptées, rien s
   assert.equal(await none.engine.media('image', () => { throw new Error('non'); }), null);
   assert.deepEqual(MD.videoProviders(), []);
 });
+
+test('mode en ligne : actif seulement si activé ET un fournisseur connecté', () => {
+  const M2 = load('src/services/cloud/mode.ts');
+  const c = C.defaultCloud();
+  assert.equal(M2.isOnlineMode(c), false);
+  c.enabled = true; assert.equal(M2.isOnlineMode(c), false, 'activé mais rien de connecté');
+  c.providers.groq = { enabled: true, order: 0, models: [] }; assert.equal(M2.isOnlineMode(c), true);
+  c.enabled = false; assert.equal(M2.isOnlineMode(c), false);
+  assert.equal(M2.isOnlineMode(undefined), false);
+});

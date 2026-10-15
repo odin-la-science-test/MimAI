@@ -21,6 +21,7 @@ import type { ImportPhase } from '../services/modelFiles';
 import { reconcile, describeImportFailure } from '../services/installed';
 import type { SpecialtyId } from '../services/advisor';
 import { ModePicker } from './modepicker';
+import { useThemeVersion } from '../theme';
 
 /* ─────────── profil réel de l'appareil (RAM + disque libre) ─────────── */
 export function useDeviceProfile(): { profile: DeviceProfile; loaded: boolean } {
@@ -92,6 +93,7 @@ interface RowProps {
   onToggle: () => void; onDownload: () => void;
 }
 const ModelRow = React.memo(function ModelRow({ m, fit, open, busy, locked, phase, pct, onToggle, onDownload }: RowProps) {
+  useThemeVersion();
   const disk = fit.level === 'trop-lourd' && fit.blockedBy === 'disk';
   return (
     <View style={{ marginTop: 8, borderRadius: 24, backgroundColor: open ? C.a100 : C.surface, borderWidth: open ? 1 : 0, borderColor: C.accent, overflow: 'hidden' }}>

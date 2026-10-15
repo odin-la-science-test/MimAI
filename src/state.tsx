@@ -21,6 +21,8 @@ import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
 import { titleFrom, nowHM, fmtGo } from './theme';
+import { applyTheme } from './theme';
+import { isOnlineMode } from './services/cloud/mode';
 import { bindCloud, cloudEngine, cloudHook, loadCloudKeys, defaultCloud } from './services/cloud';
 import type { CloudSettings } from './services/cloud';
 import { detectIntent } from './services/cloud/media';
@@ -104,6 +106,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const dataRef = useRef<AppData>(data);
   dataRef.current = data;
+
+  /* couleurs : orange hors ligne, bleu en mode en ligne (appliqué avant le rendu des écrans) */
+  applyTheme(isOnlineMode(data.settings.cloud));
 
   /* IA en ligne gratuite : le moteur lit/écrit ses réglages (et le suivi des limites) dans les réglages de l'app */
   bindCloud(

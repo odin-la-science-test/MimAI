@@ -21,9 +21,11 @@ import { overlayStatus, appExits, overlayNotifSettings, overlaySetOpen } from '.
 import { setCompat } from '../services/engine';
 import { connectedCloudVoices } from '../services/cloud/studio';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
+import { isOnlineMode } from '../services/cloud/mode';
 
 export function Companion({ navigation }: NativeStackScreenProps<RootStackParamList, 'Companion'>) {
   const { data, patchData, toast } = useApp();
+  const online = isOnlineMode(data.settings.cloud);
   const c = data.settings.comp;
   const [granted, setGranted] = useState<boolean | null>(null);
   const native = overlayAvailable();
@@ -132,7 +134,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12.5, color: C.n700 }}>Secouez le téléphone : Mìmir réagit (étourdi, atchoum, danse, saut, pirouette, tremblement, surprise).</Text>
       <H1 size={32} style={{ marginTop: 18 }}>Mìmir, toujours à portée.</H1>
       <Sub style={{ marginTop: 6 }}>{overlayIncluded
-        ? 'Dans la version installée, Mìmir reste à portée dans la barre d’état, par-dessus vos applis. Touchez la puce près de la caméra : une fenêtre de discussion flottante s’ouvre par-dessus l’appli en cours. Vous pouvez aussi écrire dans la notification ou toucher « Parler ». Tout est traité sur l’appareil, sans réseau.'
+        ? 'Dans la version installée, Mìmir reste à portée dans la barre d’état, par-dessus vos applis. Touchez la puce près de la caméra : une fenêtre de discussion flottante s’ouvre par-dessus l’appli en cours. Vous pouvez aussi écrire dans la notification ou toucher « Parler ». ' + (online ? 'Mode en ligne : les réponses viennent du fournisseur choisi (le téléphone en secours).' : 'Tout est traité sur l’appareil, sans réseau.')
         : 'Mìmir vous accompagne dans l’application. La barre autour de la caméra n’est pas incluse dans cette version.'}</Sub>
       <View style={{ marginTop: 14 }}>
         <Row>
@@ -214,7 +216,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14.5 }}>Commande vocale</Text>
             <Text style={{ fontSize: 12.5, color: C.n700 }}>{voiceAvailable()
-              ? 'Bouton micro dans le chat. Appui long sur la barre de la caméra pour parler directement. Reconnaissance sur l’appareil, rien ne part sur Internet.'
+              ? 'Bouton micro dans le chat. Appui long sur la barre de la caméra pour parler directement. Reconnaissance de votre voix sur l’appareil' + (online ? ' ; le texte reconnu est ensuite envoyé au fournisseur en mode en ligne.' : ', rien ne part sur Internet.')
               : 'Version installée requise.'}</Text>
           </View>
           <Toggle label="Parler directement en touchant la barre" on={!!c.voice && voiceAvailable()}

@@ -9,6 +9,7 @@ import { C, F } from '../theme';
 import { useIsFocused } from '@react-navigation/native';
 import { BuddyMove, ShakeBuddy, MOVES, CREATURES, Creature, moveIndex } from '../art';
 import { Screen, IconBtn, Tag, Btn, Bar, useTopPad } from '../ui';
+import { useThemeVersion } from '../theme';
 
 interface Foe { id: string; type: string; hp: number; max: number; x: number; y: number; atk: number; hit: number; dead: number }
 interface Fx { id: string; kind: string; t: number; life: number; x?: number; y?: number; v?: string; foe?: string }
@@ -198,6 +199,7 @@ export function Arena({ navigation }: NativeStackScreenProps<RootStackParamList,
 /* Vignette : image FIXE (aucune boucle d'animation, aucun abonnement à l'horloge) ; seule la vignette sélectionnée s'anime.
    Mémoïsée : choisir une animation ne re-rend que l'ancienne et la nouvelle sélection. */
 const Thumb = React.memo(function Thumb({ i, sel, w, onPick }: { i: number; sel: boolean; w: number; onPick: (i: number) => void }) {
+  useThemeVersion();
   const m = MOVES[i];
   return (
     <TouchableOpacity onPress={() => onPick(i)} accessibilityRole="button" accessibilityLabel={'Animation ' + m.n} accessibilityState={{ selected: sel }}

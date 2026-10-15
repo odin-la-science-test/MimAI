@@ -19,12 +19,14 @@ import { speak, stopSpeaking, speakAvailable } from '../services/speak';
 import { barListen } from '../services/bar';
 import type { Listening } from '../services/voice';
 import type { Msg } from '../services/db';
+import { isOnlineMode } from '../services/cloud/mode';
 
 const MODES: [string, string][] = [['rapide', 'Rapide'], ['reflexion', 'Réflexion'], ['vision', 'Vision'], ['outils', 'Outils']];
 
 export function Chat({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Chat'>) {
   const focused = useIsFocused();
   const { data, e, set, sendMessage, newChat, deleteConv, feedback, saveCorrection, regenerate, patchData, toast } = useApp();
+  const online = isOnlineMode(data.settings.cloud);
   const conv = e.chatId ? data.convs.find(c => c.id === e.chatId) : null;
   /* le mode et le modèle d'une discussion sont FIXÉS dès son premier message ; on ne les change que dans une nouvelle discussion */
   const locked = !!(conv && conv.msgs.length > 0);
@@ -134,7 +136,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
           <Text numberOfLines={1} style={{ fontWeight: '700', fontSize: 16, fontFamily: F.bodyBold }}>{conv ? conv.title : 'Nouvelle conversation'}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.g600 }} />
-            <Text numberOfLines={1} style={{ fontSize: 12, color: C.g700 }}>Local · {modeLabel} · {am ? am.name : 'modèle local'}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: C.g700 }}>{online ? 'En ligne · ' + modeLabel + ' · fournisseur gratuit (le téléphone en secours)' : 'Local · ' + modeLabel + ' · ' + (am ? am.name : 'modèle local')}</Text>
           </View>
         </View>
         <IconBtn name="dots" onPress={() => setMenu(true)} />
@@ -234,7 +236,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
                     <Text style={{ color: C.bg, fontSize: 12, fontWeight: '700' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
-              ) : <Text style={{ flex: 1, fontSize: 12, color: C.n700 }}>L’analyse reste sur l’appareil. Une photo peut demander jusqu’à une minute.</Text>}
+              ) : <Text style={{ flex: 1, fontSize: 12, color: C.n700 }}>{online && data.settings.cloud?.sharePhotos ? 'Mode en ligne : la photo est envoyée au fournisseur. Une analyse peut demander jusqu’à une minute.' : 'L’analyse reste sur l’appareil. Une photo peut demander jusqu’à une minute.'}</Text>}
             </View>
           )}
         </View>
@@ -292,7 +294,7 @@ function Bubble({ m, convId, onFeedback, busy, isLast, onRegenerate, onCopied, o
       {m.source || m.model ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
           {m.source ? <Tag kind="accent" style={{ maxWidth: '100%' }}>Source · {m.source.length > 28 ? m.source.slice(0, 27) + '…' : m.source}</Tag> : null}
-          {m.model ? <Tag kind="accent2" style={{ maxWidth: '100%' }}>{m.model} · local</Tag> : null}
+          {m.model ? (/^En ligne/.test(m.model) ? <Tag kind="accent" style={{ maxWidth: '100%' }}>{m.model}</Tag> : <Tag kind="accent2" style={{ maxWidth: '100%' }}>{m.model} · local</Tag>) : null}
         </View>
       ) : null}
       <FeedbackBar value={m.feedback} disabled={busy} text={m.text} onRegenerate={isLast ? onRegenerate : undefined} onCopied={onCopied} onGood={() => onFeedback(convId, m, 'good')} onBad={() => onFeedback(convId, m, 'bad')} onSpeak={onSpeak} speaking={speaking} />

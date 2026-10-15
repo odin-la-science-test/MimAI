@@ -1,5 +1,8 @@
+import { useSyncExternalStore } from 'react';
 /* Design system « Organic » — tokens issus de disagne/_ds/organic-…/styles.css */
-export const C = {
+/* Deux palettes : ORANGE (hors ligne, tout reste sur le téléphone) et BLEU (mode en ligne). C est un objet MUTABLE : applyTheme()
+   le remplace en place, puis l'appli se redessine. */
+const ORANGE = {
   bg: '#f5ead8',
   surface: '#ebddc5',
   text: '#201e1d',
@@ -16,6 +19,33 @@ export const C = {
   g100: '#f0fae1', g200: '#e1eecc', g300: '#ccdbb2', g400: '#aebf92',
   g500: '#8fa073', g600: '#728157', g700: '#56633f', g800: '#3d472b', g900: '#272e1b',
 } as const;
+export type ColorKey = keyof typeof ORANGE;
+const BLUE: Record<ColorKey, string> = {
+  bg: '#e9f0fa', surface: '#d8e4f4', text: '#1a1f2b', accent: '#2f6fc4', accent2: '#4f8f8a', divider: 'rgba(26,31,43,0.16)',
+  n100: '#f3f6fb', n200: '#e5ebf3', n300: '#d0d9e6', n400: '#b2bfd0', n500: '#93a1b6', n600: '#73829a', n700: '#566478', n800: '#3b4656', n900: '#262e3a',
+  a100: '#eaf2fd', a200: '#d3e4fa', a300: '#a9c9f3', a400: '#6fa3e8', a500: '#3f80d8', a600: '#2f68b8', a700: '#244f90', a800: '#193769', a900: '#102341',
+  g100: '#e6f6f4', g200: '#cdebe7', g300: '#aedbd5', g400: '#86c4bc', g500: '#5fa89f', g600: '#478d85', g700: '#366f69', g800: '#285450', g900: '#1a3836',
+};
+export const C: Record<ColorKey, string> = { ...ORANGE };
+
+let themeOnline = false;
+let themeVersion = 0;
+const themeListeners = new Set<() => void>();
+export const isOnlineTheme = () => themeOnline;
+/* appelé au rendu du fournisseur d'état : change les couleurs AVANT que les écrans se redessinent */
+export function applyTheme(online: boolean): void {
+  if (online === themeOnline) return;
+  themeOnline = online;
+  Object.assign(C, online ? BLUE : ORANGE);
+  themeVersion++;
+  themeListeners.forEach(f => f());
+}
+/* les styles créés une fois pour toutes (StyleSheet.create) et les composants mémorisés se remettent à jour ici */
+export function onThemeChange(f: () => void): void { themeListeners.add(f); }
+export function useThemeVersion(): number {
+  return useSyncExternalStore(cb => { themeListeners.add(cb); return () => { themeListeners.delete(cb); }; }, () => themeVersion);
+}
+
 
 export const F = {
   heading: 'Caprasimo',

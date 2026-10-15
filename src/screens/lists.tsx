@@ -11,6 +11,7 @@ import { C, F, hhmm, dayOf, fmtSize } from '../theme';
 import { Screen, H1, Sub, Kicker, SearchBar, IconBtn, Tag, Navbar, Card, Btn, Ico, Row, AvatarIc, Dialog, DialogActions, MenuSheet } from '../ui';
 import { summarize } from '../services/rag';
 import type { Conv } from '../services/db';
+import { isOnlineMode } from '../services/cloud/mode';
 
 /* ─────────── Chats ─────────── */
 export function Chats({ navigation }: NativeStackScreenProps<RootStackParamList, 'Chats'>) {
@@ -85,6 +86,7 @@ const TEXT_EXT = ['txt', 'md', 'markdown', 'csv', 'json', 'log', 'xml', 'html'];
 
 export function Library({ navigation }: NativeStackScreenProps<RootStackParamList, 'Library'>) {
   const { data, addDoc, removeDoc, toast } = useApp();
+  const shareDocs = isOnlineMode(data.settings.cloud) && !!data.settings.cloud?.shareContext;
   const [note, setNote] = useState<{ title: string; text: string } | null>(null);
   const [noteText, setNoteText] = useState('');
 
@@ -123,7 +125,7 @@ export function Library({ navigation }: NativeStackScreenProps<RootStackParamLis
             </TouchableOpacity>
           </View>
         </View>
-        <Sub style={{ marginTop: 6 }}>MiMai répond à partir de vos documents. Ils restent sur cet appareil.</Sub>
+        <Sub style={{ marginTop: 6 }}>MiMai répond à partir de vos documents. {shareDocs ? 'Ils sont stockés sur cet appareil, mais les extraits utilisés peuvent être envoyés au fournisseur (partage activé).' : 'Ils restent sur cet appareil.'}</Sub>
         <Kicker style={{ marginTop: 20 }}>{data.docs.length} {data.docs.length > 1 ? 'documents' : 'document'}</Kicker>
         <View style={{ marginTop: 6, gap: 2 }}>
           {data.docs.map(d => (

@@ -8,6 +8,7 @@ import { NavigationContext } from '@react-navigation/native';
 import Svg, { G, Path, Circle, Rect, ClipPath, Defs, Text as SvgText } from 'react-native-svg';
 import { C } from './theme';
 import { useShake } from './useShake';
+import { onThemeChange, useThemeVersion } from './theme';
 import {
   PIV, VB, ROOM, MOVES, moveIndex, parseSpec, compileMotion, phaseAt, stillTime, createTicker, spiralPath, FX_SPECS, SHAKE_REACTIONS, pickReaction, moveOnceMs,
   type MoveSpec, type Pt, type PivotKey, type Frame,
@@ -22,6 +23,7 @@ const S = 'M625 252Q645 308 696 328Q645 348 625 404Q605 348 554 328Q605 308 625 
 
 export type Pal = { body: string; star: string; eye: string };
 export const PAL: Pal = { body: C.text, star: C.accent, eye: C.text };
+onThemeChange(() => { PAL.body = C.text; PAL.star = C.accent; PAL.eye = C.text; });
 
 /* ───────────────────────── moteur d'animation ───────────────────────── */
 /* Aucune chaîne `transform`, aucun Animated : chaque groupe animé reçoit directement une MATRICE numérique [a b c d e f]
@@ -198,6 +200,7 @@ function Fx({ kind, pal, once, rep }: { kind: NonNullable<MoveSpec['fx']>; pal: 
    (vignettes dans un conteneur qui rogne). */
 /* `still` : image fixe (aucune animation, aucun abonnement à l'horloge) — vignettes ; `fps` : cadence maximale. */
 export const BuddyMove = React.memo(function BuddyMove({ size, move, pal, once, rep, fit, still, fps }: { size: number; move?: MoveSpec; pal?: Pal; once?: boolean; rep?: number; fit?: boolean; still?: boolean; fps?: number }) {
+  useThemeVersion();
   const p = pal || PAL;
   const m = move || MOVES[0];
   const bf = m.tone === 'dim' ? C.n400 : m.tone === 'frost' ? C.n500 : p.body;

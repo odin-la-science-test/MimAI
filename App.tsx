@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
-import { AppProvider } from './src/state';
+import { AppProvider, useApp } from './src/state';
 import { RootNav } from './src/nav';
 import { BubbleSync } from './src/BubbleSync';
 import { OverlayChat } from './src/OverlayChat';
@@ -14,6 +14,12 @@ import { CrashBoundary } from './src/CrashBoundary';
 import { installCrashHandlers } from './src/services/crashlog';
 
 installCrashHandlers();
+
+/* fond de l'appli : suit la palette (orange hors ligne, bleu en mode en ligne) */
+function Shell({ children }: { children: React.ReactNode }) {
+  useApp();
+  return <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>{children}</GestureHandlerRootView>;
+}
 
 export default function App() {
   const [fonts, fontError] = useFonts({
@@ -34,16 +40,16 @@ export default function App() {
 
   return (
     <CrashBoundary>
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
+    <AppProvider>
+      <Shell>
       <SafeAreaProvider>
-        <AppProvider>
           <StatusBar style="dark" />
           <RootNav />
           <BubbleSync />
           <OverlayChat />
-        </AppProvider>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+      </Shell>
+    </AppProvider>
     </CrashBoundary>
   );
 }

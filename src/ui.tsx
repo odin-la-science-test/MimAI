@@ -5,6 +5,7 @@ import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, R, shadow } from './theme';
 import { BuddyMove, MOVES } from './art';
+import { onThemeChange } from './theme';
 
 /* ─────────── icônes (traits lucide, comme dans les maquettes) ─────────── */
 const ICONS: Record<string, { d: string; extra?: React.ReactNode }> = {
@@ -314,7 +315,7 @@ export const DialogActions = ({ children }: { children: React.ReactNode }) =>
 /* personnage animé (raccourci) */
 export const Mimir = ({ size, move = 0 }: { size: number; move?: number }) => <BuddyMove size={size} move={MOVES[move] || MOVES[0]} />;
 
-const s = StyleSheet.create({
+const build = () => StyleSheet.create({
   btn: { borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 18, paddingVertical: 8, flexShrink: 1, maxWidth: '100%' },
   btnT: { fontFamily: F.heading, lineHeight: 22, textAlign: 'center', flexShrink: 1 },
   iconBtn: { flexShrink: 0, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
@@ -337,3 +338,5 @@ const s = StyleSheet.create({
   toast: { backgroundColor: C.text, borderRadius: R.pill, paddingVertical: 11, paddingHorizontal: 18, ...shadow(3) },
   dialog: { width: '100%', maxWidth: 360, borderRadius: 32, backgroundColor: C.bg, padding: 20, gap: 12, ...shadow(3) },
 });
+let s = build();
+onThemeChange(() => { s = build(); });

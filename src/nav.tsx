@@ -6,6 +6,7 @@ import { Linking } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './nav-types';
+import { C } from './theme';
 import { Splash, Welcome, Device, Download, Ready } from './screens/onboarding';
 import { Home } from './screens/home';
 import { Chat } from './screens/chat';
@@ -51,7 +52,7 @@ export function RootNav() {
     <NavigationContainer ref={navigationRef} onStateChange={() => { const r = navigationRef.getCurrentRoute(); if (r) trail('écran ' + r.name); }} onReady={() => {
       if (pendingLink.current) { pendingLink.current = false; navigationRef.navigate('Chat', { voice: pendingVoice.current }); pendingVoice.current = undefined; }
     }}>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom', contentStyle: { backgroundColor: '#f5ead8' } }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom', contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="Splash" component={Splash} />
         <Stack.Screen name="Welcome" component={Welcome} />
         <Stack.Screen name="Device" component={Device} />

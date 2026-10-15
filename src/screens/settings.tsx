@@ -9,10 +9,15 @@ import { useApp } from '../state';
 import { C, F, hhmm } from '../theme';
 import { Screen, IconBtn, H1, Sub, Kicker, Card, Btn, Tag, Toggle, Row, AvatarIc, Ico, Dialog, DialogActions } from '../ui';
 import { cryptoMode } from '../services/crypto';
+import { isOnlineMode } from '../services/cloud/mode';
+import { PROVIDER_BY_ID } from '../services/cloud/providers';
 
 /* ─────────── Confidentialité ─────────── */
 export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamList, 'Privacy'>) {
   const { data, blockNet, authorizeNet, wipe, exportDiagnostic, toast } = useApp();
+  const cl = data.settings.cloud;
+  const online = isOnlineMode(cl);
+  const names = Object.keys(cl?.providers || {}).filter(id => cl!.providers[id].enabled).map(id => PROVIDER_BY_ID[id]?.name || id).join(', ');
   const [confirm, setConfirm] = useState<null | 'data'>(null);
   const netOn = !!(data.settings.netUntil && data.settings.netUntil > Date.now());
   const localRows: [string, string][] = [
@@ -26,7 +31,15 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
     <Screen scroll>
       <IconBtn name="back" onPress={() => navigation.goBack()} />
       <H1 style={{ marginTop: 10 }}>Confidentialité</H1>
-      <Sub style={{ marginTop: 6 }}>Où vont vos données : nulle part ailleurs.</Sub>
+      <Sub style={{ marginTop: 6 }}>{online ? 'Mode en ligne : le stockage reste sur l’appareil, mais vos questions partent chez un fournisseur.' : 'Où vont vos données : nulle part ailleurs.'}</Sub>
+      {online ? (
+        <View style={{ marginTop: 14, borderRadius: 24, backgroundColor: C.a100, borderWidth: 1.5, borderColor: C.accent, padding: 16, gap: 6 }}>
+          <Text style={{ fontFamily: F.bodyBold, fontWeight: '700', fontSize: 15, color: C.a800 }}>Mode en ligne actif : tout n’est PAS local</Text>
+          <Text style={{ fontSize: 13, lineHeight: 19, color: C.a800 }}>Envoyé à {names || 'votre fournisseur'} : le texte de vos questions et l’historique récent de la discussion{cl?.shareContext ? ', votre mémoire, vos documents et vos exemples' : ''}{cl?.sharePhotos ? ', vos photos (Vision)' : ''}. Les images et voix en ligne envoient aussi le texte à créer ou à lire.</Text>
+          <Text style={{ fontSize: 13, lineHeight: 19, color: C.a800 }}>Resté sur l’appareil : l’historique, la mémoire, les documents et les clés (coffre Android){cl?.shareContext ? '' : ' — mémoire, documents et exemples ne sont pas envoyés'}{cl?.sharePhotos ? '' : ' ; les photos non plus'}.</Text>
+          <Text style={{ fontSize: 13, lineHeight: 19, color: C.a800 }}>Pour revenir à un fonctionnement 100 % local : Menu → IA en ligne gratuite → désactiver.</Text>
+        </View>
+      ) : null}
 
       <View style={{ marginTop: 18, borderRadius: 32, backgroundColor: C.text, padding: 22, gap: 12 }}>
         <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', color: C.n300 }}>Vos données</Text>
@@ -98,7 +111,7 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
         </Row>
       </View>
 
-      <Text style={{ marginTop: 12, fontSize: 13, lineHeight: 19, color: C.n700 }}>MiMai fonctionne entièrement hors ligne. Ce n’est pas une limite, c’est le principe.</Text>
+      <Text style={{ marginTop: 12, fontSize: 13, lineHeight: 19, color: C.n700 }}>{online ? 'En mode en ligne, MiMai utilise Internet pour les réponses (voir ci-dessus). Hors ligne, il fonctionne entièrement sur le téléphone : c’est le principe, et vous pouvez y revenir à tout moment.' : 'MiMai fonctionne entièrement hors ligne. Ce n’est pas une limite, c’est le principe.'}</Text>
       <View style={{ height: 12 }} />
 
       <Dialog visible={confirm !== null} onClose={() => setConfirm(null)}>

@@ -100,7 +100,7 @@ class MimirBar(
 
       // position posée par l'utilisateur (mémorisée) ; sinon sous la caméra
       if (prefs.contains("home_fx")) { homeX = clampX(prefs.getFloat("home_fx", 0.5f) * screenW); homeY = clampY(prefs.getFloat("home_fy", 0.05f) * screenH) }
-      roam = prefs.getBoolean("roam", true)
+      roam = false   /* Mìmir ne se déplace plus tout seul : seulement quand on le glisse du doigt */
       // fenêtre de dessin (non tactile) : tout l'écran, pour que Mìmir puisse aller partout
       fxLeft = 0
       val fh = screenH
@@ -177,7 +177,7 @@ class MimirBar(
 
   fun setRoam(on: Boolean) {
     ui.post {
-      roam = on
+      roam = false
       ui.removeCallbacks(roamRun)
       if (on && fxv != null) ui.postDelayed(roamRun, 12000)
     }
@@ -416,7 +416,7 @@ class MimirBar(
     private var startHX = 0f
     private var startHY = 0f
     private val longRun = Runnable { longFired = true; stage.play(stage.clipFor("listen")); kick(); onLong() }
-    /* rester appuyé 5 secondes sur le personnage bascule : en ligne → hors ligne, hors ligne → en ligne */
+    /* rester appuyé 3 secondes sur le personnage bascule : en ligne → hors ligne, hors ligne → en ligne */
     private val offRun = Runnable {
       longFired = true
       performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
@@ -431,7 +431,7 @@ class MimirBar(
           dragging = false
           downX = ev.rawX; downY = ev.rawY; startHX = restX; startHY = restY
           if (!isOpen) { stage.playRandomTap(); kick() }
-          ui.postDelayed(offRun, 5000)
+          ui.postDelayed(offRun, 3000)
           return true
         }
         MotionEvent.ACTION_MOVE -> {

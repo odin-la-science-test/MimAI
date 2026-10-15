@@ -19,7 +19,6 @@ import { speakAvailable, speak, stopSpeaking, listVoices, setVoicePrefs, VOICE_S
 import * as Clipboard from 'expo-clipboard';
 import { overlayStatus, appExits, overlayNotifSettings, overlaySetOpen } from '../services/overlay';
 import { setCompat } from '../services/engine';
-import { connectedCloudVoices } from '../services/cloud/studio';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
 import { isOnlineMode } from '../services/cloud/mode';
 
@@ -212,20 +211,11 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
           <Tag kind="neutral">Bientôt</Tag>
         </Row>
         <Row>
-          <AvatarIc name="user" size={36} tone="g" />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14.5 }}>Mìmir se promène</Text>
-            <Text style={{ fontSize: 12.5, color: C.n700 }}>{overlayIncluded ? 'Il se déplace tout seul sur l’écran, de temps en temps. Vous pouvez aussi le déplacer du doigt, où vous voulez : il garde sa place.' : 'Version installée requise.'}</Text>
-          </View>
-          <Toggle label="Mìmir se promène sur l’écran" on={c.roam !== false && overlayIncluded}
-            onChange={() => { if (!overlayIncluded) { toast('La barre demande la version installée de MiMai.'); return; } patchData(d => { d.settings.comp.roam = d.settings.comp.roam === false; }); }} />
-        </Row>
-        <Row>
           <AvatarIc name="mic" size={36} tone="g" />
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14.5 }}>Commande vocale</Text>
             <Text style={{ fontSize: 12.5, color: C.n700 }}>{voiceAvailable()
-              ? 'Bouton micro dans le chat et dans la bulle. Un appui de 5 secondes sur Mìmir bascule entre le mode hors ligne et le mode en ligne. Reconnaissance de votre voix sur l’appareil' + (online ? ' ; le texte reconnu est ensuite envoyé au fournisseur en mode en ligne.' : ', rien ne part sur Internet.')
+              ? 'Bouton micro dans le chat et dans la bulle. Un appui de 3 secondes sur Mìmir bascule entre le mode hors ligne et le mode en ligne. Reconnaissance de votre voix sur l’appareil' + (online ? ' ; le texte reconnu est ensuite envoyé au fournisseur en mode en ligne.' : ', rien ne part sur Internet.')
               : 'Version installée requise.'}</Text>
           </View>
           <Toggle label="Parler directement en touchant la barre" on={!!c.voice && voiceAvailable()}
@@ -266,21 +256,6 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
                 </TouchableOpacity>
               );
             }) : <Text style={{ fontSize: 12.5, color: C.n700 }}>Aucune voix française listée : la voix par défaut du téléphone est utilisée.</Text>}
-            {connectedCloudVoices().length && data.settings.cloud?.enabled ? (
-              <>
-                <Text style={{ fontSize: 14.5, fontWeight: '700', marginTop: 6 }}>Voix en ligne</Text>
-                <Text style={{ fontSize: 12.5, color: C.n700 }}>Plus naturelles, créées par vos fournisseurs connectés (le texte lu est envoyé au fournisseur). Si rien ne répond, la voix du téléphone prend le relais.</Text>
-                {connectedCloudVoices().map(v => {
-                  const on = (vp.id || null) === v.id;
-                  return (
-                    <TouchableOpacity key={v.id} onPress={() => setVoice({ id: v.id })} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                      style={{ minHeight: 44, borderRadius: 14, paddingHorizontal: 12, backgroundColor: on ? C.a200 : C.surface, justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 14, fontWeight: on ? '700' : '500' }}>{v.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            ) : null}
             {vp.id ? <TouchableOpacity onPress={() => setVoice({ id: null })} style={{ paddingVertical: 8 }}><Text style={{ fontSize: 13, color: C.a700, fontWeight: '700' }}>Revenir à la voix par défaut</Text></TouchableOpacity> : null}
           </View>
         ) : null}

@@ -173,11 +173,11 @@ export function OverlayChat() {
       pushState(true);
       void answer(q.text, q.image || null, true);
     } else if (type === 'offline') {
-      /* appui de 5 s sur le personnage : on quitte le mode en ligne (le modèle du téléphone reprend la main) */
+      /* appui de 3 s sur le personnage : on quitte le mode en ligne (le modèle du téléphone reprend la main) */
       patchRef.current(x => { if (x.settings.cloud) x.settings.cloud.enabled = false; });
       trail('mode en ligne désactivé par appui long sur Mìmir');
     } else if (type === 'online') {
-      /* appui de 5 s sur le personnage hors ligne : on passe en mode en ligne si un fournisseur est connecté */
+      /* appui de 3 s sur le personnage hors ligne : on passe en mode en ligne si un fournisseur est connecté */
       const cl = dataRef.current.settings.cloud;
       const hasProvider = !!cl && Object.keys(cl.providers || {}).some(id => cl.providers[id]?.enabled);
       if (!hasProvider) { overlayToast('Aucun fournisseur en ligne connecté : ouvrez MiMai → IA en ligne gratuite.'); return; }

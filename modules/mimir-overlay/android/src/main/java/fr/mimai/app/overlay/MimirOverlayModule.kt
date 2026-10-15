@@ -223,6 +223,13 @@ class MimirOverlayModule : Module() {
       v
     }
 
+    /* MiMai au premier plan ou non : l'icône du lanceur n'est changée qu'en arrière-plan */
+    Function("setForeground") { fg: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      MimirTheme.appForeground(ctx, fg)
+      true
+    }
+
     Function("toast") { text: String ->
       MimirOverlayService.instance?.showToast(text)
       true

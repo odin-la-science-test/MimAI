@@ -94,7 +94,11 @@ type CloudSpeaker = (text: string, voiceId: string, onEnd?: () => void) => Promi
 let cloudSpeaker: CloudSpeaker | null = null;
 let cloudStop: (() => void) | null = null;
 export const setCloudSpeaker = (f: CloudSpeaker | null, stop?: () => void) => { cloudSpeaker = f; cloudStop = stop || null; };
+/* lecture des réponses : TOUJOURS la voix du téléphone (même en mode en ligne) ; aucune voix en ligne n'est utilisée pour lire */
 const CLOUD_ID = /^(cloudflare|gemini):/;
+let failFn: ((msg: string) => void) | null = null;
+export const setSpeakFail = (f: ((msg: string) => void) | null): void => { failFn = f; };
+const FAIL_MSG = 'La lecture vocale a échoué : vérifiez Réglages Android → Synthèse vocale (un moteur et une voix française doivent être installés).';
 
 /* lit le texte ; onEnd est appelé à la fin ou à l'arrêt. Retourne false si impossible. */
 export function speak(text: string, onEnd?: () => void): boolean {
@@ -105,11 +109,6 @@ export function speak(text: string, onEnd?: () => void): boolean {
   const stopped = Promise.resolve(S.stop()).catch(() => { /* rien à arrêter */ });   /* on attend la fin de l'arrêt : sinon il peut couper la NOUVELLE lecture */
   const parts = chunkForSpeech(clean);
   const local = () => { if (mine === token) next(0); };
-  if (prefs.id && CLOUD_ID.test(prefs.id) && cloudSpeaker) {
-    try { cloudStop?.(); } catch { /* rien à arrêter */ }
-    void cloudSpeaker(clean, prefs.id, onEnd).then(ok => { if (!ok) local(); }).catch(() => local());
-    return true;
-  }
   let minimal = false;   /* après une erreur, on réessaie une fois avec les réglages les plus simples (voix par défaut) */
   const next = (i: number) => {
     if (mine !== token) return;                       // une autre lecture a pris le relais
@@ -120,9 +119,9 @@ export function speak(text: string, onEnd?: () => void): boolean {
         onStart: () => { if (i === 0) log('lecture vocale : démarrée (' + clean.length + ' car.)'); },
         onDone: () => next(i + 1),
         onStopped: () => { if (mine === token) onEnd?.(); },
-        onError: (er: unknown) => { log('lecture vocale : erreur ' + String((er as { message?: string })?.message || er).slice(0, 80)); if (mine !== token) return; if (!minimal) { minimal = true; next(i); } else onEnd?.(); },
+        onError: (er: unknown) => { log('lecture vocale : erreur ' + String((er as { message?: string })?.message || er).slice(0, 80)); if (mine !== token) return; if (!minimal) { minimal = true; next(i); } else { try { failFn?.(FAIL_MSG); } catch { /* ignoré */ } onEnd?.(); } },
       });
-    } catch (er) { log('lecture vocale : exception ' + String((er as Error)?.message || er).slice(0, 80)); onEnd?.(); }
+    } catch (er) { log('lecture vocale : exception ' + String((er as Error)?.message || er).slice(0, 80)); try { failFn?.(FAIL_MSG); } catch { /* ignoré */ } onEnd?.(); }
   };
   void stopped.then(() => setTimeout(() => next(0), 60));
   return true;

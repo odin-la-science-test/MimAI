@@ -17,8 +17,16 @@ object MimirTheme {
 
   fun set(ctx: Context, on: Boolean) {
     online = on
-    ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("online", on).apply()
-    launcherIcon(ctx, on)
+    val sp = ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
+    sp.edit().putBoolean("online", on).apply()
+    /* changer l'icône du lanceur pendant que MiMai est ouvert fait relancer l'app par Android : on attend qu'elle passe en arrière-plan */
+    if (!sp.getBoolean("app_fg", false)) launcherIcon(ctx, on)
+  }
+
+  fun appForeground(ctx: Context, fg: Boolean) {
+    val sp = ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
+    sp.edit().putBoolean("app_fg", fg).apply()
+    if (!fg) launcherIcon(ctx, sp.getBoolean("online", false))
   }
 
   /* icône de l'app sur l'écran d'accueil : orange hors ligne, bleue en mode en ligne (deux alias du lanceur, voir

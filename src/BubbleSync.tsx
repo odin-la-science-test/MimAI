@@ -5,7 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { useApp } from './state';
-import { overlayAvailable, overlayGranted, overlayShow, overlaySetRoam } from './services/overlay';
+import { overlayAvailable, overlayGranted, overlayShow, overlaySetRoam, overlaySetForeground } from './services/overlay';
 
 export function BubbleSync() {
   const { data, ready } = useApp();
@@ -20,8 +20,7 @@ export function BubbleSync() {
   open.current = data.settings.comp.open || '2c';   /* la barre autour de la caméra est affichée par défaut */
 
   /* promenade autonome de Mìmir sur l'écran (réglage, activée par défaut) */
-  const roam = data.settings.comp.roam !== false;
-  useEffect(() => { if (ready && overlayAvailable()) overlaySetRoam(roam); }, [ready, roam]);
+  useEffect(() => { if (ready && overlayAvailable()) overlaySetRoam(false); }, [ready]);   /* plus de promenade autonome */
 
   useEffect(() => {
     if (!overlayAvailable()) return;
@@ -30,7 +29,8 @@ export function BubbleSync() {
       if (await overlayGranted()) await overlayShow(bar.current, pos.current, open.current);
     };
     if (ready) void sync();
-    const sub = AppState.addEventListener('change', s => { if (s === 'active') void sync(); });
+    overlaySetForeground(AppState.currentState === 'active');
+    const sub = AppState.addEventListener('change', s => { overlaySetForeground(s === 'active'); if (s === 'active') void sync(); });
     return () => sub.remove();
   }, [ready, data.settings.comp.on, data.settings.comp.overlay, data.settings.comp.bar, data.settings.comp.pos, data.settings.comp.open]);
 

@@ -31,6 +31,7 @@ type NativeOverlay = {
   setRoam?(on: boolean): boolean;
   toast?(text: string): boolean;
   setCloudReady?(ready: boolean): boolean;
+  setForeground?(fg: boolean): boolean;
   takePendingMode?(): string;
   setPos?(pos: string): boolean;
   setOpen?(v: string): boolean;
@@ -96,6 +97,7 @@ export function overlayBarState(state: string, o: { title?: string; body?: strin
 }
 export function overlayBarPlay(id: string): void { try { M?.barPlay?.(id); } catch { /* indisponible */ } }
 /* palette de Mìmir partout : bleu en mode en ligne, orange sinon */
+export function overlaySetForeground(fg: boolean): void { try { M?.setForeground?.(fg); } catch { /* module ancien */ } }
 export function overlaySetCloudReady(ready: boolean): void { try { M?.setCloudReady?.(ready); } catch { /* module ancien */ } }
 export function overlayTakePendingMode(): string { try { return M?.takePendingMode ? String(M.takePendingMode() || '') : ''; } catch { return ''; } }
 export function overlayToast(text: string): void { try { M?.toast?.(text); } catch { /* module ancien */ } }

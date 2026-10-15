@@ -12,7 +12,7 @@ import { reconcile } from './services/installed';
 import type { ModelManifest, PhaseInfo } from './services/net';
 import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded, releaseLlama, setLocalAllowed } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
-import { setVoicePrefs, setSpeakLog } from './services/speak';
+import { setVoicePrefs, setSpeakLog, setSpeakFail } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { barThink, barDone, barProgress } from './services/bar';
 import { appExits, overlaySetTheme, overlaySetCloudReady, overlayTakePendingMode } from './services/overlay';
@@ -203,7 +203,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  useEffect(() => { setSpeakLog(trail); return () => setSpeakLog(null); }, []);
+  useEffect(() => { setSpeakLog(trail); setSpeakFail(m => toast(m)); return () => { setSpeakLog(null); setSpeakFail(null); }; // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Internet : détection du réseau. Sans connexion, le mode en ligne est suspendu (interface hors ligne, modèle du téléphone) ; au retour, il reprend. */
   useEffect(() => {

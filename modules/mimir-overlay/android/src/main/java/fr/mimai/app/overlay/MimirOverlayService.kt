@@ -246,8 +246,8 @@ class MimirOverlayService : Service() {
   fun applyTheme(online: Boolean) { animBar?.setOnline(online) }
   fun applyRoam(on: Boolean) { animBar?.setRoam(on) }
 
-  /* appui de 5 secondes sur le personnage : retour au mode hors ligne (l'app désactive l'IA en ligne) */
-  /* appui de 5 secondes hors ligne : l'app active l'IA en ligne si un fournisseur est connecté (sinon elle le dit) */
+  /* appui de 3 secondes sur le personnage : retour au mode hors ligne (l'app désactive l'IA en ligne) */
+  /* appui de 3 secondes hors ligne : l'app active l'IA en ligne si un fournisseur est connecté (sinon elle le dit) */
   fun goOnline() {
     ui.post {
       val prefs = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)

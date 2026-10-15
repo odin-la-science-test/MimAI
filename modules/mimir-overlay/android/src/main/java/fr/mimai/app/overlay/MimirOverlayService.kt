@@ -141,7 +141,7 @@ class MimirOverlayService : Service() {
       lastEvent = "puce touchée"
       if (Settings.canDrawOverlays(this)) {
         val wantMic = intent.getBooleanExtra("mic", false)
-        if (panel == null) togglePanel(wantMic) else if (wantMic) sinkAction?.invoke("mic", "")
+        if (panel == null) togglePanel(wantMic) else if (wantMic) startVoice()
       } else openAssistant("0")
       return START_NOT_STICKY
     }
@@ -166,15 +166,16 @@ class MimirOverlayService : Service() {
   }
 
   /* la barre noire dessinée autour de la caméra est facultative (réglage de l'app) ; la puce système, elle, est toujours là */
-  fun applyBarPref() {
+  fun applyBarPref(force: Boolean = false) {
     val want = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).getBoolean("bar", true)
+    if (!force && want && animBar != null) return   /* déjà affichée : on ne recrée pas la barre à chaque démarrage du service */
     if (want && Settings.canDrawOverlays(this)) refreshBar() else { closePanel(); removeBar(); lastEvent = "puce seule (barre dessinée désactivée)" }
   }
 
   /* rotation : on replace la barre (cachée en paysage) */
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)
-    if (Settings.canDrawOverlays(this)) applyBarPref()
+    if (Settings.canDrawOverlays(this)) applyBarPref(true)
   }
 
   /* bas de la zone caméra / barre d'état : la fenêtre de discussion s'ouvre juste en dessous */
@@ -199,6 +200,7 @@ class MimirOverlayService : Service() {
 
   /* barre animée : demande les données de l'étoile (1 Mo, lues hors du fil d'affichage la première fois) */
   private fun addAnimatedBar(): Boolean {
+    animBar?.dispose(); animBar = null   /* jamais deux personnages à la fois */
     val d = etoile
     if (d == null) {
       if (!etoileLoading) {
@@ -242,6 +244,7 @@ class MimirOverlayService : Service() {
   }
 
   fun applyTheme(online: Boolean) { animBar?.setOnline(online) }
+  fun applyRoam(on: Boolean) { animBar?.setRoam(on) }
 
   /* état de la barre demandé par l'app : repos, notif, ecoute, reflexion, activite */
   fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, prog) }
@@ -334,6 +337,8 @@ class MimirOverlayService : Service() {
   private var expanded = false
   private var canPhoto = false
   private var panelLp: WindowManager.LayoutParams? = null
+  private var panelBaseH = 0
+  private var panelBaseY = 0
 
   /* petite étoile Mìmir (astroïde) sur un disque terracotta */
   private class StarView(ctx: Context) : View(ctx) {
@@ -360,7 +365,7 @@ class MimirOverlayService : Service() {
 
   /* un toucher sur la barre ouvre la bulle (un second toucher la ferme) ; mic = elle démarre directement l'écoute */
   private fun togglePanel(mic: Boolean = false) {
-    if (panel != null) { if (mic) sinkAction?.invoke("mic", "") else closePanel(); return }
+    if (panel != null) { if (mic) startVoice() else closePanel(); return }
     val b = animBar
     val v = openVariant()
     if (b != null) {
@@ -378,7 +383,7 @@ class MimirOverlayService : Service() {
       lastEvent = "bulle ouverte, mais le moteur de l'app n'est pas actif"
       bubble("Le moteur de MiMai n'est pas actif. Touchez « Ouvrir MiMai » en haut, puis revenez ici.", false, null)
     } else if (mic) {
-      ui.postDelayed({ sinkAction?.invoke("mic", "") }, 600)
+      ui.postDelayed({ startVoice() }, 600)
     }
   }
 
@@ -555,6 +560,7 @@ class MimirOverlayService : Service() {
     val from = lp.height
     val to = (resources.displayMetrics.heightPixels * (if (expanded) 0.78f else 0.52f)).toInt()
     sizeView?.text = if (expanded) "Réduire" else "Agrandir"
+    panelBaseH = to
     val va = ValueAnimator.ofInt(from, to)
     va.duration = 260
     va.interpolator = DecelerateInterpolator()
@@ -714,7 +720,7 @@ class MimirOverlayService : Service() {
     val il = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
     il.leftMargin = dp(6f)
     row.addView(input, il)
-    val mic = roundButton("🎤", "#EBDDC5") { sinkAction?.invoke("mic", "") }
+    val mic = roundButton("🎤", "#EBDDC5") { startVoice() }
     micView = mic
     row.addView(mic, lpWrap(dp(6f), 0).also { it.width = dp(40f); it.height = dp(40f) })
     val send = roundButton("↑", "#C67139") { sendFromPanel() }
@@ -764,8 +770,16 @@ class MimirOverlayService : Service() {
     lp.gravity = Gravity.TOP or Gravity.START
     lp.x = cl - m
     lp.y = ct - m
-    lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+    lp.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
     panelLp = lp
+    panelBaseH = ph; panelBaseY = lp.y
+    /* clavier : la bulle remonte puis se raccourcit pour rester entièrement visible au-dessus du clavier (Android 11+) */
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      frame.setOnApplyWindowInsetsListener { v, insets ->
+        fitToKeyboard(insets.getInsets(android.view.WindowInsets.Type.ime()).bottom)
+        v.onApplyWindowInsets(insets)
+      }
+    }
     try {
       w.addView(frame, lp)
       /* ouverture de la maquette : la carte « sort » de l'étoile (échelle .12 → 1, léger rebond, 0,45 s) */
@@ -782,6 +796,25 @@ class MimirOverlayService : Service() {
       lastEvent = "bulle refusée : " + e.javaClass.simpleName + " " + (e.message ?: "")
       Log.e(TAG, lastEvent, e)
       panel = null; panelList = null; panelScroll = null; panelInput = null
+    }
+  }
+
+  private fun fitToKeyboard(imeBottom: Int) {
+    val p = panel ?: return
+    val lp = panelLp ?: return
+    val sh = resources.displayMetrics.heightPixels
+    var h = panelBaseH
+    var y = panelBaseY
+    if (imeBottom > 0) {
+      val limit = sh - imeBottom - dp(8f)
+      if (y + h > limit) {
+        y = Math.max(dp(24f), limit - h)
+        if (y + h > limit) h = Math.max(dp(200f), limit - y)
+      }
+    }
+    if (lp.height != h || lp.y != y) {
+      lp.height = h; lp.y = y
+      try { wm?.updateViewLayout(p, lp) } catch (e: Exception) { /* fenêtre fermée */ }
     }
   }
 
@@ -854,6 +887,52 @@ class MimirOverlayService : Service() {
     ui.post { listening = on; styleMic() }
   }
 
+  /* ───────── dictée de la bulle (activité transparente, voir MimirVoiceActivity) ───────── */
+  fun startVoice() {
+    if (listening) { stopVoice(); return }
+    if (waiting) return
+    try {
+      startActivity(Intent(this, MimirVoiceActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION))
+      listening = true; styleMic()
+    } catch (e: Exception) {
+      Log.w(TAG, "dictée refusée", e)
+      onVoiceError("erreur")
+    }
+  }
+
+  fun stopVoice() { MimirVoiceActivity.stopCurrent() }
+
+  /* texte dicté terminé : il est envoyé tout de suite, et la réponse sera lue à voix haute */
+  fun onVoiceResult(text: String) {
+    ui.post {
+      listening = false; styleMic()
+      val input = panelInput
+      if (text.isEmpty() || input == null) { return@post }
+      input.setText(text)
+      input.setSelection(text.length)
+      sinkAction?.invoke("voice", "1")
+      sendFromPanel()
+    }
+  }
+
+  fun onVoiceError(code: String) {
+    ui.post {
+      listening = false; styleMic()
+      val msg = when (code) {
+        "silence" -> "Je n'ai rien entendu. Réessayez en parlant plus près du micro."
+        "permission" -> "Micro refusé : autorisez-le dans Réglages Android → Applications → MiMai → Autorisations."
+        "langue" -> "Le pack de langue français hors ligne manque (Réglages Android → Système → Langues → Saisie vocale), ou activez le mode en ligne."
+        "reseau" -> "La reconnaissance vocale a besoin d'Internet pour cette fois. Vérifiez votre connexion."
+        "occupe" -> "La reconnaissance vocale est déjà utilisée. Réessayez dans un instant."
+        "micro" -> "Le micro est indisponible (utilisé par une autre appli ?)."
+        "indisponible" -> "Ce téléphone n'a pas de service de reconnaissance vocale."
+        else -> "La dictée a échoué. Réessayez."
+      }
+      if (panel != null) bubble(msg, false, null) else android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()
+      scrollDown()
+    }
+  }
+
   private fun sendFromPanel() {
     val input = panelInput ?: return
     val t = input.text.toString().trim()
@@ -906,7 +985,7 @@ class MimirOverlayService : Service() {
 
   private fun closePanel() {
     val p = panel ?: return
-    if (listening) sinkAction?.invoke("mic", "")   /* coupe l'écoute en fermant */
+    if (listening) stopVoice()   /* coupe l'écoute en fermant */
     try { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(p.windowToken, 0) } catch (e: Exception) { /* ignoré */ }
     panel = null
     val manager = wm

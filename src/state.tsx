@@ -10,9 +10,9 @@ import { DEFAULT_MODEL_ID } from './services/catalog';
 import { scanModelFiles } from './services/modelFiles';
 import { reconcile } from './services/installed';
 import type { ModelManifest, PhaseInfo } from './services/net';
-import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded, releaseLlama } from './services/engine';
+import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded, releaseLlama, setLocalAllowed } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
-import { setVoicePrefs } from './services/speak';
+import { setVoicePrefs, setSpeakLog } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { barThink, barDone, barProgress } from './services/bar';
 import { appExits, overlaySetTheme } from './services/overlay';
@@ -22,7 +22,8 @@ import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
 import { titleFrom, nowHM, fmtGo } from './theme';
 import { applyTheme } from './theme';
-import { isOnlineMode } from './services/cloud/mode';
+import { isOnlineMode, setInternetUp } from './services/cloud/mode';
+import * as Network from 'expo-network';
 import { bindCloud, cloudEngine, cloudHook, loadCloudKeys, defaultCloud } from './services/cloud';
 import type { CloudSettings } from './services/cloud';
 import { detectIntent } from './services/cloud/media';
@@ -43,6 +44,7 @@ interface Ephemeral {
   dialog: { kind: 'correction' | 'deleteConv' | 'confirm'; msg?: Msg; conv?: Conv; text?: string } | null;
   dl: DlState;
   island: boolean;
+  internet: boolean;
 }
 
 interface AppCtx {
@@ -99,7 +101,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [e, set] = useState<Ephemeral>({
     chatId: null, draft: '', busy: false, thinking: false, steps: [], step: 0,
-    stream: null, streamSource: null, toast: '', dialog: null, dl: null, island: false,
+    stream: null, streamSource: null, toast: '', dialog: null, dl: null, island: false, internet: true,
   });
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runToken = useRef(0);
@@ -201,9 +203,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  /* passage en mode en ligne : le modèle du téléphone est déchargé de la mémoire */
+  useEffect(() => { setSpeakLog(trail); return () => setSpeakLog(null); }, []);
+
+  /* Internet : détection du réseau. Sans connexion, le mode en ligne est suspendu (interface hors ligne, modèle du téléphone) ; au retour, il reprend. */
+  useEffect(() => {
+    let sub: { remove: () => void } | null = null;
+    let last: boolean | null = null;
+    const apply = (st: { isConnected?: boolean; isInternetReachable?: boolean }) => {
+      const up = !!st.isConnected && st.isInternetReachable !== false;
+      if (last === up) return;
+      const first = last === null;
+      last = up;
+      setInternetUp(up);
+      set(s => (s.internet === up ? s : { ...s, internet: up }));
+      trail('réseau : ' + (up ? 'Internet disponible' : 'plus d’Internet'));
+      if (!first && isOnlineMode(dataRef.current.settings.cloud) !== !up && (dataRef.current.settings.cloud?.enabled)) toast(up ? 'Internet est de retour : mode en ligne' : 'Plus d’Internet : mode hors ligne');
+    };
+    void Network.getNetworkStateAsync().then(apply).catch(() => { /* état inconnu : on suppose connecté */ });
+    try { sub = Network.addNetworkStateListener(apply); } catch { /* indisponible (Expo Go) */ }
+    return () => { try { sub?.remove(); } catch { /* déjà retiré */ } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* passage en mode en ligne : le modèle du téléphone est déchargé de la mémoire et reste muet */
   const onlineNow = isOnlineMode(data.settings.cloud);
-  useEffect(() => { if (onlineNow) void releaseLlama(); }, [onlineNow]);
+  setLocalAllowed(!onlineNow);
   useEffect(() => { if (ready) overlaySetTheme(onlineNow); }, [onlineNow, ready]);
 
   /* IA en ligne : liste des modèles remise à jour au plus une fois par jour et par fournisseur */
@@ -244,7 +268,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const convId = e.chatId || uid('c');
     const isNew = !e.chatId || !data.convs.some(c => c.id === convId);
-    const um: Msg = { id: uid('m'), role: 'user', text, ts: Date.now(), feedback: null, image: image || null };
+    const um: Msg = { id: uid('m'), role: 'user', text, ts: Date.now(), feedback: null, image: image || null, source: forcedDoc && forcedDoc.id.startsWith('att_') ? forcedDoc.name : null };
     /* régénération : l'historique s'arrête avant la question (qui reste en place) ; la réponse remplacée est retirée plus bas */
     const convMsgs = isNew ? [] : (data.convs.find(c => c.id === convId)?.msgs || []);
     const regenIdx = regenOf ? convMsgs.findIndex(m => m.id === regenOf) : -1;

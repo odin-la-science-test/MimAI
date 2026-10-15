@@ -176,11 +176,24 @@ export function Screen({ children, scroll = false, pad = true, style }: { childr
   const padStyle = { paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 30 + insets.bottom };
   /* tablette : contenu centré, largeur lisible */
   const col = { width: '100%' as const, maxWidth: 640, alignSelf: 'center' as const };
+  /* le bouton Retour reste TOUJOURS visible : il est sorti du contenu défilant et posé par-dessus ; une cale garde la mise en page */
+  let back: React.ReactElement | null = null;
+  let body: React.ReactNode = children;
+  if (scroll) {
+    const arr = React.Children.toArray(children);
+    const i = arr.findIndex(ch => React.isValidElement(ch) && (ch.type as unknown) === IconBtn && (ch.props as { name?: string }).name === 'back');
+    if (i >= 0) { back = arr[i] as React.ReactElement; arr[i] = <View key="back-gap" style={{ height: 40 }} />; body = arr; }
+  }
   return (
     <View style={[{ flex: 1, backgroundColor: C.bg }, style]}>
       {scroll
-        ? <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ flexGrow: 1 }, col, pad ? padStyle : null]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>{children}</ScrollView>
+        ? <ScrollView style={{ flex: 1 }} contentContainerStyle={[{ flexGrow: 1 }, col, pad ? padStyle : null]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets>{body}</ScrollView>
         : <View style={[{ flex: 1 }, col, pad ? padStyle : null]}>{children}</View>}
+      {back ? (
+        <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 12, left: 20, zIndex: 30 }}>
+          <View style={{ borderRadius: 22, backgroundColor: C.bg }}>{back}</View>
+        </View>
+      ) : null}
     </View>
   );
 }

@@ -5,7 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { useApp } from './state';
-import { overlayAvailable, overlayGranted, overlayShow } from './services/overlay';
+import { overlayAvailable, overlayGranted, overlayShow, overlaySetRoam } from './services/overlay';
 
 export function BubbleSync() {
   const { data, ready } = useApp();
@@ -18,6 +18,10 @@ export function BubbleSync() {
   pos.current = data.settings.comp.pos;
   const open = useRef<'2a' | '2b' | '2c'>('2c');
   open.current = data.settings.comp.open || '2c';   /* la barre autour de la caméra est affichée par défaut */
+
+  /* promenade autonome de Mìmir sur l'écran (réglage, activée par défaut) */
+  const roam = data.settings.comp.roam !== false;
+  useEffect(() => { if (ready && overlayAvailable()) overlaySetRoam(roam); }, [ready, roam]);
 
   useEffect(() => {
     if (!overlayAvailable()) return;

@@ -40,9 +40,11 @@ explicitement demandé par l'utilisateur, d'un fichier de modèle.
 | **Voix** | Commande vocale (reconnaissance sur l'appareil), lecture des réponses à voix haute, **choix de la voix** et du style (naturelle, posée, grave, aiguë, vive). |
 | **L'étoile de Mìmir** | Dans la barre, l'étoile est un petit être avec des yeux et **156 animations** (12 familles : accueil, joie, réflexion, écoute, notifications, émotions, physique, couleurs, téléphone, moments, jeux, repos). Il vit seul à côté de la caméra, sans barre (design « La barre Mìmir », tour 2, `assets/design/`). Un toucher l'« ouvre » : il s'éveille puis vole vers sa place (au choix : Chute, Bond ou Éclosion) et la bulle de discussion s'ouvre à côté de lui, avec une petite flèche ; fermer la bulle le renvoie à côté de la caméra. Autres usages : un toucher ouvre la bulle de discussion ; ses états se lisent sur lui (écoute, réflexion, anneau de progression d'une tâche, pastille de notification). Les animations viennent de la maquette `assets/design/etoile-engine.js`, « cuites » par `npm run etoile:bake` en `etoile.json`. |
 | **L'esprit gardien** (mode en ligne) | Dès que le mode en ligne est actif, l'étoile de Mìmir laisse sa place à l'**esprit gardien** (design « L'esprit gardien », bleu nuit, yeux et runes cyan) : capuche, ailes, trois runes, **156 mouvements à lui** (`assets/design/esprit-engine.js`, « cuits » par `npm run esprit:bake` en `esprit.json`, test : `npm run test:esprit`). Il plane au lieu de rebondir ; au changement de mode, l'un s'efface et l'autre se forme. Hors ligne comme en ligne, le personnage se tient **sous la caméra** (jamais du côté de la batterie). |
+| **Documents joints** | Dans une discussion : « ＋ Joindre un document ou une photo ». Texte, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), OpenDocument, PDF (texte) et images sont lus **sur l'appareil** (`src/services/docExtract.ts`, test : `npm run test:docs`) ; le document reste actif pour les questions suivantes. Un PDF scanné peut être lu par Gemini si connecté. |
+| **Mìmir déplaçable** | On glisse le personnage où l'on veut sur l'écran (il garde sa place) ; il se promène aussi tout seul de temps en temps (réglage). |
+| **Hors Internet** | L'app détecte la perte de connexion : le mode en ligne est suspendu (interface orange, modèle du téléphone) puis reprend au retour d'Internet. |
 | **Puce dans la barre d'état** | Notification « mise à jour en direct » (Android 16, Samsung One UI 8) : une pastille près de la caméra, comme un lecteur de musique. Un toucher ouvre une **discussion flottante** ; on peut aussi écrire dans la notification ou toucher « Parler ». Une barre noire autour de la caméra est disponible en option. |
 | **IA en ligne gratuite** (facultative) | Menu → *IA en ligne gratuite* : collez vos propres clés gratuites (Cerebras, Groq, Gemini, SambaNova, OpenRouter, Mistral, Cloudflare). MiMai suit chaque limite du jour (compteurs locaux, en-têtes de limite, erreurs 429), choisit le meilleur modèle pour la question (court / moyen / réflexion, vision) et **bascule seul** vers un autre modèle ou fournisseur au moindre refus, sans rien afficher dans la discussion. En mode en ligne, **seuls les modèles en ligne répondent** (le modèle du téléphone reste muet et déchargé) ; réponses plus longues qu'en local. Désactivée par défaut ; mémoire, documents et photos ne sont partagés que sur option. Clés dans le coffre Android. **Images et voix** : « génère une image de… », « fais un vocal : … » (Cloudflare Flux / MeloTTS, Gemini), et des **voix en ligne** au choix dans Mìmir ; la vidéo n'est proposée que si un fournisseur gratuit la permet (aucun aujourd'hui, l'app le dit). Marche dans l'app **et** dans la bulle. Code : `src/services/cloud/`, tests : `npm run test:cloud`. |
-| **Jeu hors ligne** | « La Garde des Étoiles », jeu intégré, sans réseau. |
 | **Confidentialité** | Aucune télémétrie, aucun compte ; données chiffrées au repos ; suppression complète en un geste. |
 
 ---
@@ -103,10 +105,6 @@ l'encoche réelle de l'écran (Android 11+), disparaît en paysage. Un toucher o
 messages sont envoyés au moteur de l'app (JavaScript) qui répond en direct. Fonction **optionnelle à la compilation**
 (politique Google Play sur `SYSTEM_ALERT_WINDOW`) : voir `docs/PLAY_DECLARATION_BULLE.md`.
 
-### 9. Jeu (`assets/games/`, `scripts/embed-game.mjs`, `src/screens/game.tsx`)
-Le jeu HTML est embarqué dans une WebView verrouillée par une CSP **sans aucun accès réseau** (React et ReactDOM
-inclus). La progression reste dans la WebView. Des tests vérifient l'absence d'appel réseau.
-
 ---
 
 ## Démarrer
@@ -142,14 +140,13 @@ Publication : `docs/TUTO_PLAY_STORE.md`, `docs/PLAY_STORE_CHECKLIST.md`, `docs/S
 App.tsx, app.json          point d'entrée, configuration Expo/Android
 src/
   state.tsx                état global et actions (chat, modèles, benchmarks…)
-  screens/                 écrans (chat, modèles, entraînement, compagnon, jeu…)
+  screens/                 écrans (chat, modèles, entraînement, compagnon…)
   services/                engine, speedplan, bench, training, lora, net, db, crypto, rag, memory,
                            catalog, fit, advisor, installed, voice, speak, overlay
   OverlayChat.tsx          réponses de la discussion flottante
   data/catalog.json        catalogue de modèles (taille + SHA-256)
 modules/mimir-overlay/     module natif Android (barre, discussion flottante, SHA-256 natif)
 plugins/                   plugin de configuration native
-assets/games/              jeu embarqué (source) ; src/games/ = version générée
 scripts/                   build, génération du catalogue/jeu, tests
 docs/                      Play Store, confidentialité, déclarations
 ```
@@ -158,7 +155,7 @@ docs/                      Play Store, confidentialité, déclarations
 
 ```bash
 npm run typecheck
-npm run test:training test:speed test:fit test:advisor test:speak test:installed test:game test:gameai test:motion test:shake
+npm run test:training test:speed test:fit test:advisor test:speak test:installed test:motion test:shake
 npm run catalog:check
 ```
 (à lancer un par un : `npm run test:speed`, etc.)

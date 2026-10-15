@@ -2,7 +2,7 @@
    Tout passe par les clés déjà connectées dans « IA en ligne gratuite » (mêmes limites suivies, même bascule). */
 import * as FileSystem from 'expo-file-system/legacy';
 import { cloudEngine } from './index';
-import { genImage, genSpeech, videoProviders, CLOUD_VOICES, isCloudVoice } from './media';
+import { genImage, genSpeech, genDocText, videoProviders, CLOUD_VOICES, isCloudVoice } from './media';
 import type { Intent, Media } from './media';
 import type { ProviderId } from './providers';
 import { cleanForSpeech, chunkForSpeech, setCloudSpeaker } from '../speak';
@@ -88,6 +88,20 @@ async function cloudSpeak(text: string, voiceId: string, onEnd?: () => void): Pr
   return true;
 }
 setCloudSpeaker(cloudSpeak, stopCloudAudio);
+
+/* PDF illisible en local : lu par Gemini (si connecté et si l'utilisateur a activé l'IA en ligne) ; null sinon */
+export async function extractDocViaCloud(uri: string, mime: string): Promise<string | null> {
+  const e = cloudEngine();
+  if (!e || !e.mediaAvailable('doc')) return null;
+  try {
+    const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const r = await e.media('doc', (id, key, account, post) => genDocText(id, key, account, b64, mime, post));
+    return r?.media.text || null;
+  } catch (err) {
+    trail('lecture de document en ligne : erreur ignorée (' + (err instanceof Error ? err.message : String(err)).slice(0, 80) + ')');
+    return null;
+  }
+}
 
 /* ───────── « génère une image / un vocal / une vidéo » ───────── */
 export interface MediaResult { text: string; image?: string | null; ok: boolean; model: string }

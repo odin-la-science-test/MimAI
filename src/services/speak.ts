@@ -16,6 +16,11 @@ try { S = require('expo-speech') as SpeechModule; } catch { S = null; }
 
 export const speakAvailable = (): boolean => !!S;
 
+/* journal facultatif (rapport de plantage) : permet de savoir si la lecture vocale a démarré ou pourquoi elle a échoué */
+let logFn: ((s: string) => void) | null = null;
+export const setSpeakLog = (f: ((s: string) => void) | null): void => { logFn = f; };
+const log = (s: string): void => { try { logFn?.(s); } catch { /* journal indisponible */ } };
+
 /* texte lisible à voix haute : sans markdown, liens, emojis ni symboles de mise en forme */
 export function cleanForSpeech(raw: string): string {
   let t = String(raw || '');
@@ -97,7 +102,7 @@ export function speak(text: string, onEnd?: () => void): boolean {
   const clean = cleanForSpeech(text);
   if (!clean) { onEnd?.(); return false; }
   const mine = ++token;
-  void S.stop().catch(() => { /* rien à arrêter */ });
+  const stopped = Promise.resolve(S.stop()).catch(() => { /* rien à arrêter */ });   /* on attend la fin de l'arrêt : sinon il peut couper la NOUVELLE lecture */
   const parts = chunkForSpeech(clean);
   const local = () => { if (mine === token) next(0); };
   if (prefs.id && CLOUD_ID.test(prefs.id) && cloudSpeaker) {
@@ -105,19 +110,21 @@ export function speak(text: string, onEnd?: () => void): boolean {
     void cloudSpeaker(clean, prefs.id, onEnd).then(ok => { if (!ok) local(); }).catch(() => local());
     return true;
   }
+  let minimal = false;   /* après une erreur, on réessaie une fois avec les réglages les plus simples (voix par défaut) */
   const next = (i: number) => {
     if (mine !== token) return;                       // une autre lecture a pris le relais
     if (i >= parts.length) { onEnd?.(); return; }
     try {
       S!.speak(parts[i], {
-        language: 'fr-FR', pitch: prefs.pitch, rate: prefs.rate, ...(prefs.id && !CLOUD_ID.test(prefs.id) ? { voice: prefs.id } : {}),
+        language: 'fr-FR', ...(minimal ? {} : { pitch: prefs.pitch, rate: prefs.rate }), ...(!minimal && prefs.id && !CLOUD_ID.test(prefs.id) ? { voice: prefs.id } : {}),
+        onStart: () => { if (i === 0) log('lecture vocale : démarrée (' + clean.length + ' car.)'); },
         onDone: () => next(i + 1),
         onStopped: () => { if (mine === token) onEnd?.(); },
-        onError: () => { if (mine === token) onEnd?.(); },
+        onError: (er: unknown) => { log('lecture vocale : erreur ' + String((er as { message?: string })?.message || er).slice(0, 80)); if (mine !== token) return; if (!minimal) { minimal = true; next(i); } else onEnd?.(); },
       });
-    } catch { onEnd?.(); }
+    } catch (er) { log('lecture vocale : exception ' + String((er as Error)?.message || er).slice(0, 80)); onEnd?.(); }
   };
-  next(0);
+  void stopped.then(() => setTimeout(() => next(0), 60));
   return true;
 }
 

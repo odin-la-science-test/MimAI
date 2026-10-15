@@ -6,7 +6,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp, MODELS } from '../state';
 import { C, F } from '../theme';
-import { MOVES } from '../art';
 import { IconBtn, Tag, Navbar, MenuSheet, Composer, AvatarIc, useTopPad, useKeyboardOpen } from '../ui';
 import { onThemeChange } from '../theme';
 import { isOnlineMode } from '../services/cloud/mode';
@@ -42,8 +41,8 @@ export function Home({ navigation }: NativeStackScreenProps<RootStackParamList, 
           <IconBtn name="dots" onPress={() => setMenu(true)} />
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 22, paddingTop: 10, alignItems: 'center' }}>
-          <Tag kind="accent2" dot>{online ? 'En ligne · IA en ligne active' : netOn ? 'Réseau autorisé' : 'Local · Internet bloqué'}</Tag>
-          <Tag kind="neutral" onPress={() => navigation.navigate('Models')}>{am ? am.name : 'Modèle'} ›</Tag>
+          <Tag kind="accent2" dot>{online ? 'En ligne · IA en ligne active' : (!e.internet && data.settings.cloud?.enabled) ? 'Hors ligne · pas d’Internet' : netOn ? 'Réseau autorisé' : 'Local · Internet bloqué'}</Tag>
+          {online ? null : <Tag kind="neutral" onPress={() => navigation.navigate('Models')}>{am ? am.name : 'Modèle'} ›</Tag>}
         </View>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 14, paddingTop: 12, width: '100%', maxWidth: 640, alignSelf: 'center' }}
           keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -76,16 +75,13 @@ export function Home({ navigation }: NativeStackScreenProps<RootStackParamList, 
       <Navbar active="home" onGo={k => navigation.navigate(k === 'home' ? 'Home' : k === 'chats' ? 'Chats' : 'Library')} />
       {menu ? (
         <MenuSheet onClose={() => setMenu(false)} items={[
-          { icon: 'cpu', title: 'Modèles', sub: (am ? am.name : '') + ' actif', on: () => navigation.navigate('Models') },
+          { icon: 'cpu', title: 'Modèles', sub: online ? 'Modèles du téléphone' : (am ? am.name : '') + ' actif', on: () => navigation.navigate('Models') },
           { icon: 'grad', title: 'Entraînement', sub: 'Compétences et exemples', on: () => navigation.navigate('Training') },
           { icon: 'layers', title: 'Mémoire', sub: data.memories.length + ' souvenir(s) actif(s)', on: () => navigation.navigate('Memory') },
           { icon: 'user', title: 'Mìmir', sub: data.settings.comp.on ? 'Affiché dans l’app' : 'Le compagnon, partout', on: () => navigation.navigate('Companion') },
           { icon: 'spark', title: 'IA en ligne gratuite', sub: data.settings.cloud?.enabled ? 'Activée · bascule automatique' : 'Désactivée · vos propres clés', on: () => navigation.navigate('Cloud') },
           { icon: 'lock', title: 'Confidentialité', sub: online ? 'Stockage local · IA en ligne active' : 'Local, sans compte', on: () => navigation.navigate('Privacy') },
           { icon: 'chart', title: 'Rapport de plantage', sub: 'Erreurs et fermetures, à copier', on: () => navigation.navigate('CrashLog') },
-          { icon: 'spark', title: 'La Garde des Étoiles', sub: 'Jeu hors ligne avec Mìmir', on: () => navigation.navigate('Game') },
-          { icon: 'spark', title: 'Arène', sub: 'Mini-jeu avec Mìmir', on: () => navigation.navigate('Arena') },
-          { icon: 'pen', title: 'Animations', sub: MOVES.length + ' mouvements de Mìmir', on: () => navigation.navigate('Moves') },
         ]} />
       ) : null}
     </View>

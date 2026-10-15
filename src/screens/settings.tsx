@@ -24,7 +24,7 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
     ['Conversations', data.convs.length + (cryptoMode === 'js' ? ' (test, en clair)' : ' chiffrées')],
     ['Mémoire', data.memories.length + (data.memories.length > 1 ? ' souvenirs' : ' souvenir')],
     ['Documents', data.docs.length + ' indexés localement'],
-    ['Modèles et compétences', data.settings.installed.length + ' modèles · ' + data.adapters.length + ' adaptateurs'],
+    ...(online ? [] : [['Modèles et compétences', data.settings.installed.length + ' modèles · ' + data.adapters.length + ' adaptateurs'] as [string, string]]),
   ];
 
   return (

@@ -16,8 +16,6 @@ import { Training, TrainNew, TrainExample, TrainRun, TrainResult } from './scree
 import { Memory } from './screens/memory';
 import { Privacy } from './screens/settings';
 import { Companion, FloatingMimir } from './screens/companion';
-import { Arena, Moves } from './screens/arena';
-import { Game } from './screens/game';
 import { CrashLog } from './screens/crashlog';
 import { Cloud } from './screens/cloud';
 import { trail } from './services/crashlog';
@@ -72,9 +70,6 @@ export function RootNav() {
         <Stack.Screen name="Memory" component={Memory} />
         <Stack.Screen name="Privacy" component={Privacy} />
         <Stack.Screen name="Companion" component={Companion} />
-        <Stack.Screen name="Arena" component={Arena} />
-        <Stack.Screen name="Game" component={Game} options={{ animation: 'fade' }} />
-        <Stack.Screen name="Moves" component={Moves} />
         <Stack.Screen name="CrashLog" component={CrashLog} />
         <Stack.Screen name="Cloud" component={Cloud} />
       </Stack.Navigator>

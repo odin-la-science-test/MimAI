@@ -17,6 +17,7 @@ import { listen, voiceAvailable, describeVoiceFailure } from './services/voice';
 import type { Listening } from './services/voice';
 import { trail } from './services/crashlog';
 import { cloudHook } from './services/cloud';
+import { isOnlineMode } from './services/cloud/mode';
 import { detectIntent } from './services/cloud/media';
 import { runIntent } from './services/cloud/studio';
 import { barThink, barListen, barDone } from './services/bar';
@@ -50,15 +51,17 @@ export function OverlayChat() {
     const st = dataRef.current.settings;
     const mode = curMode();
     const cl = st.cloud;
-    const hasVision = isVisionModel(MODELS[curModel()]) || !!(cl?.enabled && cl.sharePhotos);   /* ou une IA en ligne qui voit les images */
+    const online = isOnlineMode(cl);
+    const hasVision = online ? !!cl?.sharePhotos : isVisionModel(MODELS[curModel()]);   /* en ligne : l'IA en ligne voit les images si le partage des photos est activé */
     const locked = hist.current.length > 0;
     overlayChatState(JSON.stringify({
       reset, locked, mode,
-      model: MODELS[curModel()]?.name || 'moteur intégré',
-      models: candidatesFor(mode as FnMode, st.installed, defs).map(id => ({ id, name: MODELS[id].name })),
+      /* mode en ligne : rien des modèles téléchargés n'est montré dans la bulle */
+      model: online ? 'en ligne' : (MODELS[curModel()]?.name || 'moteur intégré'),
+      models: online ? [] : candidatesFor(mode as FnMode, st.installed, defs).map(id => ({ id, name: MODELS[id].name })),
       canPhoto: mode === 'vision' && hasVision,
-      micOk: voiceAvailable(),
-      hint: mode === 'vision' && !hasVision ? 'Aucun modèle de vision installé. Ouvrez MiMai → Modèles → Un moteur par fonction → Vision pour en installer un.' : '',
+      micOk: true,   /* la dictée de la bulle est native (activité transparente) */
+      hint: mode === 'vision' && !hasVision ? (online ? 'Activez « Photos » dans MiMai → IA en ligne gratuite pour envoyer des photos.' : 'Aucun modèle de vision installé. Ouvrez MiMai → Modèles → Un moteur par fonction → Vision pour en installer un.') : '',
       msgs: reset ? hist.current.map(m => ({ role: m.role === 'user' ? 'user' : 'ai', text: m.text, image: m.image || undefined })) : undefined,
     }));
   };
@@ -137,7 +140,7 @@ export function OverlayChat() {
         session.current = null; overlayChatMic(false);
         overlayChatText(describeVoiceFailure(r) + ' Sur certains téléphones, le micro ne marche que si MiMai est ouvert : touchez « Ouvrir MiMai » pour dicter.', true);
       },
-    });
+    }, 'fr-FR', { allowNetwork: isOnlineMode(dataRef.current.settings.cloud) });
   };
 
   const onAction = (type: string, arg: string) => {
@@ -169,6 +172,8 @@ export function OverlayChat() {
       patchRef.current(x => { const c = x.convs.find(v => v.id === convId.current); if (c) c.msgs = c.msgs.filter(m => m.id !== gone.id); });
       pushState(true);
       void answer(q.text, q.image || null, true);
+    } else if (type === 'voice') {
+      voiceTurn.current = true;   /* texte dicté dans la bulle : la réponse sera lue à voix haute */
     } else if (type === 'speak') {
       speak(arg);
     } else if (type === 'mic') {

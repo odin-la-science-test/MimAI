@@ -29,15 +29,13 @@
     "catalog:check": "node --test scripts/catalog.test.mjs",
     "test:advisor": "node --test scripts/advisor.test.cjs",
     "test:speak": "node --test scripts/speak.test.cjs",
-    "game:embed": "node scripts/embed-game.mjs",
-    "test:game": "node --test scripts/game.test.mjs",
-    "test:gameai": "node --test scripts/gameAi.test.cjs",
     "test:installed": "node --test scripts/installed.test.cjs",
     "test:speed": "node --test scripts/speed.test.cjs",
     "test:modes": "node --test scripts/modes.test.cjs",
     "test:etoile": "node --test scripts/etoile.test.cjs",
     "esprit:bake": "node scripts/bake-esprit.mjs",
     "test:esprit": "node --test scripts/esprit.test.cjs",
+    "test:docs": "node --test scripts/docs.test.cjs",
     "test:cloud": "node --test scripts/cloud.test.cjs"
   },
   "dependencies": {
@@ -65,6 +63,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "fflate": "^0.8.2",
     "llama.rn": "^0.13.0-rc.6",
     "react": "19.2.3",
     "react-native": "0.86.3",
@@ -73,8 +72,7 @@
     "react-native-quick-crypto": "^1.1.7",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4",
-    "react-native-webview": "13.16.1"
+    "react-native-svg": "15.15.4"
   },
   "devDependencies": {
     "@expo/ngrok": "^4.1.3",

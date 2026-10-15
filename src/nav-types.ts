@@ -18,9 +18,6 @@ export type RootStackParamList = {
   Memory: undefined;
   Privacy: undefined;
   Companion: undefined;
-  Arena: undefined;
-  Game: undefined;
-  Moves: undefined;
   CrashLog: undefined;
   Cloud: undefined;
 };

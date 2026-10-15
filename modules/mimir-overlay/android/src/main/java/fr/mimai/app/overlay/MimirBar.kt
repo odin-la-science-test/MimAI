@@ -45,6 +45,11 @@ class MimirBar(
   /* hors ligne : l'étoile de Mìmir ; en mode en ligne : l'esprit gardien (si ses animations sont chargées) */
   private var stage: Being = if (MimirTheme.online && esprit != null) EspritStage(esprit!!) else EtoileStage(data)
   private var swapping = false
+  private var dragging = false
+  private var roam = true
+  private var touchSide = 0
+  private val roamRun = Runnable { roamTick() }
+  private val prefs = ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
   private var pendingSwap = false
   private var touchV: TouchView? = null
   private var touchLp: WindowManager.LayoutParams? = null
@@ -69,8 +74,13 @@ class MimirBar(
 
   /* place de repos : à côté de la caméra, côté batterie (petite) — ou juste sous la barre d'état sur les téléphones où
      le système y garde les touchers (Samsung) ; l'étoile y est alors un peu plus grande */
-  private val restX: Float get() = Math.max(34f * dp, Math.min(screenW - 34f * dp, camXpx))
-  private val restY: Float get() = topPx + (if (stage is EspritStage) 24f else 20f) * dp
+  private var homeX = -1f
+  private var homeY = -1f
+  private val screenH: Int get() = ctx.resources.displayMetrics.heightPixels
+  private fun clampX(x: Float): Float = Math.max(30f * dp, Math.min(screenW - 30f * dp, x))
+  private fun clampY(y: Float): Float = Math.max(topPx + 16f * dp, Math.min(screenH - 110f * dp, y))
+  private val restX: Float get() = if (homeX >= 0f) homeX else clampX(camXpx)
+  private val restY: Float get() = if (homeY >= 0f) homeY else topPx + (if (stage is EspritStage) 24f else 20f) * dp
   private fun sizeFor(b: Being): Float = (if (b is EspritStage) 30f else 24f) * dp
   private val restS: Float get() = sizeFor(stage)
 
@@ -88,9 +98,12 @@ class MimirBar(
       val common = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
 
-      // fenêtre de dessin (non tactile) : toute la largeur, assez haute pour les vols de l'étoile
+      // position posée par l'utilisateur (mémorisée) ; sinon sous la caméra
+      if (prefs.contains("home_fx")) { homeX = clampX(prefs.getFloat("home_fx", 0.5f) * screenW); homeY = clampY(prefs.getFloat("home_fy", 0.05f) * screenH) }
+      roam = prefs.getBoolean("roam", true)
+      // fenêtre de dessin (non tactile) : tout l'écran, pour que Mìmir puisse aller partout
       fxLeft = 0
-      val fh = Math.min(ctx.resources.displayMetrics.heightPixels, (330f * dp).toInt())
+      val fh = screenH
       stage.place(restX - fxLeft, restY, restS)
       val fx = FxView(ctx)
       val flp = WindowManager.LayoutParams(screenW, fh, type, common or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, PixelFormat.TRANSLUCENT)
@@ -100,7 +113,8 @@ class MimirBar(
       fxv = fx
 
       // fenêtre tactile : un carré autour de l'étoile au repos
-      val side = (52f * dp).toInt()
+      touchSide = (52f * dp).toInt()
+      val side = touchSide
       val tv = TouchView(ctx)
       val tlp = WindowManager.LayoutParams(side, side, type, common, PixelFormat.TRANSLUCENT)
       tlp.gravity = Gravity.TOP or Gravity.START
@@ -116,6 +130,7 @@ class MimirBar(
       stage.play(stage.clipFor("hello"))
       try { ctx.registerReceiver(screenReceiver, IntentFilter().also { it.addAction(Intent.ACTION_SCREEN_OFF); it.addAction(Intent.ACTION_SCREEN_ON) }) } catch (e: Exception) { /* facultatif */ }
       kick()
+      if (roam) ui.postDelayed(roamRun, 15000)
       true
     } catch (e: Exception) {
       Log.e(MimirOverlayService.TAG, "Mìmir près de la caméra refusé : " + e.javaClass.simpleName + " " + (e.message ?: ""), e)
@@ -131,12 +146,64 @@ class MimirBar(
 
   fun dispose() {
     running = false
+    ui.removeCallbacks(roamRun)
     autoBack?.let { ui.removeCallbacks(it) }
     cancelSeq()
     try { ctx.unregisterReceiver(screenReceiver) } catch (e: Exception) { /* pas enregistré */ }
     touchV?.let { try { wm.removeView(it) } catch (e: Exception) { /* déjà retirée */ } }
     fxv?.let { try { wm.removeView(it) } catch (e: Exception) { /* déjà retirée */ } }
     touchV = null; fxv = null
+  }
+
+  /* ───────── déplacement : glisser avec le doigt, et promenade autonome ───────── */
+  private fun moveTouch() {
+    val v = touchV ?: return
+    val lp = touchLp ?: return
+    lp.x = Math.max(0, (restX - touchSide / 2f).toInt())
+    lp.y = Math.max(0, (restY - touchSide / 2f).toInt())
+    try { wm.updateViewLayout(v, lp) } catch (e: Exception) { /* fenêtre retirée */ }
+  }
+
+  private fun moveHome(x: Float, y: Float) {
+    homeX = clampX(x); homeY = clampY(y)
+    stage.place(homeX - fxLeft, homeY, restS)
+    moveTouch()
+    kick()
+  }
+
+  private fun saveHome() {
+    prefs.edit().putFloat("home_fx", restX / screenW).putFloat("home_fy", restY / screenH).apply()
+  }
+
+  fun setRoam(on: Boolean) {
+    ui.post {
+      roam = on
+      ui.removeCallbacks(roamRun)
+      if (on && fxv != null) ui.postDelayed(roamRun, 12000)
+    }
+  }
+
+  /* de temps en temps, Mìmir se promène tout seul : il vole jusqu'à un autre endroit de l'écran et s'y pose */
+  private fun roamTick() {
+    ui.removeCallbacks(roamRun)
+    if (!roam || fxv == null) return
+    if (isOpen || swapping || pendingSwap || dragging || !screenOn || stage.busy() || state != "repos") { ui.postDelayed(roamRun, 8000); return }
+    val tx = clampX(36f * dp + Math.random().toFloat() * (screenW - 72f * dp))
+    val ty = clampY(topPx + 24f * dp + Math.random().toFloat() * (screenH - topPx - 170f * dp))
+    val x0 = restX
+    val y0 = restY
+    val dist = Math.hypot((tx - x0).toDouble(), (ty - y0).toDouble()).toFloat()
+    val dur = Math.max(1.3f, Math.min(3.4f, dist / (230f * dp)))
+    setHit(false)
+    stage.play(stage.clipFor("roam"))
+    stage.fly(tx - fxLeft, ty, restS, (x0 + tx) / 2f + (Math.random().toFloat() - 0.5f) * 120f * dp, Math.min(y0, ty) - 60f * dp * Math.random().toFloat(), dur, "io", "io", "io") {
+      homeX = tx; homeY = ty
+      moveTouch(); setHit(true)
+      stage.play(stage.clipFor("land"))
+      kick()
+    }
+    kick()
+    ui.postDelayed(roamRun, (22000 + Math.random() * 38000).toLong())
   }
 
   /* la zone tactile n'existe qu'au repos : pendant l'ouverture, l'étoile vole et la bulle a ses propres boutons */
@@ -344,6 +411,10 @@ class MimirBar(
 
   private inner class TouchView(c: Context) : View(c) {
     private var longFired = false
+    private var downX = 0f
+    private var downY = 0f
+    private var startHX = 0f
+    private var startHY = 0f
     private val longRun = Runnable { longFired = true; stage.play(stage.clipFor("listen")); kick(); onLong() }
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
@@ -351,16 +422,37 @@ class MimirBar(
         MotionEvent.ACTION_DOWN -> {
           MimirOverlayService.lastEvent = "toucher reçu sur Mìmir (" + ev.x.toInt() + "," + ev.y.toInt() + ")"
           longFired = false
+          dragging = false
+          downX = ev.rawX; downY = ev.rawY; startHX = restX; startHY = restY
           if (!isOpen) { stage.playRandomTap(); kick() }
           ui.postDelayed(longRun, 500)
           return true
         }
-        MotionEvent.ACTION_UP -> {
-          ui.removeCallbacks(longRun)
-          if (!longFired) { MimirOverlayService.lastEvent = "toucher court : ouverture"; onTap() }
+        MotionEvent.ACTION_MOVE -> {
+          val dx = ev.rawX - downX
+          val dy = ev.rawY - downY
+          if (!dragging && !isOpen && Math.hypot(dx.toDouble(), dy.toDouble()) > 12f * dp) {
+            dragging = true
+            ui.removeCallbacks(longRun)
+            ui.removeCallbacks(roamRun)
+            stage.play(stage.clipFor("grab"))
+          }
+          if (dragging) moveHome(startHX + dx, startHY + dy)
           return true
         }
-        MotionEvent.ACTION_CANCEL -> { ui.removeCallbacks(longRun); return true }
+        MotionEvent.ACTION_UP -> {
+          ui.removeCallbacks(longRun)
+          if (dragging) {
+            dragging = false
+            saveHome()
+            stage.play(stage.clipFor("land"))
+            MimirOverlayService.lastEvent = "Mìmir posé en (" + restX.toInt() + "," + restY.toInt() + ")"
+            if (roam) ui.postDelayed(roamRun, 30000)
+            kick()
+          } else if (!longFired) { MimirOverlayService.lastEvent = "toucher court : ouverture"; onTap() }
+          return true
+        }
+        MotionEvent.ACTION_CANCEL -> { ui.removeCallbacks(longRun); if (dragging) { dragging = false; saveHome() }; return true }
       }
       return super.onTouchEvent(ev)
     }

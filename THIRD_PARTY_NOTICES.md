@@ -13,7 +13,6 @@ avant toute distribution commerciale.
 | Expo et modules `expo-*` (SDK 57) | MIT |
 | `llama.rn` (liaison React Native de llama.cpp) | MIT |
 | `expo-speech-recognition` | MIT |
-| `react-native-webview` | MIT |
 | `@react-navigation/*`, `react-native-svg`, `react-native-screens`, `react-native-gesture-handler`, `react-native-safe-area-context`, `react-native-quick-crypto`, `react-native-nitro-modules` | MIT |
 
 Pour la liste complète et à jour : `npx license-checker --summary` (ou lire `node_modules/*/package.json`).
@@ -23,9 +22,6 @@ Pour la liste complète et à jour : `npx license-checker --summary` (ou lire `n
 
 ## Polices
 - **Caprasimo** et **Figtree** — polices Google Fonts, publiées sous SIL Open Font License 1.1.
-
-## Jeu intégré
-- « La Garde des Étoiles » est une création du Titulaire. Il embarque **React 18.3.1** et **ReactDOM 18.3.1** (MIT).
 
 ## Modèles de langage (téléchargés par l'utilisateur, non inclus dans ce dépôt)
 Le catalogue (`src/data/catalog.json`) renvoie vers des fichiers GGUF publiés sur Hugging Face. **Chaque modèle a sa licence**,

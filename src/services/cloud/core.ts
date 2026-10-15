@@ -161,7 +161,7 @@ export class CloudEngine {
       const key = this.d.getKey(id);
       if (!pc || !pc.enabled || !key || (def.needsAccount && !pc.account)) continue;
       const now = this.d.now();
-      const cost = kind === 'image' ? (id === 'cloudflare' ? 700 : 1500) : (id === 'cloudflare' ? 300 : 500);
+      const cost = kind === 'image' ? (id === 'cloudflare' ? 700 : 1500) : kind === 'doc' ? 3000 : (id === 'cloudflare' ? 300 : 500);
       const pe = roll(c0.quota[providerKey(def)], now, def.resetTz), me = roll(c0.quota[modelKey(def, 'media')], now, def.resetTz);
       if (!canUse(def, [pe, me], now, cost).ok) continue;
       const cand: Candidate = { def, model: { id: 'media', tier: 'balanced', vision: false, reasoning: false, free: true }, account: pc.account, score: 0 };

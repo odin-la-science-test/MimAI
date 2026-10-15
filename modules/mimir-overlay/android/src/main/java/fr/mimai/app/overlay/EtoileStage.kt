@@ -146,6 +146,8 @@ class EtoileStage(private val d: EtoileData) : Being {
     "think" -> "reflechit"
     "thinkOpen" -> "compris"
     "notif" -> "message"
+    "roam" -> "plane"
+    "land" -> "atterrit"
     else -> "coucou"
   }
 

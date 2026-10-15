@@ -20,6 +20,9 @@ import { barListen } from '../services/bar';
 import type { Listening } from '../services/voice';
 import type { Msg } from '../services/db';
 import { isOnlineMode } from '../services/cloud/mode';
+import { extractFromFile, extOf } from '../services/docExtract';
+import { extractDocViaCloud } from '../services/cloud/studio';
+import type { Doc } from '../services/db';
 
 const MODES: [string, string][] = [['rapide', 'Rapide'], ['reflexion', 'Réflexion'], ['vision', 'Vision'], ['outils', 'Outils']];
 
@@ -36,8 +39,12 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
   const am = MODELS[modelId];
   const modeLabel = MODES.find(m => m[0] === mode)?.[1] || 'Rapide';
   const visionMode = mode === 'vision';
-  const hasVisionModel = isVisionModel(am);
+  const hasVisionModel = online ? !!data.settings.cloud?.sharePhotos : isVisionModel(am);
   const [photo, setPhoto] = useState<string | null>(null);
+  /* document joint à la discussion : reste actif pour les questions suivantes jusqu'à ce qu'on le retire */
+  const [attach, setAttach] = useState<{ name: string; text: string; type: string } | null>(null);
+  const [reading, setReading] = useState(false);
+  useEffect(() => { setAttach(null); }, [e.chatId]);
   const scrollRef = useRef<ScrollView>(null);
   const [menu, setMenu] = useState(false);
   const top = useTopPad(4);
@@ -91,7 +98,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
       onFinal: t => { if (t) { voiceTurn.current = true; stopSpeaking(); set(s => ({ ...s, draft: '' })); void sendMessage(t); } },
       onEnd: () => { setListening(false); session.current = null; if (!e.busy) barListen(false); },
       onFail: r => { setListening(false); set(s => ({ ...s, draft: '' })); toast(describeVoiceFailure(r)); },
-    });
+    }, 'fr-FR', { allowNetwork: online });
   };
   /* arrêt du micro en quittant l'écran ou l'application */
   useEffect(() => { if (!focused) session.current?.cancel(); }, [focused]);
@@ -118,14 +125,48 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
       setPhoto(dest);
     } catch (err) { toast('Photo impossible : ' + (err instanceof Error ? err.message.slice(0, 80) : 'erreur')); }
   };
+  /* joindre un document OU une photo : texte, Word, Excel, PowerPoint, PDF, images — lu sur l'appareil */
+  const pickAttachment = async () => {
+    if (reading) return;
+    try {
+      const r = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      if (r.canceled || !r.assets?.length) return;
+      const a = r.assets[0];
+      setReading(true);
+      let x = await extractFromFile(a.uri, a.name || 'document', a.size);
+      if (x.kind === 'image') {
+        if (!hasVisionModel) { toast(online ? 'Activez « Photos » dans IA en ligne gratuite pour envoyer une photo.' : 'Il faut un modèle de vision pour analyser une photo (Modèles → Un moteur par fonction).'); return; }
+        const ext = (/\.(jpe?g|png|webp|gif|bmp)$/i.exec(a.name || a.uri) || ['', 'jpg'])[1].toLowerCase();
+        const dir = (FileSystem.documentDirectory || '') + 'vision/';
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => { /* existe déjà */ });
+        const dest = dir + uid('img') + '.' + ext;
+        await FileSystem.copyAsync({ from: a.uri, to: dest });
+        setPhoto(dest); setAttach(null);
+        toast('Photo jointe');
+        return;
+      }
+      if (x.kind === 'none' && x.canCloud) {
+        const cloudText = await extractDocViaCloud(a.uri, extOf(a.name || '') === 'pdf' ? 'application/pdf' : 'application/octet-stream');
+        if (cloudText) x = { kind: 'text', text: cloudText.slice(0, 120000), type: x.type };
+      }
+      if (x.kind === 'none') { toast(x.reason + (x.canCloud ? ' Connectez Google Gemini (IA en ligne gratuite) pour qu’il le lise.' : '')); return; }
+      if (x.kind === 'text') {
+        setAttach({ name: a.name || 'document', text: x.text, type: x.type }); setPhoto(null);
+        toast('Document joint : ' + (a.name || 'document') + ' (' + x.text.split(/\s+/).filter(Boolean).length + ' mots)');
+      }
+    } catch (err) { toast('Pièce jointe impossible : ' + (err instanceof Error ? err.message.slice(0, 80) : 'erreur')); }
+    finally { setReading(false); }
+  };
+
   const doSend = () => {
-    if (visionMode && !hasVisionModel) { toast('Choisissez d’abord un modèle de vision.'); navigation.navigate('Models'); return; }
+    if (visionMode && !hasVisionModel) { toast(online ? 'Activez « Photos » dans IA en ligne gratuite.' : 'Choisissez d’abord un modèle de vision.'); if (!online) navigation.navigate('Models'); return; }
     const raw = e.draft.trim();
-    if (!raw && !photo) return;
-    const img = visionMode ? photo : null;
-    const t = raw || 'Décris cette image.';
+    if (!raw && !photo && !attach) return;
+    const img = photo && hasVisionModel ? photo : null;
+    const t = raw || (img ? 'Décris cette image.' : 'Résume ce document.');
+    const fd: Doc | null = attach ? { id: 'att_' + attach.name, name: attach.name, type: attach.type, sizeMb: attach.text.length / 1e6, addedAt: Date.now(), text: attach.text, indexed: true } : null;
     stopSpeaking(); setSpeakingId(null); set(s => ({ ...s, draft: '' })); setPhoto(null);
-    void sendMessage(t, null, undefined, img);
+    void sendMessage(t, fd, undefined, img);
   };
 
   return (
@@ -162,7 +203,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
               </View>
               <View style={{ gap: 6, flex: 1, minWidth: 0 }}>
                 <Text style={{ fontWeight: '700', fontSize: 16, fontFamily: F.bodyBold }}>{(e.steps[e.step] || 'Analyse') + '…'}</Text>
-                <Tag kind="accent">{(MODES.find(m => m[0] === data.settings.mode)?.[1] || 'Rapide') + ' · ' + (am ? am.name : '')}</Tag>
+                <Tag kind="accent">{(MODES.find(m => m[0] === data.settings.mode)?.[1] || 'Rapide') + (online ? ' · en ligne' : ' · ' + (am ? am.name : ''))}</Tag>
               </View>
             </View>
             <View style={{ backgroundColor: C.surface, borderRadius: 32, padding: 16, gap: 12 }}>
@@ -194,7 +235,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
 
       {locked ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Tag kind="accent">{'Mode ' + modeLabel + ' · ' + (am ? am.name : 'moteur intégré')}</Tag>
+          <Tag kind="accent">{'Mode ' + modeLabel + (online ? ' · en ligne' : ' · ' + (am ? am.name : 'moteur intégré'))}</Tag>
           <Text style={{ flexShrink: 1, fontSize: 12, color: C.n700 }}>Fixé pour cette discussion.</Text>
           <TouchableOpacity onPress={() => newChat()} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}>
             <Text style={{ fontSize: 12.5, fontWeight: '700', color: C.a700 }}>Nouvelle discussion</Text>
@@ -242,6 +283,28 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
         </View>
       ) : null}
 
+      <View style={{ paddingHorizontal: 14, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <TouchableOpacity onPress={() => { void pickAttachment(); }} disabled={reading} accessibilityRole="button" accessibilityLabel="Joindre un document ou une photo"
+          style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: C.a100, justifyContent: 'center', opacity: reading ? 0.6 : 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.a800 }}>{reading ? 'Lecture…' : '＋ Joindre un document ou une photo'}</Text>
+        </TouchableOpacity>
+        {attach ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '100%', paddingLeft: 12, paddingRight: 4, height: 36, borderRadius: 18, backgroundColor: C.surface }}>
+            <Text numberOfLines={1} ellipsizeMode="middle" style={{ flexShrink: 1, fontSize: 12.5, fontWeight: '600', color: C.text }}>{attach.type} · {attach.name}</Text>
+            <TouchableOpacity onPress={() => setAttach(null)} accessibilityRole="button" accessibilityLabel="Retirer le document" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 13, color: C.n800 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {photo && !visionMode ? (
+          <View>
+            <Image source={{ uri: photo }} style={{ width: 36, height: 36, borderRadius: 10 }} />
+            <TouchableOpacity onPress={() => setPhoto(null)} accessibilityRole="button" accessibilityLabel="Retirer la photo" style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: C.text, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: C.bg, fontSize: 11, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
       <View style={{ paddingHorizontal: 14, paddingBottom: Math.max(bottom, 12) + 8 }}>
         <Composer value={e.draft} onChange={t => set(s => ({ ...s, draft: t }))} onSend={doSend} placeholder={listening ? 'Je vous écoute…' : visionMode ? 'Une question sur la photo…' : 'Écrire à MiMai…'} busy={e.busy} onMic={() => { void startVoice(); }} listening={listening} />
       </View>

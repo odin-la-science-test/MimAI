@@ -5,6 +5,8 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- dictée depuis la bulle (activité transparente au premier plan) -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <!-- Android 16 : la notification de Mìmir peut devenir une puce dans la barre d'état (comme un lecteur de musique) -->
   <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
@@ -19,6 +21,8 @@
     </service>
     <!-- choix d'une photo depuis la bulle de discussion (transparente) -->
     <activity android:name="fr.mimai.app.overlay.MimirPickActivity" android:exported="false" android:excludeFromRecents="true" android:taskAffinity="" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    <!-- dictée vocale de la bulle : transparente, se ferme toute seule, ne rouvre pas l'app -->
+    <activity android:name="fr.mimai.app.overlay.MimirVoiceActivity" android:exported="false" android:excludeFromRecents="true" android:taskAffinity="" android:noHistory="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <!-- réponse rapide écrite dans la notification -->
     <receiver android:name="fr.mimai.app.overlay.MimirReplyReceiver" android:exported="false" />
   </application>

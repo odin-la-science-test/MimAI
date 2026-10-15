@@ -180,7 +180,7 @@ class MimirOverlayModule : Module() {
     Function("setPos") { pos: String ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putString("pos", if (pos == "camera") "camera" else "below").apply()
-      MimirOverlayService.instance?.applyBarPref()
+      MimirOverlayService.instance?.applyBarPref(true)
       true
     }
 
@@ -199,10 +199,18 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* promenade autonome de Mìmir sur l'écran */
+    Function("setRoam") { on: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("roam", on).apply()
+      MimirOverlayService.instance?.applyRoam(on)
+      true
+    }
+
     Function("setBar") { on: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()
-      MimirOverlayService.instance?.applyBarPref()
+      MimirOverlayService.instance?.applyBarPref(true)
       true
     }
 

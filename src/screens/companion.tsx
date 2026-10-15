@@ -212,6 +212,15 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
           <Tag kind="neutral">Bientôt</Tag>
         </Row>
         <Row>
+          <AvatarIc name="user" size={36} tone="g" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14.5 }}>Mìmir se promène</Text>
+            <Text style={{ fontSize: 12.5, color: C.n700 }}>{overlayIncluded ? 'Il se déplace tout seul sur l’écran, de temps en temps. Vous pouvez aussi le déplacer du doigt, où vous voulez : il garde sa place.' : 'Version installée requise.'}</Text>
+          </View>
+          <Toggle label="Mìmir se promène sur l’écran" on={c.roam !== false && overlayIncluded}
+            onChange={() => { if (!overlayIncluded) { toast('La barre demande la version installée de MiMai.'); return; } patchData(d => { d.settings.comp.roam = d.settings.comp.roam === false; }); }} />
+        </Row>
+        <Row>
           <AvatarIc name="mic" size={36} tone="g" />
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14.5 }}>Commande vocale</Text>
@@ -366,8 +375,6 @@ export function FloatingMimir() {
         onClose={() => setMenu(false)}
         items={[
           { icon: 'chat', title: 'Parler à MiMai', on: () => navigationRef.navigate('Chat', {}) },
-          { icon: 'spark', title: 'Arène', sub: 'Mini-jeu', on: () => navigationRef.navigate('Arena') },
-          { icon: 'pen', title: 'Animations', sub: 'Galerie de Mìmir', on: () => navigationRef.navigate('Moves') },
           { icon: 'trash', title: 'Ranger Mìmir', on: () => patchData(d => { d.settings.comp.on = false; }) },
         ]}
       />

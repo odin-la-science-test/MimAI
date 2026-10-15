@@ -196,7 +196,7 @@ export function Cloud({ navigation }: NativeStackScreenProps<RootStackParamList,
         <Text style={{ fontFamily: F.heading, fontSize: 24, color: C.text }}>Activer l’IA en ligne ?</Text>
         <Text style={{ fontSize: 14, lineHeight: 21, color: C.n800, marginTop: 10, marginBottom: 14 }}>
           Quand elle est activée, le texte de vos questions est envoyé par Internet au fournisseur dont vous avez collé la clé (par exemple Groq ou Google), et non plus traité uniquement sur votre téléphone.
-          Votre mémoire, vos documents et vos photos ne sont envoyés que si vous le choisissez ci-dessous. Vous pouvez désactiver à tout moment.
+          Les documents que vous joignez à une discussion sont envoyés avec la question, et la dictée vocale peut passer par le service de reconnaissance de votre téléphone (Google). Votre mémoire, votre bibliothèque et vos photos ne sont envoyées que si vous le choisissez ci-dessous. Vous pouvez désactiver à tout moment.
         </Text>
         <DialogActions>
           <Btn title="Annuler" kind="ghost" height={44} fontSize={14} onPress={() => setConfirm(false)} />

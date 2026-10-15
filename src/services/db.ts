@@ -26,7 +26,7 @@ export interface Settings {
   wifiOnly: boolean; speed?: Record<string, number>; compat?: boolean; crashSeen?: number;
   /* un moteur d'IA par fonction (Rapide, Réflexion, Outils, Vision) ; sans choix : le modèle actif */
   modeModels?: Partial<Record<'rapide' | 'reflexion' | 'outils' | 'vision', string>>; cloud?: CloudSettings; /* IA en ligne gratuite (optionnelle) : réglages et suivi des limites ; les clés sont dans le coffre Android, jamais ici */ voice?: { id?: string | null; rate: number; pitch: number }; gameReset?: boolean; memOn: boolean; encrypt: boolean; threshold: number; netUntil?: number | null;
-  comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean; bar?: boolean; pos?: 'below' | 'camera'; open?: '2a' | '2b' | '2c' };
+  comp: { on: boolean; overlay: boolean; read: boolean; voice: boolean; speak?: boolean; bar?: boolean; roam?: boolean; pos?: 'below' | 'camera'; open?: '2a' | '2b' | '2c' };
 }
 export interface AppData {
   convs: Conv[]; docs: Doc[]; memories: Memory[]; tex: TEx[]; runs: Run[]; adapters: Adapter[];

@@ -6,11 +6,11 @@ import type { ProviderId } from './providers.ts';
 import { classifyFailure } from './quota.ts';
 import { CloudError } from './router.ts';
 
-export type MediaKind = 'image' | 'tts';
+export type MediaKind = 'image' | 'tts' | 'doc';
 export interface Post { (url: string, headers: Record<string, string>, body: unknown, timeoutMs: number): Promise<{ status: number; headers: Record<string, string>; text: string }> }
-export interface Media { base64: string; mime: string }
+export interface Media { base64: string; mime: string; text?: string }
 
-export const MEDIA_PROVIDERS: Record<MediaKind, ProviderId[]> = { image: ['cloudflare', 'gemini'], tts: ['cloudflare', 'gemini'] };
+export const MEDIA_PROVIDERS: Record<MediaKind, ProviderId[]> = { image: ['cloudflare', 'gemini'], tts: ['cloudflare', 'gemini'], doc: ['gemini'] };
 export const videoProviders = (): ProviderId[] => [];
 
 /* voix proposées en ligne : identifiant stable « fournisseur:voix » */
@@ -52,7 +52,7 @@ async function call(post: Post, url: string, headers: Record<string, string>, bo
   catch { throw new CloudError({ kind: 'server', reason: 'réponse illisible' }, r.headers); }
 }
 
-interface GemPart { inlineData?: { data?: string; mimeType?: string }; inline_data?: { data?: string; mime_type?: string } }
+interface GemPart { text?: string; inlineData?: { data?: string; mimeType?: string }; inline_data?: { data?: string; mime_type?: string } }
 const gemParts = (j: Record<string, unknown>): GemPart[] => {
   const c = (j.candidates as { content?: { parts?: GemPart[] } }[] | undefined)?.[0];
   return c?.content?.parts || [];
@@ -75,6 +75,16 @@ export async function genImage(id: ProviderId, key: string, account: string | un
     throw new CloudError({ kind: 'model', reason: 'aucune image reçue (modèle d’image non disponible sur ce compte)' });
   }
   throw new CloudError({ kind: 'bad_request', reason: 'génération d’image non prise en charge' });
+}
+
+/* lecture d'un document (PDF scanné ou aux polices spéciales) par Gemini, qui lit les PDF : renvoie le texte transcrit */
+export async function genDocText(id: ProviderId, key: string, _account: string | undefined, b64: string, mime: string, post: Post): Promise<Media> {
+  if (id !== 'gemini') throw new CloudError({ kind: 'bad_request', reason: 'lecture de document non prise en charge' });
+  const body = { contents: [{ parts: [{ inline_data: { mime_type: mime, data: b64 } }, { text: 'Transcris fidèlement tout le texte de ce document, dans l’ordre de lecture, sans commentaire ni mise en forme ajoutée.' }] }] };
+  const { json } = await call(post, GEMINI + '/models/gemini-2.5-flash:generateContent', { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body, 90000);
+  const text = gemParts(json).map(p => (p as { text?: string }).text || '').join('\n').trim();
+  if (!text) throw new CloudError({ kind: 'model', reason: 'aucun texte reçu' });
+  return { base64: '', mime: 'text/plain', text };
 }
 
 export async function genSpeech(id: ProviderId, key: string, account: string | undefined, text: string, voice: string, post: Post): Promise<Media> {

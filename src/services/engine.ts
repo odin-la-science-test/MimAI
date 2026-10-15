@@ -16,6 +16,7 @@ import type { TrainPair, ChatMsg, Evaluator, AdapterRef } from './training';
 import { trail } from './crashlog';
 import { classify, maxTokensFor, lengthHint, trimToSentence, historyWindow, fewShotCount, BUDGET_MS } from './speedplan';
 import type { Kind } from './speedplan';
+import { pickExcerpt } from './docExtract';
 import type { CloudAnswer, CloudRequest, Policy } from './cloud/core.ts';
 
 export interface GenerateCtx {
@@ -115,9 +116,13 @@ let compatMode = false;
 export function setCompat(on: boolean): void { if (compatMode !== on) { compatMode = on; void releaseLlama(); } }
 export const llamaAvailable = (): boolean => llamaModule() !== null;
 
+/* MODE EN LIGNE : le modèle du téléphone n'est ni chargé ni utilisé (aucune mémoire, aucun calcul) */
+let localAllowed = true;
+export function setLocalAllowed(v: boolean): void { if (localAllowed === v) return; localAllowed = v; if (!v) void releaseLlama(); }
+
 async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | null> {
   const mod = llamaModule();
-  if (!mod || !modelFile) return null;
+  if (!mod || !modelFile || !localAllowed) return null;
   lastUse = Date.now();
   /* le module image (≈ 1 Go) n'est chargé que pour une PHOTO ; s'il manque quand une photo arrive, on recharge avec lui */
   if (llama && llama.file === modelFile && (!mmproj || llama.mm)) return llama.ctx;
@@ -517,7 +522,7 @@ export async function generate(ctx: GenerateCtx): Promise<string> {
   return (await generateDetailed(ctx)).text;
 }
 
-function buildSystemPrompt(ctx: GenerateCtx, personal = true): string {
+function buildSystemPrompt(ctx: GenerateCtx, personal = true, cloud = false): string {
   const rules = personal ? visibleRules(ctx.adapterRules) : [];
   const lines: string[] = [
     EXPORT_SYSTEM,
@@ -526,7 +531,10 @@ function buildSystemPrompt(ctx: GenerateCtx, personal = true): string {
   const mems = personal ? memoryLines(ctx.memories) : [];
   if (mems.length) lines.push('Mémoire locale de l’utilisateur :\n' + mems.join('\n'));
   if (rules.length) lines.push('Style personnel appris :\n' + rules.map(r => '- ' + r).join('\n'));
-  const doc = personal ? (ctx.forcedDoc || RAG.findDocByName(ctx.userText, ctx.docs)) : null;
+  /* document JOINT à la discussion par l'utilisateur (explicite : envoyé même si le partage de la bibliothèque est désactivé) */
+  const att = ctx.forcedDoc && ctx.forcedDoc.id.startsWith('att_') ? ctx.forcedDoc : null;
+  if (att) lines.push('Document joint par l’utilisateur (« ' + att.name + ' »). Réponds d’après ce document :\n' + pickExcerpt(att.text, ctx.userText, cloud ? 30000 : 2600));
+  const doc = att ? null : (personal ? (ctx.forcedDoc || RAG.findDocByName(ctx.userText, ctx.docs)) : null);
   if (doc) {
     const hits = RAG.retrieve(ctx.userText, [doc], 2);
     if (hits.length) lines.push('Extraits de la bibliothèque locale (' + doc.name + ') :\n' + hits.map(h => '[' + h.chunk.page + '] ' + h.chunk.text).join('\n'));
@@ -536,7 +544,7 @@ function buildSystemPrompt(ctx: GenerateCtx, personal = true): string {
 
 /* messages de chat (gabarit du modèle appliqué par llama.rn) : système + exemples pertinents + historique + question */
 function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false, personal = true, cloud = false): ChatMsg[] {
-  const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx, personal) }];
+  const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx, personal, cloud) }];
   shots.forEach(p => { out.push({ role: 'user', content: p.q }, { role: 'assistant', content: p.a }); });
   ctx.history.slice(-(cloud ? 12 : historyWindow(kind))).forEach(m => out.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
   /* la consigne de longueur est collée à la question : le prompt système reste identique d'une demande à l'autre */

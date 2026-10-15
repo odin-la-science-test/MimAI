@@ -49,14 +49,15 @@ export interface ListenHandlers {
 let active = false;
 
 /* démarre l'écoute ; renvoie null (et appelle onFail) si impossible */
-export async function listen(h: ListenHandlers, lang = 'fr-FR'): Promise<Listening | null> {
+export async function listen(h: ListenHandlers, lang = 'fr-FR', opts: { allowNetwork?: boolean } = {}): Promise<Listening | null> {
   if (!M) { h.onFail('unavailable'); return null; }
   if (active) { h.onFail('busy'); return null; }
   let granted = false;
   try { granted = !!(await M.requestPermissionsAsync()).granted; } catch { granted = false; }
   if (!granted) { h.onFail('permission'); return null; }
   /* garde-fou vie privée : pas de reconnaissance par le réseau */
-  if (!M.supportsOnDeviceRecognition()) { h.onFail('offline-unsupported'); return null; }
+  /* sauf en mode en ligne (l'utilisateur a accepté l'envoi du texte à un fournisseur) : le service de reconnaissance du téléphone peut alors passer par Internet */
+  if (!opts.allowNetwork && !M.supportsOnDeviceRecognition()) { h.onFail('offline-unsupported'); return null; }
 
   const subs: Sub[] = [];
   let lastText = '';
@@ -86,7 +87,7 @@ export async function listen(h: ListenHandlers, lang = 'fr-FR'): Promise<Listeni
 
   active = true;
   try {
-    M.start({ lang, interimResults: true, continuous: false, requiresOnDeviceRecognition: true, addsPunctuation: true, maxAlternatives: 1 });
+    M.start({ lang, interimResults: true, continuous: false, requiresOnDeviceRecognition: !opts.allowNetwork, addsPunctuation: true, maxAlternatives: 1 });
   } catch {
     cleanup();
     h.onFail('error');

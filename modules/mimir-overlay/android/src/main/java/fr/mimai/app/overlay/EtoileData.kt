@@ -24,7 +24,10 @@ class EtoileData(
   val shapes: List<Path>, val body: Path, val eyeNames: List<String>, val eyes: Map<String, List<EyeShape>>,
   val texts: List<String>, val tap: List<String>, val amb: List<String>, val anims: List<Anim>, val byId: Map<String, Anim>
 ) {
-  val argb = IntArray(labs.size) { labToArgb(labs[it][0], labs[it][1], labs[it][2]) }
+  private val argbWarm = IntArray(labs.size) { labToArgbRaw(labs[it][0], labs[it][1], labs[it][2]) }
+  private val argbBlue = IntArray(labs.size) { MimirTheme.toBlue(argbWarm[it]) }
+  /* couleurs précalculées de l'étoile : orange hors ligne, bleu en mode en ligne */
+  val argb: IntArray get() = if (MimirTheme.online) argbBlue else argbWarm
   fun key(k: String): Int = colorKeys.indexOf(k)
   fun eyeIndex(name: String): Int = eyeNames.indexOf(name)
 
@@ -53,7 +56,9 @@ class EtoileData(
       )
     }
 
-    fun labToArgb(L: Float, a: Float, b: Float): Int {
+    fun labToArgb(L: Float, a: Float, b: Float): Int = MimirTheme.shift(labToArgbRaw(L, a, b))
+
+    fun labToArgbRaw(L: Float, a: Float, b: Float): Int {
       val l_ = L + 0.3963377774f * a + 0.2158037573f * b
       val m_ = L - 0.1055613458f * a - 0.0638541728f * b
       val s_ = L - 0.0894841775f * a - 1.291485548f * b

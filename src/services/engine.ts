@@ -84,7 +84,7 @@ const exclusive = <T,>(fn: () => Promise<T>): Promise<T> => { const r = chain.th
 let lastUse = Date.now();
 let inBackground = false;
 let idleTimer: ReturnType<typeof setInterval> | null = null;
-const IDLE_BG_MS = 90_000, IDLE_FG_MS = 10 * 60_000;
+const IDLE_BG_MS = 90_000, IDLE_FG_MS = 5 * 60_000;
 export function setBackgrounded(bg: boolean): void { inBackground = bg; lastUse = Date.now(); }
 function startIdleGuard(): void {
   if (idleTimer) return;
@@ -119,7 +119,8 @@ async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | nu
   const mod = llamaModule();
   if (!mod || !modelFile) return null;
   lastUse = Date.now();
-  if (llama && llama.file === modelFile) return llama.ctx;
+  /* le module image (≈ 1 Go) n'est chargé que pour une PHOTO ; s'il manque quand une photo arrive, on recharge avec lui */
+  if (llama && llama.file === modelFile && (!mmproj || llama.mm)) return llama.ctx;
   const info = await FileSystem.getInfoAsync(modelFile);
   if (!info.exists) return null; /* poids non installés : moteur intégré */
   const base = modelFile.split('/').pop();
@@ -131,9 +132,12 @@ async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | nu
   /* mode compatibilité : sans réarrangement des poids en mémoire (no_extra_bufts) et sur moins de cœurs ; plus lent mais le plus sûr */
   /* un modèle de vision a besoin d'un contexte plus long : une image occupe plusieurs centaines de jetons */
   const nCtx = mmproj ? 3072 : 2048;
+  /* gros modèle (> 1,8 Go) : pas de copie réarrangée des poids (no_extra_bufts) = environ 1,3 Go de mémoire en moins, un peu plus lent */
+  const big = ((info as { size?: number }).size || 0) > 1.8e9;
+  if (big && !compatMode) trail('gros modèle : économie de mémoire activée (poids non dupliqués)');
   const ctx = await mod.initLlama(compatMode
     ? { model: modelFile, n_ctx: nCtx, n_gpu_layers: 0, n_threads: 2, no_extra_bufts: true, use_mlock: false }
-    : { model: modelFile, n_ctx: nCtx, n_gpu_layers: 0, n_threads: 4 });
+    : { model: modelFile, n_ctx: nCtx, n_gpu_layers: 0, n_threads: 4, ...(big ? { no_extra_bufts: true, use_mlock: false } : {}) });
   trail('modèle chargé en ' + (Date.now() - tLoad) + ' ms');
   let mm = false;
   if (mmproj) {
@@ -250,12 +254,15 @@ let warmKey = '';
 export async function prewarm(modelId: string, ctx: Pick<GenerateCtx, 'memories' | 'adapterRules' | 'docs'>): Promise<void> {
   try {
     if (!llamaAvailable() || !MODELS[modelId]) return;
+    /* MÉMOIRE : un gros modèle (> 1,3 Go) gardé chargé « pour aller plus vite » fait tuer MiMai par Android (7 Go de RAM, 3,8 à 5 Go utilisés).
+       On ne précharge donc que les petits modèles ; les gros se chargent à la première question, puis se déchargent seuls. */
+    if (MODELS[modelId].sizeBytes > 1.3e9) { if (warmKey !== 'skip:' + modelId) { warmKey = 'skip:' + modelId; trail('pas de préchauffage de ' + modelId + ' (trop gros : mémoire préservée)'); } return; }
     const file = modelFilePath(modelId);
     const sys = buildSystemPrompt({ history: [], userText: '', mode: 'rapide', docs: ctx.docs, memories: ctx.memories, adapterRules: ctx.adapterRules, examples: [], modelName: modelId });
     const key = file + '|' + hash(sys);
     if (warmKey === key) return;
     trail('préchauffage du modèle ' + modelId);
-    const r = await llmCompleteDetailed(file, [{ role: 'system', content: sys }, { role: 'user', content: 'Bonjour' }], { maxTokens: 1, temperature: 0, deadlineMs: 30000, mmproj: MODELS[modelId].mmproj ? mmprojPath(modelId) : undefined });
+    const r = await llmCompleteDetailed(file, [{ role: 'system', content: sys }, { role: 'user', content: 'Bonjour' }], { maxTokens: 1, temperature: 0, deadlineMs: 30000 });
     if (r) warmKey = key;
   } catch { /* le préchauffage est facultatif */ }
 }
@@ -483,7 +490,7 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
   const file = MODELS[ctx.modelName] ? modelFilePath(ctx.modelName) : '';
   const run = (ad: AdapterRef | null) => llmCompleteDetailed(file, messages, {
     adapter: ad, maxTokens, deadlineMs: deadline,
-    mmproj: def?.mmproj ? mmprojPath(ctx.modelName) : undefined, images: withImage ? [ctx.image as string] : undefined,
+    mmproj: withImage && def?.mmproj ? mmprojPath(ctx.modelName) : undefined, images: withImage ? [ctx.image as string] : undefined,
     onText: ctx.onText ? t => ctx.onText!(clean(t)) : undefined,
   });
   try {

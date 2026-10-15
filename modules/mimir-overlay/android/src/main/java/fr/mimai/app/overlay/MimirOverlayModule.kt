@@ -191,6 +191,13 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* palette : bleu en mode en ligne, orange sinon (l'étoile se redessine à chaque image, la bulle à sa prochaine ouverture) */
+    Function("setTheme") { online: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      MimirTheme.set(ctx, online)
+      true
+    }
+
     Function("setBar") { on: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()

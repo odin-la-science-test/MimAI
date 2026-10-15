@@ -15,7 +15,7 @@ import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { barThink, barDone, barProgress } from './services/bar';
-import { appExits } from './services/overlay';
+import { appExits, overlaySetTheme } from './services/overlay';
 import { modelForMode, isVisionModel } from './services/modes';
 import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
@@ -204,6 +204,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   /* passage en mode en ligne : le modèle du téléphone est déchargé de la mémoire */
   const onlineNow = isOnlineMode(data.settings.cloud);
   useEffect(() => { if (onlineNow) void releaseLlama(); }, [onlineNow]);
+  useEffect(() => { if (ready) overlaySetTheme(onlineNow); }, [onlineNow, ready]);
 
   /* IA en ligne : liste des modèles remise à jour au plus une fois par jour et par fournisseur */
   useEffect(() => { if (ready) void cloudEngine()?.refreshModels(false); }, [ready, data.settings.cloud?.enabled]);

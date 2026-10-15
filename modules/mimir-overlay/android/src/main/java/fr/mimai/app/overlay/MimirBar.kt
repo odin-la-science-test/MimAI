@@ -289,14 +289,14 @@ class MimirBar(
       if (state == "activite") {
         val r = s * 0.95f
         ring.strokeWidth = 2.4f * dp
-        ring.color = Color.argb(70, 245, 234, 216)
+        ring.color = MimirTheme.shift(Color.argb(70, 245, 234, 216))
         canvas.drawCircle(cx, cy, r, ring)
-        ring.color = Color.parseColor("#8fa073")
+        ring.color = MimirTheme.pc("#8fa073")
         rr.set(cx - r, cy - r, cx + r, cy + r)
         canvas.drawArc(rr, -90f, 360f * prog, false, ring)
       } else if (state == "notif") {
         dot.color = Color.WHITE; canvas.drawCircle(cx + s * 0.58f, cy - s * 0.58f, 5f * dp, dot)
-        dot.color = Color.parseColor("#c67139"); canvas.drawCircle(cx + s * 0.58f, cy - s * 0.58f, 3.6f * dp, dot)
+        dot.color = MimirTheme.pc("#c67139"); canvas.drawCircle(cx + s * 0.58f, cy - s * 0.58f, 3.6f * dp, dot)
       }
     }
   }

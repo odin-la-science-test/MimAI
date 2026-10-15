@@ -107,6 +107,7 @@ class MimirOverlayService : Service() {
     super.onCreate()
     instance = this
     appCtx = applicationContext
+    MimirTheme.load(applicationContext)
     wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
   }
 
@@ -326,9 +327,9 @@ class MimirOverlayService : Service() {
     override fun onDraw(c: Canvas) {
       val w = width.toFloat()
       val h = height.toFloat()
-      p.color = Color.parseColor("#C67139")
+      p.color = MimirTheme.pc("#C67139")
       c.drawCircle(w / 2f, h / 2f, minOf(w, h) / 2f, p)
-      p.color = Color.parseColor("#F5EAD8")
+      p.color = MimirTheme.pc("#F5EAD8")
       val a = minOf(w, h) * 0.26f
       val path = Path()
       val n = 72
@@ -371,10 +372,10 @@ class MimirOverlayService : Service() {
 
   private fun styleChip(tv: TextView, on: Boolean) {
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (on) "#C67139" else "#EBDDC5"))
+    bg.setColor(MimirTheme.pc(if (on) "#C67139" else "#EBDDC5"))
     bg.cornerRadius = dp(15f).toFloat()
     tv.background = bg
-    tv.setTextColor(if (on) Color.WHITE else Color.parseColor("#201E1D"))
+    tv.setTextColor(if (on) Color.WHITE else MimirTheme.pc("#201E1D"))
   }
 
   private fun chip(label: String, on: Boolean, click: () -> Unit): TextView {
@@ -391,7 +392,7 @@ class MimirOverlayService : Service() {
     val tv = TextView(this)
     tv.text = label
     tv.textSize = 12f
-    tv.setTextColor(Color.parseColor("#8C491A"))
+    tv.setTextColor(MimirTheme.pc("#8C491A"))
     tv.setPadding(dp(6f), dp(6f), dp(10f), dp(6f))
     tv.setOnClickListener { click() }
     return tv
@@ -404,7 +405,7 @@ class MimirOverlayService : Service() {
     tv.gravity = Gravity.CENTER
     tv.setTextColor(Color.WHITE)
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(color))
+    bg.setColor(MimirTheme.pc(color))
     bg.shape = GradientDrawable.OVAL
     tv.background = bg
     tv.setOnClickListener { click() }
@@ -445,12 +446,12 @@ class MimirOverlayService : Service() {
     val maxW = (resources.displayMetrics.widthPixels * 0.94f * 0.78f).toInt()
     val tv = TextView(this)
     tv.text = text
-    tv.setTextColor(if (mine) Color.WHITE else Color.parseColor("#201E1D"))
+    tv.setTextColor(if (mine) Color.WHITE else MimirTheme.pc("#201E1D"))
     tv.textSize = 15f
     tv.maxWidth = maxW
     tv.setTextIsSelectable(true)
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (mine) "#C67139" else "#EBDDC5"))
+    bg.setColor(MimirTheme.pc(if (mine) "#C67139" else "#EBDDC5"))
     bg.cornerRadius = dp(18f).toFloat()
     tv.background = bg
     tv.setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
@@ -494,7 +495,7 @@ class MimirOverlayService : Service() {
   private fun styleMic() {
     val m = micView ?: return
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor(if (listening) "#D23F3F" else "#EBDDC5"))
+    bg.setColor(MimirTheme.pc(if (listening) "#D23F3F" else "#EBDDC5"))
     bg.shape = GradientDrawable.OVAL
     m.background = bg
     m.text = if (listening) "■" else "🎤"
@@ -585,9 +586,9 @@ class MimirOverlayService : Service() {
     val root = LinearLayout(this)
     root.orientation = LinearLayout.VERTICAL
     val bg = GradientDrawable()
-    bg.setColor(Color.parseColor("#201E1D"))
+    bg.setColor(MimirTheme.pc("#201E1D"))
     bg.cornerRadius = dp(28f).toFloat()
-    bg.setStroke(dp(1f), Color.parseColor("#E2D5BC"))
+    bg.setStroke(dp(1f), MimirTheme.pc("#E2D5BC"))
     root.background = bg
     root.setPadding(dp(14f), dp(12f), dp(14f), dp(12f))
     root.elevation = dp(10f).toFloat()
@@ -601,12 +602,12 @@ class MimirOverlayService : Service() {
     titles.orientation = LinearLayout.VERTICAL
     val title = TextView(this)
     title.text = "Mìmir"
-    title.setTextColor(Color.parseColor("#201E1D"))
+    title.setTextColor(MimirTheme.pc("#201E1D"))
     title.textSize = 16f
     title.typeface = Typeface.DEFAULT_BOLD
     titles.addView(title)
     val sub = TextView(this)
-    sub.setTextColor(Color.parseColor("#645C50"))
+    sub.setTextColor(MimirTheme.pc("#645C50"))
     sub.textSize = 11.5f
     sub.maxLines = 1
     sub.ellipsize = android.text.TextUtils.TruncateAt.END
@@ -621,7 +622,7 @@ class MimirOverlayService : Service() {
     head.addView(size)
     val close = TextView(this)
     close.text = "✕"
-    close.setTextColor(Color.parseColor("#201E1D"))
+    close.setTextColor(MimirTheme.pc("#201E1D"))
     close.textSize = 18f
     close.contentDescription = "Fermer la bulle"
     close.setPadding(dp(8f), dp(6f), dp(4f), dp(6f))
@@ -684,15 +685,15 @@ class MimirOverlayService : Service() {
     row.addView(photo, lpWrap(0, 0))
     val input = EditText(this)
     input.hint = "Écrire à Mìmir…"
-    input.setHintTextColor(Color.parseColor("#A19786"))
-    input.setTextColor(Color.parseColor("#201E1D"))
+    input.setHintTextColor(MimirTheme.pc("#A19786"))
+    input.setTextColor(MimirTheme.pc("#201E1D"))
     input.textSize = 15f
     input.maxLines = 3
     input.imeOptions = EditorInfo.IME_ACTION_SEND
     input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
     val ibg = GradientDrawable()
-    ibg.setColor(Color.parseColor("#F9F4ED"))
-    ibg.setStroke(dp(1f), Color.parseColor("#DCD3C4"))
+    ibg.setColor(MimirTheme.pc("#F9F4ED"))
+    ibg.setStroke(dp(1f), MimirTheme.pc("#DCD3C4"))
     ibg.cornerRadius = dp(22f).toFloat()
     input.background = ibg
     input.setPadding(dp(14f), dp(8f), dp(14f), dp(8f))
@@ -713,7 +714,7 @@ class MimirOverlayService : Service() {
     frame.addView(root, cardLp)
     val tail = View(this)
     val tbg = GradientDrawable()
-    tbg.setColor(Color.parseColor("#201E1D"))
+    tbg.setColor(MimirTheme.pc("#201E1D"))
     tbg.cornerRadius = dp(3f).toFloat()
     tail.background = tbg
     tail.rotation = 45f
@@ -799,7 +800,7 @@ class MimirOverlayService : Service() {
             val id = m.optString("id")
             val row = TextView(this)
             row.text = (if (m.optString("name") == modelName) "✓ " else "   ") + m.optString("name")
-            row.setTextColor(Color.parseColor("#201E1D"))
+            row.setTextColor(MimirTheme.pc("#201E1D"))
             row.textSize = 13.5f
             row.setPadding(dp(8f), dp(7f), dp(8f), dp(7f))
             row.setOnClickListener { modelList?.visibility = View.GONE; sinkAction?.invoke("model", id) }
@@ -917,9 +918,9 @@ class MimirOverlayService : Service() {
     val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val cv = Canvas(bmp)
     val p = Paint(Paint.ANTI_ALIAS_FLAG)
-    p.color = Color.parseColor("#C67139")
+    p.color = MimirTheme.pc("#C67139")
     cv.drawCircle(size / 2f, size / 2f, size * 0.36f, p)
-    p.color = Color.parseColor("#F5EAD8")
+    p.color = MimirTheme.pc("#F5EAD8")
     val a = size * 0.2f
     val path = Path()
     val n = 96
@@ -990,6 +991,7 @@ class MimirOverlayService : Service() {
       .setContentText(body)
       .setStyle(Notification.BigTextStyle().bigText(body))
       .setSmallIcon(R.drawable.ic_mimir_notif)
+      .setColor(MimirTheme.pc("#C67139"))
       .setContentIntent(open)
       .setOngoing(true)
       .setOnlyAlertOnce(true)

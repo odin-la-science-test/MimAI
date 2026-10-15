@@ -72,6 +72,28 @@ let chain: Promise<unknown> = Promise.resolve();
 /* un seul accès natif à la fois (chat et benchmark partagent le contexte) */
 const exclusive = <T,>(fn: () => Promise<T>): Promise<T> => { const r = chain.then(fn, fn); chain = r.catch(() => undefined); return r; };
 
+/* LIBÉRATION DU MODÈLE QUAND ON NE S'EN SERT PAS : un modèle de 4 Go garde ~3,8 Go de mémoire ; sur un téléphone de 8 Go, Android (surtout
+   Honor / Samsung) tue alors MiMai en arrière-plan, et avec lui la bulle (« demande d'ouvrir l'appli »). Après un temps d'inactivité,
+   le modèle est déchargé ; il se recharge tout seul à la prochaine question (la bulle compte comme une utilisation). */
+let lastUse = Date.now();
+let inBackground = false;
+let idleTimer: ReturnType<typeof setInterval> | null = null;
+const IDLE_BG_MS = 90_000, IDLE_FG_MS = 10 * 60_000;
+export function setBackgrounded(bg: boolean): void { inBackground = bg; lastUse = Date.now(); }
+function startIdleGuard(): void {
+  if (idleTimer) return;
+  idleTimer = setInterval(() => {
+    if (!llama) return;
+    if (Date.now() - lastUse < (inBackground ? IDLE_BG_MS : IDLE_FG_MS)) return;
+    void exclusive(async () => {
+      if (!llama || Date.now() - lastUse < (inBackground ? IDLE_BG_MS : IDLE_FG_MS)) return;
+      trail('modèle déchargé (inactif depuis ' + Math.round((Date.now() - lastUse) / 1000) + ' s) pour libérer la mémoire');
+      await releaseLlama();
+      warmKey = '';
+    });
+  }, 20_000);
+}
+
 export class LoraLoadError extends Error {}
 export class VisionError extends Error {}
 
@@ -90,6 +112,7 @@ export const llamaAvailable = (): boolean => llamaModule() !== null;
 async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | null> {
   const mod = llamaModule();
   if (!mod || !modelFile) return null;
+  lastUse = Date.now();
   if (llama && llama.file === modelFile) return llama.ctx;
   const info = await FileSystem.getInfoAsync(modelFile);
   if (!info.exists) return null; /* poids non installés : moteur intégré */
@@ -119,6 +142,7 @@ async function getCtx(modelFile: string, mmproj?: string): Promise<LlamaCtx | nu
     } catch (err) { trail('ERREUR module image : ' + (err instanceof Error ? err.message : String(err))); mm = false; }
   }
   llama = { file: modelFile, ctx, adapterKey: '', mm };
+  startIdleGuard();
   return ctx;
 }
 
@@ -162,6 +186,7 @@ export function llmCompleteDetailed(modelFile: string, messages: ChatMsg[], o: L
   return exclusive(async () => {
     const ctx = await getCtx(modelFile, o.mmproj);
     if (!ctx) return null;
+    lastUse = Date.now();
     await syncAdapter(ctx, o.adapter ?? null);
     const wantImages = !!(o.images && o.images.length);
     if (wantImages && !llama?.mm) throw new VisionError('Le module image du modèle n’a pas pu être chargé.');

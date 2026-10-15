@@ -10,7 +10,7 @@ import { DEFAULT_MODEL_ID } from './services/catalog';
 import { scanModelFiles } from './services/modelFiles';
 import { reconcile } from './services/installed';
 import type { ModelManifest, PhaseInfo } from './services/net';
-import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat } from './services/engine';
+import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
@@ -191,6 +191,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [data, ready]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', st => {
+      setBackgrounded(st !== 'active');
       if (st !== 'active' && ready) {
         if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
         persist();
@@ -207,6 +208,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const warm = modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode);
     if (!ready || !data.settings.installed.includes(warm)) return;
+    /* en mode en ligne, le modèle du téléphone n'est chargé qu'en cas de besoin (secours) : on ne garde pas 4 Go en mémoire pour rien */
+    const cl = data.settings.cloud;
+    if (isOnlineMode(cl) && cl?.policy !== 'local-first') return;
+    if (AppState.currentState !== 'active') return;
     const t = setTimeout(() => { void prewarm(warm, { memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], docs: [] }); }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -17,11 +17,11 @@ import { listen, voiceAvailable, describeVoiceFailure } from './services/voice';
 import type { Listening } from './services/voice';
 import { trail } from './services/crashlog';
 import { cloudHook } from './services/cloud';
-import { isOnlineMode } from './services/cloud/mode';
+import { isOnlineMode, isOnlineConfigured } from './services/cloud/mode';
 import { detectIntent } from './services/cloud/media';
 import { runIntent } from './services/cloud/studio';
 import { barThink, barListen, barDone } from './services/bar';
-import { overlayAvailable, overlayChatOn, overlayChatText, overlayChatState, overlayChatInput, overlayChatMic } from './services/overlay';
+import { overlayAvailable, overlayChatOn, overlayChatText, overlayChatState, overlayChatInput, overlayChatMic, overlayToast } from './services/overlay';
 
 type Mode = 'rapide' | 'reflexion' | 'vision' | 'outils';
 
@@ -176,6 +176,14 @@ export function OverlayChat() {
       /* appui de 5 s sur le personnage : on quitte le mode en ligne (le modèle du téléphone reprend la main) */
       patchRef.current(x => { if (x.settings.cloud) x.settings.cloud.enabled = false; });
       trail('mode en ligne désactivé par appui long sur Mìmir');
+    } else if (type === 'online') {
+      /* appui de 5 s sur le personnage hors ligne : on passe en mode en ligne si un fournisseur est connecté */
+      const cl = dataRef.current.settings.cloud;
+      const hasProvider = !!cl && Object.keys(cl.providers || {}).some(id => cl.providers[id]?.enabled);
+      if (!hasProvider) { overlayToast('Aucun fournisseur en ligne connecté : ouvrez MiMai → IA en ligne gratuite.'); return; }
+      patchRef.current(x => { if (x.settings.cloud) x.settings.cloud.enabled = true; });
+      trail('mode en ligne activé par appui long sur Mìmir');
+      if (!isOnlineConfigured({ ...cl!, enabled: true })) return;
     } else if (type === 'voice') {
       voiceTurn.current = true;   /* texte dicté dans la bulle : la réponse sera lue à voix haute */
     } else if (type === 'speak') {

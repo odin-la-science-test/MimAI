@@ -207,6 +207,11 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    Function("toast") { text: String ->
+      MimirOverlayService.instance?.showToast(text)
+      true
+    }
+
     Function("setBar") { on: Boolean ->
       val ctx = appContext.reactContext ?: return@Function false
       ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("bar", on).apply()

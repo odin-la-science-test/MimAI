@@ -29,6 +29,7 @@ type NativeOverlay = {
   setBar?(on: boolean): boolean;
   setTheme?(online: boolean): boolean;
   setRoam?(on: boolean): boolean;
+  toast?(text: string): boolean;
   setPos?(pos: string): boolean;
   setOpen?(v: string): boolean;
   openNotifSettings?(promoted: boolean): boolean;
@@ -93,6 +94,7 @@ export function overlayBarState(state: string, o: { title?: string; body?: strin
 }
 export function overlayBarPlay(id: string): void { try { M?.barPlay?.(id); } catch { /* indisponible */ } }
 /* palette de Mìmir partout : bleu en mode en ligne, orange sinon */
+export function overlayToast(text: string): void { try { M?.toast?.(text); } catch { /* module ancien */ } }
 export function overlaySetRoam(on: boolean): void { try { M?.setRoam?.(on); } catch { /* module ancien */ } }
 export function overlaySetTheme(online: boolean): void { try { M?.setTheme?.(online); } catch { /* module ancien */ } }
 export function overlayChatState(json: string): void { try { M?.chatState?.(json); } catch { /* indisponible */ } }

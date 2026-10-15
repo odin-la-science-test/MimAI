@@ -416,11 +416,11 @@ class MimirBar(
     private var startHX = 0f
     private var startHY = 0f
     private val longRun = Runnable { longFired = true; stage.play(stage.clipFor("listen")); kick(); onLong() }
-    /* mode en ligne : rester appuyé 5 secondes sur le personnage repasse en mode hors ligne */
+    /* rester appuyé 5 secondes sur le personnage bascule : en ligne → hors ligne, hors ligne → en ligne */
     private val offRun = Runnable {
       longFired = true
       performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-      MimirOverlayService.instance?.goOffline()
+      if (MimirTheme.online) MimirOverlayService.instance?.goOffline() else MimirOverlayService.instance?.goOnline()
     }
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
@@ -431,7 +431,7 @@ class MimirBar(
           dragging = false
           downX = ev.rawX; downY = ev.rawY; startHX = restX; startHY = restY
           if (!isOpen) { stage.playRandomTap(); kick() }
-          if (MimirTheme.online) ui.postDelayed(offRun, 5000) else ui.postDelayed(longRun, 500)
+          ui.postDelayed(offRun, 5000)
           return true
         }
         MotionEvent.ACTION_MOVE -> {

@@ -8,6 +8,9 @@ import type { QuotaMap, QuotaEntry, Failure } from './quota.ts';
 import { roll, providerKey, modelKey, recordUsage, applyFailure, applySuccess, parseRateHeaders, usedOf, limitOf, remainingFraction } from './quota.ts';
 import type { ProvidersCfg, Kind, Candidate, ProviderStatus } from './router.ts';
 import { buildCandidates, runWithFailover, CloudError, statusOf } from './router.ts';
+import { MEDIA_PROVIDERS } from './media.ts';
+import type { MediaKind, Media, Post } from './media.ts';
+import { canUse } from './quota.ts';
 
 export type Policy = 'auto' | 'local-first' | 'cloud-only';
 
@@ -37,6 +40,7 @@ export interface Deps {
   now(): number;
   get(): CloudSettings;
   set(fn: (c: CloudSettings) => void): void;
+  post?: Post;   /* appels non-flux (images, voix) */
 }
 
 export interface CloudRequest {
@@ -131,6 +135,47 @@ export class CloudEngine {
       else { c.quota[pk] = applyFailure(def, pe, f, now); c.quota[mk] = me; }
     });
     this.log(cand.def.name + ' / ' + cand.model.id + ' : ' + ({ rate: 'limite momentanée', quota: 'limite du jour atteinte', auth: 'clé refusée', server: 'indisponible', model: 'modèle indisponible', bad_request: 'requête refusée' } as Record<string, string>)[f.kind]);
+  }
+
+  /* ───────── images et voix : mêmes clés, mêmes limites, même bascule ───────── */
+  mediaAvailable(kind: MediaKind): boolean {
+    const c = this.d.get();
+    if (!c.enabled || !this.d.post) return false;
+    return MEDIA_PROVIDERS[kind].some(id => !!c.providers[id]?.enabled && !!this.d.getKey(id) && (id !== 'cloudflare' || !!c.providers[id].account));
+  }
+
+  hasProvider(id: ProviderId): boolean {
+    const pc = this.d.get().providers[id];
+    return !!pc?.enabled && !!this.d.getKey(id) && (!PROVIDER_BY_ID[id].needsAccount || !!pc.account) && this.d.get().enabled;
+  }
+
+  async media(kind: MediaKind, run: (id: ProviderId, key: string, account: string | undefined, post: Post) => Promise<Media>, prefer?: ProviderId): Promise<{ media: Media; provider: string; providerId: ProviderId; tried: number } | null> {
+    const c0 = this.d.get();
+    const post = this.d.post;
+    if (!c0.enabled || !post) return null;
+    let tried = 0;
+    const order = prefer ? [prefer, ...MEDIA_PROVIDERS[kind].filter(x => x !== prefer)] : MEDIA_PROVIDERS[kind];
+    for (const id of order) {
+      const def = PROVIDER_BY_ID[id];
+      const pc = c0.providers[id];
+      const key = this.d.getKey(id);
+      if (!pc || !pc.enabled || !key || (def.needsAccount && !pc.account)) continue;
+      const now = this.d.now();
+      const cost = kind === 'image' ? (id === 'cloudflare' ? 700 : 1500) : (id === 'cloudflare' ? 300 : 500);
+      const pe = roll(c0.quota[providerKey(def)], now, def.resetTz), me = roll(c0.quota[modelKey(def, 'media')], now, def.resetTz);
+      if (!canUse(def, [pe, me], now, cost).ok) continue;
+      const cand: Candidate = { def, model: { id: 'media', tier: 'balanced', vision: false, reasoning: false, free: true }, account: pc.account, score: 0 };
+      tried++;
+      try {
+        const m = await run(id, key, pc.account, post);
+        this.success(cand, 0, cost, {});
+        if (tried > 1) this.log('Bascule vers ' + def.name + ' pour ' + (kind === 'image' ? 'l’image' : 'la voix'));
+        return { media: m, provider: def.name, providerId: id, tried };
+      } catch (e) {
+        this.failure(cand, e instanceof CloudError ? e.failure : { kind: 'server', reason: String((e as Error)?.message || e).slice(0, 100) });
+      }
+    }
+    return null;
   }
 
   /* ───────── connexion d'une clé : validation + découverte des modèles ───────── */

@@ -369,3 +369,60 @@ test('remise à jour quotidienne de la liste des modèles (une fois par jour, re
   await e.refreshModels(); assert.equal(listed, 1);
   assert.deepEqual(settings.providers.groq.models.map(m => m.id).sort(), ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile']);
 });
+
+/* ───────── images, voix, demandes de création ───────── */
+const MD = load('src/services/cloud/media.ts');
+const okPost = (obj, status = 200) => async () => ({ status, headers: {}, text: JSON.stringify(obj) });
+
+test('demandes de création : image, vocal, vidéo ; les questions ordinaires passent', () => {
+  assert.deepEqual(MD.detectIntent('Génère une image d\'un chat sur la lune'), { kind: 'image', prompt: 'chat sur la lune' });
+  assert.equal(MD.detectIntent('dessine une image de montagnes').kind, 'image');
+  assert.equal(MD.detectIntent('crée une vidéo d\'une vague').kind, 'video');
+  const v = MD.detectIntent('fais un vocal : « Bonjour tout le monde »');
+  assert.equal(v.kind, 'voice'); assert.equal(v.prompt, 'Bonjour tout le monde');
+  assert.equal(MD.detectIntent('Quelle est la capitale de la France ?'), null);
+  assert.equal(MD.detectIntent('explique-moi comment générer une image avec python'), null);
+  assert.equal(MD.detectIntent('génère une image'), null);
+});
+
+test('WAV : en-tête correct autour du son brut', () => {
+  const pcm = Buffer.from([1, 0, 2, 0, 3, 0]).toString('base64');
+  const wav = Buffer.from(MD.pcmToWavBase64(pcm, 24000), 'base64');
+  assert.equal(wav.slice(0, 4).toString(), 'RIFF'); assert.equal(wav.slice(8, 12).toString(), 'WAVE');
+  assert.equal(wav.readUInt32LE(24), 24000); assert.equal(wav.readUInt32LE(40), 6); assert.equal(wav.length, 50);
+});
+
+test('images et voix : réponses de Cloudflare et de Gemini lues correctement', async () => {
+  const cf = await MD.genImage('cloudflare', 'k', 'acc', 'chat', okPost({ result: { image: 'QUJD' }, success: true }));
+  assert.deepEqual(cf, { base64: 'QUJD', mime: 'image/jpeg' });
+  const gm = await MD.genImage('gemini', 'k', undefined, 'chat', okPost({ candidates: [{ content: { parts: [{ text: 'ok' }, { inlineData: { mimeType: 'image/png', data: 'REVG' } }] } }] }));
+  assert.deepEqual(gm, { base64: 'REVG', mime: 'image/png' });
+  const sp = await MD.genSpeech('cloudflare', 'k', 'acc', 'bonjour', 'FR', okPost({ result: { audio: 'AAA' } }));
+  assert.equal(sp.mime, 'audio/mpeg');
+  const g2 = await MD.genSpeech('gemini', 'k', undefined, 'bonjour', 'Kore', okPost({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;rate=24000', data: Buffer.from([0, 0]).toString('base64') } }] } }] }));
+  assert.equal(g2.mime, 'audio/wav');
+  await assert.rejects(MD.genImage('gemini', 'k', undefined, 'x', okPost({ candidates: [{ content: { parts: [{ text: 'refus' }] } }] })), e => e.failure.kind === 'model');
+  await assert.rejects(MD.genImage('cloudflare', 'bad', 'acc', 'x', okPost({ errors: [{ message: 'Authentication error' }] }, 401)), e => e.failure.kind === 'auth');
+});
+
+test('création : bascule vers le fournisseur suivant, limites comptées, rien si non connecté', async () => {
+  const { engine, settings } = makeEngine({ providers: { cloudflare: [M('x')], gemini: [M('g')] }, behaviour: () => ({ text: '' }) });
+  const posts = [];
+  engine.d.post = async (url) => {
+    posts.push(url);
+    if (url.includes('cloudflare')) return { status: 429, headers: {}, text: 'daily neurons quota exceeded' };
+    return { status: 200, headers: {}, text: JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: 'REVG' } }] } }] }) };
+  };
+  assert.equal(engine.mediaAvailable('image'), true);
+  const r = await engine.media('image', (id, key, account, post) => MD.genImage(id, key, account, 'chat', post));
+  assert.equal(r.providerId, 'gemini'); assert.equal(r.tried, 2); assert.equal(posts.length, 2);
+  assert.ok(settings.quota['gemini|*'].requests >= 1);
+  const again = await engine.media('image', (id, key, account, post) => MD.genImage(id, key, account, 'chat', post));
+  assert.equal(again.providerId, 'gemini');
+  assert.equal(posts.filter(u => u.includes('cloudflare')).length, 1, 'Cloudflare est mis de côté après sa limite');
+  const none = makeEngine({ providers: { groq: [M('g')] }, behaviour: () => ({ text: '' }) });
+  none.engine.d.post = async () => { throw new Error('ne doit pas être appelé'); };
+  assert.equal(none.engine.mediaAvailable('image'), false);
+  assert.equal(await none.engine.media('image', () => { throw new Error('non'); }), null);
+  assert.deepEqual(MD.videoProviders(), []);
+});

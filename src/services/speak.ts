@@ -84,6 +84,13 @@ export async function listVoices(): Promise<VoiceInfo[]> {
 
 let token = 0;
 
+/* voix EN LIGNE (« cloudflare:… », « gemini:… ») : lecture confiée à un lecteur injecté par l'app ; repli sur la voix du téléphone */
+type CloudSpeaker = (text: string, voiceId: string, onEnd?: () => void) => Promise<boolean>;
+let cloudSpeaker: CloudSpeaker | null = null;
+let cloudStop: (() => void) | null = null;
+export const setCloudSpeaker = (f: CloudSpeaker | null, stop?: () => void) => { cloudSpeaker = f; cloudStop = stop || null; };
+const CLOUD_ID = /^(cloudflare|gemini):/;
+
 /* lit le texte ; onEnd est appelé à la fin ou à l'arrêt. Retourne false si impossible. */
 export function speak(text: string, onEnd?: () => void): boolean {
   if (!S) return false;
@@ -92,12 +99,18 @@ export function speak(text: string, onEnd?: () => void): boolean {
   const mine = ++token;
   void S.stop().catch(() => { /* rien à arrêter */ });
   const parts = chunkForSpeech(clean);
+  const local = () => { if (mine === token) next(0); };
+  if (prefs.id && CLOUD_ID.test(prefs.id) && cloudSpeaker) {
+    try { cloudStop?.(); } catch { /* rien à arrêter */ }
+    void cloudSpeaker(clean, prefs.id, onEnd).then(ok => { if (!ok) local(); }).catch(() => local());
+    return true;
+  }
   const next = (i: number) => {
     if (mine !== token) return;                       // une autre lecture a pris le relais
     if (i >= parts.length) { onEnd?.(); return; }
     try {
       S!.speak(parts[i], {
-        language: 'fr-FR', pitch: prefs.pitch, rate: prefs.rate, ...(prefs.id ? { voice: prefs.id } : {}),
+        language: 'fr-FR', pitch: prefs.pitch, rate: prefs.rate, ...(prefs.id && !CLOUD_ID.test(prefs.id) ? { voice: prefs.id } : {}),
         onDone: () => next(i + 1),
         onStopped: () => { if (mine === token) onEnd?.(); },
         onError: () => { if (mine === token) onEnd?.(); },
@@ -110,5 +123,6 @@ export function speak(text: string, onEnd?: () => void): boolean {
 
 export function stopSpeaking(): void {
   token++;
+  try { cloudStop?.(); } catch { /* rien à arrêter */ }
   try { void S?.stop(); } catch { /* indisponible */ }
 }

@@ -29,6 +29,17 @@ function urlFor(id: ProviderId, account: string | undefined, path: string): stri
   return url;
 }
 
+/* appel JSON simple (images, voix) : réponse lue en entier */
+export async function post(url: string, headers: Record<string, string>, body: unknown, timeoutMs: number): Promise<{ status: number; headers: Record<string, string>; text: string }> {
+  if (!url.startsWith('https://')) throw new Error('adresse non sécurisée');
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await xfetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
+    return { status: res.status, headers: headersOf(res), text: await res.text() };
+  } finally { clearTimeout(timer); }
+}
+
 export async function listModels(id: ProviderId, key: string, account: string | undefined) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 12000);

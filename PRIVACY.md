@@ -36,6 +36,7 @@ Dans **Menu → IA en ligne gratuite**, vous pouvez activer, après une confirma
 - Chaque fournisseur traite ces données selon ses propres conditions (certains niveaux gratuits peuvent les utiliser pour améliorer leurs produits) ; il voit aussi votre adresse IP.
 - Vos clés sont conservées dans le **coffre sécurisé Android** (Keystore), jamais dans la base de données, les sauvegardes ni les rapports. « Déconnecter » efface la clé.
 - MiMai suit localement l'usage de chaque fournisseur (jetons, requêtes, limites du jour) et passe automatiquement de l'un à l'autre ; ce suivi reste sur l'appareil et ne contient aucun contenu de conversation.
+- **Images et voix** : une demande de création (« génère une image de… », « fais un vocal… ») ou la lecture d'une réponse avec une **voix en ligne** envoie le texte concerné (description, texte à lire) au fournisseur (Cloudflare ou Google). Les images et sons créés sont enregistrés dans l'espace privé de l'application ; les sons de lecture sont effacés après usage. La voix du téléphone, elle, ne quitte pas l'appareil.
 - Si l'IA en ligne est désactivée, ou si aucun fournisseur ne répond, tout reste traité sur l'appareil.
 
 ### Autorisations Android

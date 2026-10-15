@@ -19,6 +19,7 @@ import { speakAvailable, speak, stopSpeaking, listVoices, setVoicePrefs, VOICE_S
 import * as Clipboard from 'expo-clipboard';
 import { overlayStatus, appExits, overlayNotifSettings, overlaySetOpen } from '../services/overlay';
 import { setCompat } from '../services/engine';
+import { connectedCloudVoices } from '../services/cloud/studio';
 import { overlayAvailable, overlayIncluded, overlayGranted, overlayRequest, overlayShow, overlayHide } from '../services/overlay';
 
 export function Companion({ navigation }: NativeStackScreenProps<RootStackParamList, 'Companion'>) {
@@ -254,6 +255,21 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
                 </TouchableOpacity>
               );
             }) : <Text style={{ fontSize: 12.5, color: C.n700 }}>Aucune voix française listée : la voix par défaut du téléphone est utilisée.</Text>}
+            {connectedCloudVoices().length && data.settings.cloud?.enabled ? (
+              <>
+                <Text style={{ fontSize: 14.5, fontWeight: '700', marginTop: 6 }}>Voix en ligne</Text>
+                <Text style={{ fontSize: 12.5, color: C.n700 }}>Plus naturelles, créées par vos fournisseurs connectés (le texte lu est envoyé au fournisseur). Si rien ne répond, la voix du téléphone prend le relais.</Text>
+                {connectedCloudVoices().map(v => {
+                  const on = (vp.id || null) === v.id;
+                  return (
+                    <TouchableOpacity key={v.id} onPress={() => setVoice({ id: v.id })} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                      style={{ minHeight: 44, borderRadius: 14, paddingHorizontal: 12, backgroundColor: on ? C.a200 : C.surface, justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 14, fontWeight: on ? '700' : '500' }}>{v.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            ) : null}
             {vp.id ? <TouchableOpacity onPress={() => setVoice({ id: null })} style={{ paddingVertical: 8 }}><Text style={{ fontSize: 13, color: C.a700, fontWeight: '700' }}>Revenir à la voix par défaut</Text></TouchableOpacity> : null}
           </View>
         ) : null}

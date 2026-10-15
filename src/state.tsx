@@ -23,6 +23,8 @@ import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } fro
 import { titleFrom, nowHM, fmtGo } from './theme';
 import { bindCloud, cloudEngine, cloudHook, loadCloudKeys, defaultCloud } from './services/cloud';
 import type { CloudSettings } from './services/cloud';
+import { detectIntent } from './services/cloud/media';
+import { runIntent } from './services/cloud/studio';
 
 export type DlState = { id: string; phase: string; pct: number; info?: PhaseInfo } | null;
 
@@ -260,6 +262,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (mem) d.memories.unshift(mem);
       }
     });
+
+    /* « génère une image de… », « fais-moi un vocal… » : création par les fournisseurs en ligne connectés */
+    const intent = image ? null : detectIntent(text);
+    if (intent) {
+      const r = await runIntent(intent, data.settings.voice?.id ?? null);
+      if (runToken.current !== token) return;
+      const mm: Msg = { id: uid('m'), role: 'ai', text: r.text, ts: Date.now(), feedback: null, model: r.model, image: r.image || null };
+      patchData(d => { const c = d.convs.find(x => x.id === convId); if (c) c.msgs.push(mm); });
+      set(s => ({ ...s, busy: false, thinking: false, stream: null, streamSource: null }));
+      barDone(r.ok ? 'eureka' : 'confus');
+      return;
+    }
 
     /* étapes affichées tant que le premier mot n'est pas arrivé */
     let i = 0;

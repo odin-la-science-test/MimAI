@@ -17,6 +17,8 @@ import { listen, voiceAvailable, describeVoiceFailure } from './services/voice';
 import type { Listening } from './services/voice';
 import { trail } from './services/crashlog';
 import { cloudHook } from './services/cloud';
+import { detectIntent } from './services/cloud/media';
+import { runIntent } from './services/cloud/studio';
 import { barThink, barListen, barDone } from './services/bar';
 import { overlayAvailable, overlayChatOn, overlayChatText, overlayChatState, overlayChatInput, overlayChatMic } from './services/overlay';
 
@@ -47,7 +49,8 @@ export function OverlayChat() {
   const pushState = (reset: boolean) => {
     const st = dataRef.current.settings;
     const mode = curMode();
-    const hasVision = isVisionModel(MODELS[curModel()]);
+    const cl = st.cloud;
+    const hasVision = isVisionModel(MODELS[curModel()]) || !!(cl?.enabled && cl.sharePhotos);   /* ou une IA en ligne qui voit les images */
     const locked = hist.current.length > 0;
     overlayChatState(JSON.stringify({
       reset, locked, mode,
@@ -84,6 +87,20 @@ export function OverlayChat() {
       });
     }
     let lastSent = 0;
+    const intent = photo ? null : detectIntent(text);
+    if (intent) {
+      try {
+        const r = await runIntent(intent, dataRef.current.settings.voice?.id ?? null);
+        const am: Msg = { id: uid('m'), role: 'ai', text: r.text, ts: Date.now(), feedback: null, model: r.model, image: r.image || null };
+        hist.current = [...hist.current, am];
+        patchRef.current(x => { const c = x.convs.find(v => v.id === id); if (c) c.msgs.push(am); });
+        overlayChatText(r.image ? r.text + ' (Elle est enregistrée dans cette discussion, dans MiMai.)' : r.text, true);
+        barDone(r.ok ? 'eureka' : 'confus');
+      } catch { overlayChatText('La création a échoué. Réessayez.', true); barDone('confus'); }
+      voiceTurn.current = false;
+      busy.current = false;
+      return;
+    }
     try {
       const info = await generateDetailed({
         history: prev, userText: text, mode,

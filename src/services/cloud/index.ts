@@ -44,6 +44,7 @@ export function bindCloud(get: () => CloudSettings, set: (fn: (c: CloudSettings)
       getKey: id => cache[id] || null,
       setKey,
       now: () => Date.now(),
+      post: client.post,
       get: () => current!.get(),
       set: fn => current!.set(fn),
     });

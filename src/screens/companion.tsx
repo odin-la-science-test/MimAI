@@ -225,7 +225,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14.5 }}>Commande vocale</Text>
             <Text style={{ fontSize: 12.5, color: C.n700 }}>{voiceAvailable()
-              ? 'Bouton micro dans le chat. Appui long sur la barre de la caméra pour parler directement. Reconnaissance de votre voix sur l’appareil' + (online ? ' ; le texte reconnu est ensuite envoyé au fournisseur en mode en ligne.' : ', rien ne part sur Internet.')
+              ? 'Bouton micro dans le chat et dans la bulle. Appui long sur Mìmir pour parler directement (en mode en ligne, un appui de 5 secondes le repasse hors ligne). Reconnaissance de votre voix sur l’appareil' + (online ? ' ; le texte reconnu est ensuite envoyé au fournisseur en mode en ligne.' : ', rien ne part sur Internet.')
               : 'Version installée requise.'}</Text>
           </View>
           <Toggle label="Parler directement en touchant la barre" on={!!c.voice && voiceAvailable()}

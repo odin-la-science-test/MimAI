@@ -246,6 +246,17 @@ class MimirOverlayService : Service() {
   fun applyTheme(online: Boolean) { animBar?.setOnline(online) }
   fun applyRoam(on: Boolean) { animBar?.setRoam(on) }
 
+  /* appui de 5 secondes sur le personnage : retour au mode hors ligne (l'app désactive l'IA en ligne) */
+  fun goOffline() {
+    ui.post {
+      MimirTheme.set(this, false)
+      animBar?.setOnline(false)
+      lastEvent = "retour hors ligne demandé par appui long"
+      val s = sinkAction
+      if (s != null) s("offline", "") else android.widget.Toast.makeText(this, "Ouvrez MiMai une fois pour terminer le passage hors ligne.", android.widget.Toast.LENGTH_LONG).show()
+    }
+  }
+
   /* état de la barre demandé par l'app : repos, notif, ecoute, reflexion, activite */
   fun barState(state: String, title: String, body: String, label: String, prog: Float) { animBar?.setState(state, prog) }
   fun barPlay(id: String) { animBar?.play(id) }

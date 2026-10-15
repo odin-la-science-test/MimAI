@@ -416,6 +416,12 @@ class MimirBar(
     private var startHX = 0f
     private var startHY = 0f
     private val longRun = Runnable { longFired = true; stage.play(stage.clipFor("listen")); kick(); onLong() }
+    /* mode en ligne : rester appuyé 5 secondes sur le personnage repasse en mode hors ligne */
+    private val offRun = Runnable {
+      longFired = true
+      performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+      MimirOverlayService.instance?.goOffline()
+    }
 
     override fun onTouchEvent(ev: MotionEvent): Boolean {
       when (ev.actionMasked) {
@@ -425,7 +431,7 @@ class MimirBar(
           dragging = false
           downX = ev.rawX; downY = ev.rawY; startHX = restX; startHY = restY
           if (!isOpen) { stage.playRandomTap(); kick() }
-          ui.postDelayed(longRun, 500)
+          if (MimirTheme.online) ui.postDelayed(offRun, 5000) else ui.postDelayed(longRun, 500)
           return true
         }
         MotionEvent.ACTION_MOVE -> {
@@ -433,7 +439,7 @@ class MimirBar(
           val dy = ev.rawY - downY
           if (!dragging && !isOpen && Math.hypot(dx.toDouble(), dy.toDouble()) > 12f * dp) {
             dragging = true
-            ui.removeCallbacks(longRun)
+            ui.removeCallbacks(longRun); ui.removeCallbacks(offRun)
             ui.removeCallbacks(roamRun)
             stage.play(stage.clipFor("grab"))
           }
@@ -441,7 +447,7 @@ class MimirBar(
           return true
         }
         MotionEvent.ACTION_UP -> {
-          ui.removeCallbacks(longRun)
+          ui.removeCallbacks(longRun); ui.removeCallbacks(offRun)
           if (dragging) {
             dragging = false
             saveHome()
@@ -452,7 +458,7 @@ class MimirBar(
           } else if (!longFired) { MimirOverlayService.lastEvent = "toucher court : ouverture"; onTap() }
           return true
         }
-        MotionEvent.ACTION_CANCEL -> { ui.removeCallbacks(longRun); if (dragging) { dragging = false; saveHome() }; return true }
+        MotionEvent.ACTION_CANCEL -> { ui.removeCallbacks(longRun); ui.removeCallbacks(offRun); if (dragging) { dragging = false; saveHome() }; return true }
       }
       return super.onTouchEvent(ev)
     }

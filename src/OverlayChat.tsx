@@ -172,6 +172,10 @@ export function OverlayChat() {
       patchRef.current(x => { const c = x.convs.find(v => v.id === convId.current); if (c) c.msgs = c.msgs.filter(m => m.id !== gone.id); });
       pushState(true);
       void answer(q.text, q.image || null, true);
+    } else if (type === 'offline') {
+      /* appui de 5 s sur le personnage : on quitte le mode en ligne (le modèle du téléphone reprend la main) */
+      patchRef.current(x => { if (x.settings.cloud) x.settings.cloud.enabled = false; });
+      trail('mode en ligne désactivé par appui long sur Mìmir');
     } else if (type === 'voice') {
       voiceTurn.current = true;   /* texte dicté dans la bulle : la réponse sera lue à voix haute */
     } else if (type === 'speak') {

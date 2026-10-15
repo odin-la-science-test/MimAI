@@ -207,6 +207,22 @@ class MimirOverlayModule : Module() {
       true
     }
 
+    /* l'app dit si un fournisseur en ligne est connecté (nécessaire pour passer en ligne par appui long, même app fermée) */
+    Function("setCloudReady") { ready: Boolean ->
+      val ctx = appContext.reactContext ?: return@Function false
+      ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("cloud_ready", ready).apply()
+      true
+    }
+
+    /* mode demandé par appui long pendant que l'app était fermée ("online" / "offline" / "") ; lu une seule fois */
+    Function("takePendingMode") {
+      val ctx = appContext.reactContext ?: return@Function ""
+      val sp = ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
+      val v = sp.getString("pending_mode", "") ?: ""
+      if (v.isNotEmpty()) sp.edit().remove("pending_mode").apply()
+      v
+    }
+
     Function("toast") { text: String ->
       MimirOverlayService.instance?.showToast(text)
       true

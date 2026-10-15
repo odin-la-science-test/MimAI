@@ -250,9 +250,18 @@ class MimirOverlayService : Service() {
   /* appui de 5 secondes hors ligne : l'app active l'IA en ligne si un fournisseur est connecté (sinon elle le dit) */
   fun goOnline() {
     ui.post {
+      val prefs = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
+      if (!prefs.getBoolean("cloud_ready", false)) {
+        android.widget.Toast.makeText(this, "Aucun fournisseur en ligne connecté : ouvrez MiMai → IA en ligne gratuite.", android.widget.Toast.LENGTH_LONG).show()
+        return@post
+      }
       lastEvent = "passage en ligne demandé par appui long"
+      /* même app fermée : le personnage, la bulle et l'icône passent tout de suite en bleu ; MiMai applique le réglage à sa prochaine ouverture */
+      MimirTheme.set(this, true)
+      animBar?.setOnline(true)
       val s = sinkAction
-      if (s != null) s("online", "") else android.widget.Toast.makeText(this, "Ouvrez MiMai une fois pour passer en mode en ligne.", android.widget.Toast.LENGTH_LONG).show()
+      if (s != null) { s("online", ""); prefs.edit().remove("pending_mode").apply() }
+      else { prefs.edit().putString("pending_mode", "online").apply(); android.widget.Toast.makeText(this, "Mode en ligne : il sera appliqué à la prochaine ouverture de MiMai.", android.widget.Toast.LENGTH_LONG).show() }
     }
   }
 
@@ -263,8 +272,10 @@ class MimirOverlayService : Service() {
       MimirTheme.set(this, false)
       animBar?.setOnline(false)
       lastEvent = "retour hors ligne demandé par appui long"
+      val prefs = getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE)
       val s = sinkAction
-      if (s != null) s("offline", "") else android.widget.Toast.makeText(this, "Ouvrez MiMai une fois pour terminer le passage hors ligne.", android.widget.Toast.LENGTH_LONG).show()
+      if (s != null) { s("offline", ""); prefs.edit().remove("pending_mode").apply() }
+      else { prefs.edit().putString("pending_mode", "offline").apply(); android.widget.Toast.makeText(this, "Mode hors ligne : il sera appliqué à la prochaine ouverture de MiMai.", android.widget.Toast.LENGTH_LONG).show() }
     }
   }
 

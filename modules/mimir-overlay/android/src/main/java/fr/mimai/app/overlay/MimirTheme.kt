@@ -1,6 +1,8 @@
 package fr.mimai.app.overlay
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 
 /* Palette de Mìmir partout : ORANGE hors ligne, BLEU en mode en ligne (choix poussé par l'app via setTheme, mémorisé pour le
@@ -16,6 +18,22 @@ object MimirTheme {
   fun set(ctx: Context, on: Boolean) {
     online = on
     ctx.getSharedPreferences("mimai_overlay", Context.MODE_PRIVATE).edit().putBoolean("online", on).apply()
+    launcherIcon(ctx, on)
+  }
+
+  /* icône de l'app sur l'écran d'accueil : orange hors ligne, bleue en mode en ligne (deux alias du lanceur, voir
+     plugins/withMimaiAndroid.js). Selon le lanceur, le changement apparaît après quelques secondes. */
+  fun launcherIcon(ctx: Context, blue: Boolean) {
+    try {
+      val pm = ctx.packageManager
+      val on = ComponentName(ctx.packageName, "fr.mimai.app.LauncherBlue")
+      val off = ComponentName(ctx.packageName, "fr.mimai.app.LauncherOrange")
+      val wantOn = if (blue) on else off
+      val wantOff = if (blue) off else on
+      if (pm.getComponentEnabledSetting(wantOn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED && pm.getComponentEnabledSetting(wantOff) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED) return
+      pm.setComponentEnabledSetting(wantOn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+      pm.setComponentEnabledSetting(wantOff, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+    } catch (e: Exception) { /* alias absent (build sans bulle) : l'icône ne change pas */ }
   }
 
   private val hsv = ThreadLocal<FloatArray>()

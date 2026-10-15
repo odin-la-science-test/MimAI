@@ -76,10 +76,38 @@ ${PROGUARD_MARK}
 -dontwarn com.margelo.**
 `;
 
+/* — icône de l'app : orange hors ligne, bleue en mode en ligne —
+   Deux « activity-alias » du lanceur ; le module natif (MimirTheme) active l'un et désactive l'autre. */
+const BLUE_ICON_XML = `<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/mimai_icon_bg_blue"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
+</adaptive-icon>
+`;
+const BLUE_COLORS_XML = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mimai_icon_bg_blue">#2f6fc4</color>
+</resources>
+`;
+
 /* — manifeste — */
 function patchManifest(config) {
   return withAndroidManifest(config, (cfg) => {
     const manifest = cfg.modResults.manifest;
+    {
+      const app0 = manifest.application[0];
+      const main = (app0.activity || []).find((a) => a.$['android:name'] === '.MainActivity');
+      if (main) {
+        /* l'activité principale n'est plus lancée directement par le lanceur : ce sont les alias qui le sont */
+        main['intent-filter'] = (main['intent-filter'] || []).filter((f) => !JSON.stringify(f).includes('android.intent.category.LAUNCHER'));
+        const alias = (name, icon, enabled) => ({
+          $: { 'android:name': name, 'android:targetActivity': '.MainActivity', 'android:exported': 'true', 'android:enabled': enabled ? 'true' : 'false', 'android:icon': icon, 'android:roundIcon': icon, 'android:label': '@string/app_name' },
+          'intent-filter': [{ action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }], category: [{ $: { 'android:name': 'android.intent.category.LAUNCHER' } }] }],
+        });
+        app0['activity-alias'] = [alias('.LauncherOrange', '@mipmap/ic_launcher', true), alias('.LauncherBlue', '@mipmap/ic_launcher_blue', false)];
+      }
+    }
     manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
     const app = manifest.application[0];
     app.$['android:allowBackup'] = 'false';
@@ -109,6 +137,16 @@ function writeFiles(config) {
     fs.mkdirSync(xmlDir, { recursive: true });
     fs.writeFileSync(path.join(xmlDir, 'mimai_network_security_config.xml'), NETWORK_SECURITY_CONFIG);
     fs.writeFileSync(path.join(xmlDir, 'mimai_data_extraction_rules.xml'), DATA_EXTRACTION_RULES);
+
+    /* icône bleue du mode en ligne */
+    const res = path.join(root, 'app', 'src', 'main', 'res');
+    fs.mkdirSync(path.join(res, 'mipmap-anydpi-v26'), { recursive: true });
+    fs.mkdirSync(path.join(res, 'mipmap-xxxhdpi'), { recursive: true });
+    fs.mkdirSync(path.join(res, 'values'), { recursive: true });
+    fs.writeFileSync(path.join(res, 'mipmap-anydpi-v26', 'ic_launcher_blue.xml'), BLUE_ICON_XML);
+    fs.writeFileSync(path.join(res, 'values', 'mimai_icon_colors.xml'), BLUE_COLORS_XML);
+    const legacy = path.join(cfg.modRequest.projectRoot, 'assets', 'icons', 'icon-blue-192.png');
+    if (fs.existsSync(legacy)) fs.copyFileSync(legacy, path.join(res, 'mipmap-xxxhdpi', 'ic_launcher_blue.png'));
 
     const pro = path.join(root, 'app', 'proguard-rules.pro');
     const cur = fs.existsSync(pro) ? fs.readFileSync(pro, 'utf8') : '';

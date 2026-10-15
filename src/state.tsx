@@ -15,7 +15,7 @@ import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs, setSpeakLog } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
 import { barThink, barDone, barProgress } from './services/bar';
-import { appExits, overlaySetTheme } from './services/overlay';
+import { appExits, overlaySetTheme, overlaySetCloudReady, overlayTakePendingMode } from './services/overlay';
 import { modelForMode, isVisionModel } from './services/modes';
 import { extractMemory } from './services/memory';
 import { ensureIndexed } from './services/rag';
@@ -229,6 +229,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const onlineNow = isOnlineMode(data.settings.cloud);
   setLocalAllowed(!onlineNow);
   useEffect(() => { if (ready) overlaySetTheme(onlineNow); }, [onlineNow, ready]);
+  /* un fournisseur est-il connecté ? (le personnage ne peut passer en ligne par appui long que dans ce cas, même app fermée) */
+  const cloudHasProvider = !!data.settings.cloud && Object.keys(data.settings.cloud.providers || {}).some(id => data.settings.cloud!.providers[id]?.enabled);
+  useEffect(() => { if (ready) overlaySetCloudReady(cloudHasProvider); }, [cloudHasProvider, ready]);
+  /* mode demandé par un appui long sur le personnage pendant que MiMai était fermé : appliqué à l'ouverture */
+  useEffect(() => {
+    if (!ready) return;
+    const m = overlayTakePendingMode();
+    if (m === 'offline') patchData(d => { if (d.settings.cloud) d.settings.cloud.enabled = false; });
+    else if (m === 'online' && cloudHasProvider) patchData(d => { if (d.settings.cloud) d.settings.cloud.enabled = true; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   /* IA en ligne : liste des modèles remise à jour au plus une fois par jour et par fournisseur */
   useEffect(() => { if (ready) void cloudEngine()?.refreshModels(false); }, [ready, data.settings.cloud?.enabled]);

@@ -102,9 +102,10 @@ const CREAM = [245, 234, 216]; // #f5ead8 crème
 const mix = (a, b, t) => [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)];
 
 /* icône de l'app : fond terracotta plein, logo crème */
-function icon(size, fit = 0.62) {
-  return png(size, size, (x, y) => [...mix(BG, CREAM, coverage(x, y, size, size, fit)), 255]);
+function icon(size, fit = 0.62, bg = BG) {
+  return png(size, size, (x, y) => [...mix(bg, CREAM, coverage(x, y, size, size, fit)), 255]);
 }
+const BG_BLUE = [47, 111, 196];   // #2f6fc4 : icône du mode en ligne (voir plugins/withMimaiAndroid.js)
 /* splash : logo crème sur transparent (le fond terracotta vient de app.json) */
 function splashIcon(size) {
   return png(size, size, (x, y) => [...CREAM, Math.round(255 * coverage(x, y, size, size, 0.8))]);
@@ -133,6 +134,7 @@ fs.writeFileSync(path.join(out, 'adaptive-icon.png'), adaptiveFg(1024));
 fs.writeFileSync(path.join(out, 'adaptive-icon-mono.png'), adaptiveMono(1024));
 fs.writeFileSync(path.join(out, 'splash-icon.png'), splashIcon(512));
 fs.writeFileSync(path.join(out, 'favicon.png'), icon(48));
+fs.writeFileSync(path.join(out, 'icon-blue-192.png'), icon(192, 0.62, BG_BLUE));   // ancienne icône (Android < 8) de la variante bleue
 /* ressources de la fiche Play Store (à téléverser dans la Play Console) */
 const store = path.join(__dirname, '..', 'docs', 'store-assets');
 fs.mkdirSync(store, { recursive: true });

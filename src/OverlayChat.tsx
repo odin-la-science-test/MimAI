@@ -108,7 +108,7 @@ export function OverlayChat() {
         modelName: curModel(), image: photo, cloud: cloudHook(),
         onText: t => { const n = Date.now(); if (n - lastSent > 120) { lastSent = n; overlayChatText(t, false); } },
       });
-      const am: Msg = { id: uid('m'), role: 'ai', text: info.text, ts: Date.now(), feedback: null, model: info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : info.real ? (MODELS[curModel()]?.name || 'local') : 'Moteur intégré' };
+      const am: Msg = { id: uid('m'), role: 'ai', text: info.text, ts: Date.now(), feedback: null, model: info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : info.cloudFailed ? 'En ligne · indisponible' : info.real ? (MODELS[curModel()]?.name || 'local') : 'Moteur intégré' };
       hist.current = [...hist.current, am];
       patchRef.current(x => { const c = x.convs.find(v => v.id === id); if (c) c.msgs.push(am); });
       overlayChatText(info.text, true);

@@ -12,12 +12,7 @@ import { Screen, IconBtn, H1, Sub, Kicker, Card, Btn, Tag, Toggle, Bar, Dialog, 
 import { cloudEngine, defaultCloud } from '../services/cloud';
 import { PROVIDERS, detectProvider } from '../services/cloud/providers';
 import type { ProviderId } from '../services/cloud/providers';
-import type { Policy } from '../services/cloud/core';
 
-const POLICIES: { id: Policy; title: string; sub: string }[] = [
-  { id: 'auto', title: 'Automatique', sub: 'L’IA en ligne en premier, le modèle du téléphone en secours.' },
-  { id: 'local-first', title: 'Téléphone d’abord', sub: 'Le modèle local répond ; l’IA en ligne ne sert que s’il ne peut pas.' },
-];
 
 const STATE_LABEL: Record<string, string> = { ok: 'Prêt', limited: 'Limite atteinte', auth: 'Clé refusée', down: 'Indisponible', off: 'Non connecté' };
 
@@ -90,15 +85,10 @@ export function Cloud({ navigation }: NativeStackScreenProps<RootStackParamList,
 
       {cloud.enabled ? (
         <>
-          <Kicker style={{ marginTop: 20 }}>Quand l’utiliser</Kicker>
-          <View style={{ marginTop: 8, gap: 8 }}>
-            {POLICIES.map(p => (
-              <Card key={p.id} onPress={() => patch(c => { c.policy = p.id; })} style={{ borderWidth: 1.5, borderColor: cloud.policy === p.id ? C.accent : 'transparent' }}>
-                <Text style={{ fontWeight: '700', fontSize: 14.5, fontFamily: F.bodyBold }}>{p.title}</Text>
-                <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.n700, marginTop: 2 }}>{p.sub}</Text>
-              </Card>
-            ))}
-          </View>
+          <Card style={{ marginTop: 20 }}>
+            <Text style={{ fontWeight: '700', fontSize: 14.5, fontFamily: F.bodyBold }}>Mode en ligne = modèles en ligne seulement</Text>
+            <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.n700, marginTop: 2 }}>Tant que l’IA en ligne est active (et un fournisseur connecté), seuls les modèles en ligne répondent, avec bascule automatique entre eux. Le modèle du téléphone reste muet et déchargé de la mémoire. Si tous les fournisseurs sont à leur limite, MiMai vous le dit au lieu de répondre en local. Désactivez l’IA en ligne pour revenir au modèle du téléphone.</Text>
+          </Card>
 
           <Kicker style={{ marginTop: 20 }}>Ce qui est envoyé</Kicker>
           <Card style={{ marginTop: 8, gap: 12 }}>

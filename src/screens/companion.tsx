@@ -134,7 +134,7 @@ export function Companion({ navigation }: NativeStackScreenProps<RootStackParamL
       <Text style={{ marginTop: 8, textAlign: 'center', fontSize: 12.5, color: C.n700 }}>Secouez le téléphone : Mìmir réagit (étourdi, atchoum, danse, saut, pirouette, tremblement, surprise).</Text>
       <H1 size={32} style={{ marginTop: 18 }}>Mìmir, toujours à portée.</H1>
       <Sub style={{ marginTop: 6 }}>{overlayIncluded
-        ? 'Dans la version installée, Mìmir reste à portée dans la barre d’état, par-dessus vos applis. Touchez la puce près de la caméra : une fenêtre de discussion flottante s’ouvre par-dessus l’appli en cours. Vous pouvez aussi écrire dans la notification ou toucher « Parler ». ' + (online ? 'Mode en ligne : les réponses viennent du fournisseur choisi (le téléphone en secours).' : 'Tout est traité sur l’appareil, sans réseau.')
+        ? 'Dans la version installée, Mìmir reste à portée dans la barre d’état, par-dessus vos applis. Touchez la puce près de la caméra : une fenêtre de discussion flottante s’ouvre par-dessus l’appli en cours. Vous pouvez aussi écrire dans la notification ou toucher « Parler ». ' + (online ? 'Mode en ligne : les réponses viennent du fournisseur choisi, pas du modèle du téléphone.' : 'Tout est traité sur l’appareil, sans réseau.')
         : 'Mìmir vous accompagne dans l’application. La barre autour de la caméra n’est pas incluse dans cette version.'}</Sub>
       <View style={{ marginTop: 14 }}>
         <Row>

@@ -47,6 +47,12 @@ export interface CloudHook {
 
 export type Step = string;
 
+/* consigne de longueur des modèles EN LIGNE : ils sont rapides et puissants, on ne bride plus la réponse */
+const cloudHint = (kind: Kind): string => (kind === 'court' ? 'Réponds de façon claire et directe.' : kind === 'moyen' ? 'Réponds de façon complète et bien structurée.' : 'Raisonne étape par étape, de façon détaillée et rigoureuse, puis conclus.');
+
+const CLOUD_BUDGET_MS: Record<Kind, number> = { court: 25000, moyen: 50000, reflexion: 120000 };
+const NO_PROVIDER = 'Aucun modèle en ligne n’a pu répondre pour l’instant (limite du jour atteinte, ou pas de connexion). Réessayez dans un moment, connectez un autre fournisseur, ou désactivez l’IA en ligne pour utiliser le modèle du téléphone.';
+
 export function planSteps(ctx: GenerateCtx): Step[] {
   const steps: Step[] = ['Analyse'];
   const docHit = ctx.forcedDoc || RAG.findDocByName(ctx.userText, ctx.docs);
@@ -406,7 +412,7 @@ function integratedAnswer(ctx: GenerateCtx, seed: number): string {
 }
 
 /* ─────────── API du moteur ─────────── */
-export interface GenerateInfo { tps?: number; text: string; real: boolean; adapterApplied: string | null; fewShots: number; adapterError?: string; engineError?: string; kind?: Kind; cut?: boolean; ms?: number; ttftMs?: number | null; cloud?: { provider: string; model: string; tokens: number; ms: number } }
+export interface GenerateInfo { tps?: number; text: string; real: boolean; adapterApplied: string | null; fewShots: number; adapterError?: string; engineError?: string; kind?: Kind; cloudFailed?: boolean; cut?: boolean; ms?: number; ttftMs?: number | null; cloud?: { provider: string; model: string; tokens: number; ms: number } }
 
 const toPair = (e: TEx): TrainPair => ({ id: e.id, q: e.q, a: e.target, src: 'example', weight: 2, tags: e.tags || [], ts: e.ts });
 
@@ -426,17 +432,17 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
   const shotsAll = withImage ? [] : fewShotsFor(ctx, fewShotCount(kind));
 
   /* IA en ligne gratuite : meilleur (fournisseur, modèle) du moment, bascule automatique au moindre refus ; null = on continue en local */
-  const tryCloud = async (): Promise<GenerateInfo | null> => {
-    const h = ctx.cloud;
-    if (!h) return null;
-    if (withImage && !h.sharePhotos) return null;
+  const tryCloud = async (): Promise<GenerateInfo> => {
+    const h = ctx.cloud!;
+    const failed = (text: string): GenerateInfo => ({ text, real: false, adapterApplied: null, fewShots: 0, kind, cloudFailed: true });
+    if (withImage && !h.sharePhotos) return failed('Le mode en ligne n’envoie pas vos photos. Activez « Photos » dans IA en ligne gratuite, ou désactivez l’IA en ligne pour analyser la photo sur le téléphone.');
     try {
       const personal = h.shareContext;
       const cShots = personal ? shotsAll : [];
-      const msgs = buildMessages(ctx, cShots, kind, withImage, personal);
-      const cMax = withImage ? 400 : kind === 'court' ? 180 : kind === 'moyen' ? 520 : 900;
+      const msgs = buildMessages(ctx, cShots, kind, withImage, personal, true);
+      const cMax = withImage ? 1200 : kind === 'court' ? 600 : kind === 'moyen' ? 1800 : 4000;
       const promptChars = JSON.stringify(msgs).length;
-      if (!h.available(kind, withImage, promptChars, cMax)) return null;
+      if (!h.available(kind, withImage, promptChars, cMax)) return failed(NO_PROVIDER);
       let payload: unknown[] = msgs;
       if (withImage) {
         const path = String(ctx.image).replace(/^file:\/\//, '');
@@ -449,21 +455,20 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
       const ans = await h.run({
         messages: payload, kind, needVision: withImage, maxTokens: cMax, promptChars,
         onText: ctx.onText ? t => ctx.onText!(clean(t)) : undefined,
-        budgetMs: BUDGET_MS[kind] + (withImage ? 40000 : 4000),
+        budgetMs: CLOUD_BUDGET_MS[kind] + (withImage ? 40000 : 0),
       });
-      if (!ans) return null;
+      if (!ans) return failed(NO_PROVIDER);
       trail('IA en ligne : ' + ans.provider + ' / ' + ans.model + ', ' + ans.tokens + ' jetons, ' + ans.ms + ' ms' + (ans.tried > 1 ? ' (après ' + (ans.tried - 1) + ' refus)' : ''));
       return { text: trimToSentence(clean(ans.text), ans.cut), real: true, adapterApplied: null, fewShots: cShots.length, kind, ms: ans.ms, cloud: { provider: ans.provider, model: ans.model, tokens: ans.tokens, ms: ans.ms } };
     } catch (e) {
-      trail('IA en ligne : erreur interne ignorée (' + (e instanceof Error ? e.message : String(e)).slice(0, 80) + ')');
-      return null;
+      trail('IA en ligne : erreur interne (' + (e instanceof Error ? e.message : String(e)).slice(0, 80) + ')');
+      return failed(NO_PROVIDER);
     }
   };
-  const cloudFirst = !!ctx.cloud && ctx.cloud.policy !== 'local-first';
-  if (cloudFirst) { const c = await tryCloud(); if (c) return c; }
+  /* MODE EN LIGNE : seuls les modèles en ligne répondent ; le modèle du téléphone reste muet (aucun repli silencieux) */
+  if (ctx.cloud) return tryCloud();
 
   if (withImage && !def?.mmproj) {
-    if (ctx.cloud && !cloudFirst) { const c = await tryCloud(); if (c) return c; }
     /* modèle sans module image : on le dit clairement plutôt que de répondre à côté */
     return { text: 'Le modèle choisi pour la fonction Vision ne sait pas lire les images. Installez un modèle de vision (Modèles → Un moteur par fonction) puis réessayez.', real: false, adapterApplied: null, fewShots: 0, kind };
   }
@@ -496,8 +501,6 @@ export async function generateDetailed(ctx: GenerateCtx): Promise<GenerateInfo> 
     if (real.tps) knownSpeed[ctx.modelName] = Math.round(real.tps * 10) / 10;
     return { tps: real.tps ?? undefined, text: trimToSentence(clean(real.text), real.cut), real: true, adapterApplied: adapter && !adapterError ? meta!.file! : null, fewShots: shots.length, adapterError, kind, cut: real.cut, ms: real.ms, ttftMs: real.ttftMs };
   }
-  /* « local d'abord » : le modèle local n'a pas répondu (absent ou en échec) → l'IA en ligne prend le relais */
-  if (ctx.cloud && !cloudFirst) { const c = await tryCloud(); if (c) return c; }
   const seed = hash(ctx.userText + ctx.history.length);
   const fallback = integratedAnswer(ctx, seed);
   return { text: fallback, real: false, adapterApplied: null, fewShots: 0, engineError, kind };
@@ -525,12 +528,12 @@ function buildSystemPrompt(ctx: GenerateCtx, personal = true): string {
 }
 
 /* messages de chat (gabarit du modèle appliqué par llama.rn) : système + exemples pertinents + historique + question */
-function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false, personal = true): ChatMsg[] {
+function buildMessages(ctx: GenerateCtx, shots: TrainPair[], kind: Kind, withImage = false, personal = true, cloud = false): ChatMsg[] {
   const out: ChatMsg[] = [{ role: 'system', content: buildSystemPrompt(ctx, personal) }];
   shots.forEach(p => { out.push({ role: 'user', content: p.q }, { role: 'assistant', content: p.a }); });
-  ctx.history.slice(-historyWindow(kind)).forEach(m => out.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
+  ctx.history.slice(-(cloud ? 12 : historyWindow(kind))).forEach(m => out.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
   /* la consigne de longueur est collée à la question : le prompt système reste identique d'une demande à l'autre */
-  out.push({ role: 'user', content: ctx.userText + '\n\n[' + (withImage ? 'Regarde la photo jointe, décris ce que tu vois puis réponds à la question en quelques phrases.' : lengthHint(kind)) + ']' });
+  out.push({ role: 'user', content: ctx.userText + '\n\n[' + (withImage ? 'Regarde la photo jointe, décris ce que tu vois puis réponds à la question en quelques phrases.' : (cloud ? cloudHint(kind) : lengthHint(kind))) + ']' });
   return out;
 }
 

@@ -136,7 +136,7 @@ export function Chat({ navigation, route }: NativeStackScreenProps<RootStackPara
           <Text numberOfLines={1} style={{ fontWeight: '700', fontSize: 16, fontFamily: F.bodyBold }}>{conv ? conv.title : 'Nouvelle conversation'}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.g600 }} />
-            <Text numberOfLines={1} style={{ fontSize: 12, color: C.g700 }}>{online ? 'En ligne · ' + modeLabel + ' · fournisseur gratuit (le téléphone en secours)' : 'Local · ' + modeLabel + ' · ' + (am ? am.name : 'modèle local')}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: C.g700 }}>{online ? 'En ligne · ' + modeLabel + ' · fournisseur gratuit' : 'Local · ' + modeLabel + ' · ' + (am ? am.name : 'modèle local')}</Text>
           </View>
         </View>
         <IconBtn name="dots" onPress={() => setMenu(true)} />

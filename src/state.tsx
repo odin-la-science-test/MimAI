@@ -10,7 +10,7 @@ import { DEFAULT_MODEL_ID } from './services/catalog';
 import { scanModelFiles } from './services/modelFiles';
 import { reconcile } from './services/installed';
 import type { ModelManifest, PhaseInfo } from './services/net';
-import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded } from './services/engine';
+import { generateDetailed, planSteps, prewarm, seedSpeed, takeSnapshot, setCompat, setBackgrounded, releaseLlama } from './services/engine';
 import { MAX_SNAPSHOTS } from './services/bench';
 import { setVoicePrefs } from './services/speak';
 import { trail, recordJsError } from './services/crashlog';
@@ -201,6 +201,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
+  /* passage en mode en ligne : le modèle du téléphone est déchargé de la mémoire */
+  const onlineNow = isOnlineMode(data.settings.cloud);
+  useEffect(() => { if (onlineNow) void releaseLlama(); }, [onlineNow]);
+
   /* IA en ligne : liste des modèles remise à jour au plus une fois par jour et par fournisseur */
   useEffect(() => { if (ready) void cloudEngine()?.refreshModels(false); }, [ready, data.settings.cloud?.enabled]);
 
@@ -208,9 +212,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const warm = modelForMode(data.settings.installed, data.settings.activeModel, data.settings.modeModels, data.settings.mode);
     if (!ready || !data.settings.installed.includes(warm)) return;
-    /* en mode en ligne, le modèle du téléphone n'est chargé qu'en cas de besoin (secours) : on ne garde pas 4 Go en mémoire pour rien */
-    const cl = data.settings.cloud;
-    if (isOnlineMode(cl) && cl?.policy !== 'local-first') return;
+    /* en mode en ligne, le modèle du téléphone ne répond pas : on ne garde pas 4 Go en mémoire pour rien */
+    if (isOnlineMode(data.settings.cloud)) return;
     if (AppState.currentState !== 'active') return;
     const t = setTimeout(() => { void prewarm(warm, { memories: data.memories, adapterRules: activeAdapter(data)?.rules || [], docs: [] }); }, 1200);
     return () => clearTimeout(t);
@@ -311,7 +314,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       answer = info.text;
       usedRealModel = info.real;
-      cloudLabel = info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : null;
+      cloudLabel = info.cloud ? 'En ligne · ' + info.cloud.provider + ' · ' + info.cloud.model : info.cloudFailed ? 'En ligne · indisponible' : null;
       /* vitesse mesurée de ce modèle sur ce téléphone (affichée dans Modèles) */
       if (info.real && !info.cloud && info.tps && info.tps > 0) {
         const id = modelId, v = Math.round(info.tps * 10) / 10;

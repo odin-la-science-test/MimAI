@@ -5,6 +5,7 @@ import type { CloudSettings } from './core.ts';
 import { PROVIDERS } from './providers.ts';
 import * as client from './client.ts';
 import type { CloudHook } from '../engine';
+import { isOnlineMode } from './mode.ts';
 
 export { defaultCloud };
 export type { CloudSettings };
@@ -57,7 +58,7 @@ export const cloudEngine = (): CloudEngine | null => engine;
 export function cloudHook(): CloudHook | undefined {
   const c = current?.get();
   const e = engine;
-  if (!e || !c || !c.enabled) return undefined;
+  if (!e || !c || !isOnlineMode(c)) return undefined;   /* activée mais sans fournisseur connecté : on reste en local */
   return {
     policy: c.policy, shareContext: c.shareContext, sharePhotos: c.sharePhotos,
     available: (k, v, p, m) => e.available(k, v, p, m),

@@ -8,7 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { buildBackup, mergeBackup, backupFileName } from '../services/backup';
 import { uid } from '../services/db';
-import { bi } from '../i18n';
+import { bi, LANGS } from '../i18n';
 import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
@@ -131,11 +131,11 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
 
       <Kicker style={{ marginTop: 18 }}>Langue</Kicker>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-        {([['auto', bi('Automatique', 'Automatic')], ['fr', 'Français'], ['en', 'English']] as const).map(([k, label]) => (
-          <Btn key={k} title={label} kind={lang === k ? 'primary' : 'secondary'} height={44} fontSize={14} onPress={() => patchData(d => { d.settings.lang = k; })} />
+        {([{ id: 'auto' as const, label: bi('Automatique', 'Automatic') }, ...LANGS]).map(l => (
+          <Btn key={l.id} title={l.label} kind={lang === l.id ? 'primary' : 'secondary'} height={44} fontSize={14} onPress={() => patchData(d => { d.settings.lang = l.id; })} />
         ))}
       </View>
-      <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700, marginTop: 8 }}>{bi('Une partie des textes est encore en français quand l’anglais est choisi.', 'Some texts are still in French when English is selected.')}</Text>
+      <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700, marginTop: 8 }}>{bi('Certains textes peuvent rester en français.', 'Some texts may still appear in French.')}</Text>
 
       <Kicker style={{ marginTop: 18 }}>Sauvegarde</Kicker>
       <Card style={{ marginTop: 8, gap: 10 }}>

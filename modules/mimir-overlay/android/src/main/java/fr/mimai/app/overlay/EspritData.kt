@@ -13,20 +13,23 @@ class EyePrim(val type: Int, val a: FloatArray, val path: Path?, val kind: Int, 
 
 class EspritAnim(
   val id: String, val name: String, val fam: String, val d: Float, val trail: Int, val hard: Boolean, val frames: Int,
-  val f: FloatArray, val fx: Array<FloatArray?>?
+  val f: FloatArray, val colAlt: FloatArray, val fx: Array<FloatArray?>?
 )
 
 class EspritData(
   val fps: Float, val scale: Float, val hexKeys: List<String>, val labs: Array<FloatArray>,
   val shapes: List<Path>, val eyes: Map<String, List<EyePrim>>, val eyeKeys: List<String>, val texts: List<String>,
   val feath: List<Path>, val runes: List<Path>, val rim: Path, val void: Path, val brow: Path, val ghost: Path,
-  val tap: List<String>, val amb: List<String>, val anims: List<EspritAnim>, val byId: Map<String, EspritAnim>
+  val tap: List<String>, val amb: List<String>, val anims: List<EspritAnim>, val byId: Map<String, EspritAnim>,
+  val labsAlt: Array<FloatArray>
 ) {
   fun key(k: String): Int = hexKeys.indexOf(k)
-  fun lab(k: String): FloatArray = labs[hexKeys.indexOf(k)]
+  fun lab(k: String, orange: Boolean = false): FloatArray = (if (orange) labsAlt else labs)[hexKeys.indexOf(k)]
 
   /* couleurs d'effets : la palette est déjà bleue, aucun décalage de teinte */
   val argb: IntArray = IntArray(labs.size) { EtoileData.labToArgbRaw(labs[it][0], labs[it][1], labs[it][2]) }
+  /* palette orange (personnage hors ligne) */
+  val argbAlt: IntArray = IntArray(labsAlt.size) { EtoileData.labToArgbRaw(labsAlt[it][0], labsAlt[it][1], labsAlt[it][2]) }
 
   companion object {
     /* ordre des champs d'une image cuite */
@@ -100,6 +103,9 @@ class EspritData(
         val fj = a.getJSONArray("f")
         val f = FloatArray(fj.length()) { fj.getDouble(it).toFloat() }
         check(f.size == frames * N) { "images de " + a.getString("id") + " : taille inattendue" }
+        val cj = a.getJSONArray("c2")
+        val colAlt = FloatArray(cj.length()) { cj.getDouble(it).toFloat() }
+        check(colAlt.size == frames * 3) { "couleurs orange de " + a.getString("id") + " : taille inattendue" }
         var fx: Array<FloatArray?>? = null
         if (a.has("fx")) {
           val xj = a.getJSONArray("fx")
@@ -115,18 +121,20 @@ class EspritData(
             fx[k] = arr
           }
         }
-        val an = EspritAnim(a.getString("id"), a.getString("n"), a.getString("fam"), a.getDouble("d").toFloat(), a.getInt("trail"), a.optBoolean("hard", false), frames, f, fx)
+        val an = EspritAnim(a.getString("id"), a.getString("n"), a.getString("fam"), a.getDouble("d").toFloat(), a.getInt("trail"), a.optBoolean("hard", false), frames, f, colAlt, fx)
         anims.add(an)
         byId[an.id] = an
       }
       fun pathOf(k: String): Path = EtoileData.pathFrom(o.getJSONArray(k))
+      val hexOrange = strings(o.getJSONArray("hexOrange"))
+      val labsAlt = Array(hexOrange.size) { EtoileData.hexToLab(hexOrange[it]) }
       val fj = o.getJSONArray("feath")
       val rj = o.getJSONArray("runes")
       return EspritData(
         o.getDouble("fps").toFloat(), o.getDouble("scale").toFloat(), hexKeys, labs, shapes, eyes, eyeKeys, strings(o.getJSONArray("texts")),
         List(fj.length()) { EtoileData.pathFrom(fj.getJSONArray(it)) }, List(rj.length()) { EtoileData.pathFrom(rj.getJSONArray(it)) },
         pathOf("rim"), pathOf("void"), pathOf("brow"), pathOf("ghost"),
-        strings(o.getJSONArray("tap")), strings(o.getJSONArray("amb")), anims, byId
+        strings(o.getJSONArray("tap")), strings(o.getJSONArray("amb")), anims, byId, labsAlt
       )
     }
   }

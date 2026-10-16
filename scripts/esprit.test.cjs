@@ -15,12 +15,15 @@ test('156 mouvements + les mouvements d\'ouverture, dans l\'ordre de champs atte
   assert.equal(D.anims.filter(a => a.fam !== 'extra').length, 156);
   for (const id of ['arrivee', 'depart', 'vole_bulle', 'pose_bulle', 'rentre', 'coucou', 'scrute', 'pensif', 'message']) assert.ok(D.anims.some(a => a.id === id), 'manque ' + id);
   assert.equal(D.fams.length, 12);
+  assert.equal(D.hexOrange.length, D.hex.length);
 });
 
 test('chaque animation : images complètes, valeurs finies, durée ≤ 2,8 s, effets cohérents', () => {
   for (const a of D.anims) {
     assert.equal(a.f.length, a.frames * D.stride, a.id);
     assert.ok(a.f.every(Number.isFinite), a.id);
+    assert.equal(a.c2.length, a.frames * 3, a.id);   /* couleurs de la version orange */
+    assert.ok(a.c2.every(Number.isFinite), a.id);
     assert.ok(a.d > 0 && (a.fam === 'extra' || a.d <= 2.8), a.id);
     if (a.fx) {
       assert.equal(a.fx.length, a.frames, a.id);

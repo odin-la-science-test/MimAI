@@ -80,6 +80,7 @@ export function Home({ navigation }: NativeStackScreenProps<RootStackParamList, 
           { icon: 'layers', title: 'Mémoire', sub: data.memories.length + ' souvenir(s) actif(s)', on: () => navigation.navigate('Memory') },
           { icon: 'user', title: 'Mìmir', sub: data.settings.comp.on ? 'Affiché dans l’app' : 'Le compagnon, partout', on: () => navigation.navigate('Companion') },
           { icon: 'spark', title: 'IA en ligne gratuite', sub: data.settings.cloud?.enabled ? 'Activée · bascule automatique' : 'Désactivée · vos propres clés', on: () => navigation.navigate('Cloud') },
+          { icon: 'pen', title: 'Atelier', sub: 'Créer des images et des vocaux', on: () => navigation.navigate('Studio') },
           { icon: 'lock', title: 'Confidentialité', sub: online ? 'Stockage local · IA en ligne active' : 'Local, sans compte', on: () => navigation.navigate('Privacy') },
           { icon: 'chart', title: 'Rapport de plantage', sub: 'Erreurs et fermetures, à copier', on: () => navigation.navigate('CrashLog') },
         ]} />

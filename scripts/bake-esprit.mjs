@@ -18,14 +18,31 @@ const OUT_DIR = resolve(ROOT, 'modules/mimir-overlay/android/src/main/assets');
 const FPS = 30;
 const SCALE = 100;            // les effets sont échantillonnés pour un personnage de 100 unités de haut ; lus à l'échelle réelle côté Android
 
+/* ---- palette ORANGE : le même personnage, version « hors ligne » (capuche sombre, liseré, yeux, runes et ailes orange) ----
+   Les couleurs des animations (mélanges, éclats) sont recalculées par le moteur avec CETTE palette : on le fait donc tourner deux fois. */
+const HEX_ORANGE = {
+  c1: '#fff0dc', c2: '#ffd9ae', c3: '#ffbf73', c4: '#ffa247', c5: '#ff8a1f', c6: '#e86f0c', c7: '#bd560a', c8: '#8c3f08', c9: '#5c2906',
+  cy: '#ffa02e', aq: '#ffd54d', in: '#ff7a3d', vi: '#ff6f91', wh: '#ffffff', gl: '#fff2e2',
+  h1: '#4b4440', h2: '#38322e', h3: '#26221f', h4: '#171412', r1: '#ffc070', r2: '#f59a2e', r3: '#c9701a', vd: '#0b0706', pu: '#6a2a05',
+};
+
 /* ---- chargement du moteur dans Node (faux DOM minimal) ---- */
-let code = readFileSync(SRC, 'utf8');
-if (!code.includes('window.ESPRIT = {')) throw new Error('ancre du moteur introuvable');
-code = code.replace('window.ESPRIT = {', 'window.__EI = { LIST, BY, FAMS, TAP, AMB, evalClip, fxp, L, HEX, SH, SHAPES, RUNES, FEATH, RIM, VOID, BROW, hoodD, ADD, MUL }; window.ESPRIT = {');
-const win = { addEventListener() {}, matchMedia: () => ({ matches: false }), console, ETOILE: null };
-const doc = { documentElement: {}, createElementNS: () => ({ setAttribute() {}, appendChild() {} }) };
-new Function('window', 'document', 'getComputedStyle', 'requestAnimationFrame', 'performance', 'IntersectionObserver', code)(win, doc, () => ({ getPropertyValue: () => '' }), () => 0, { now: () => 0 }, undefined);
-const I = win.__EI;
+function loadEngine(hexOverride) {
+  let code = readFileSync(SRC, 'utf8');
+  if (!code.includes('window.ESPRIT = {')) throw new Error('ancre du moteur introuvable');
+  if (hexOverride) {
+    const before = code;
+    code = code.replace(/const HEX = \{[^}]*\};/, 'const HEX = ' + JSON.stringify(hexOverride) + ';');
+    if (code === before) throw new Error('palette du moteur introuvable');
+  }
+  code = code.replace('window.ESPRIT = {', 'window.__EI = { LIST, BY, FAMS, TAP, AMB, evalClip, fxp, L, HEX, SH, SHAPES, RUNES, FEATH, RIM, VOID, BROW, hoodD, ADD, MUL }; window.ESPRIT = {');
+  const win = { addEventListener() {}, matchMedia: () => ({ matches: false }), console, ETOILE: null };
+  const doc = { documentElement: {}, createElementNS: () => ({ setAttribute() {}, appendChild() {} }) };
+  new Function('window', 'document', 'getComputedStyle', 'requestAnimationFrame', 'performance', 'IntersectionObserver', code)(win, doc, () => ({ getPropertyValue: () => '' }), () => 0, { now: () => 0 }, undefined);
+  return win.__EI;
+}
+const I = loadEngine();
+const IO = loadEngine(HEX_ORANGE);
 
 const r2 = v => Math.round(v * 100) / 100;
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -58,6 +75,7 @@ const base = I.L.c5;
 const texts = [];
 const textId = t => { let j = texts.indexOf(t); if (j < 0) { texts.push(t); j = texts.length - 1; } return j; };
 const ALL = [...I.LIST, ...Object.values(I.BY).filter(a => a.fam === 'extra')];
+const ALL_O = [...IO.LIST, ...Object.values(IO.BY).filter(a => a.fam === 'extra')];
 let totalFrames = 0;
 const eyeIdx = n => { const j = eyeNames.indexOf(n); return j < 0 ? 0 : j; };
 // « wide », « small », « clin » ne sont pas des formes : le moteur les traduit (expr) ; on garde le nom d'origine pour que Kotlin refasse la même traduction
@@ -65,12 +83,14 @@ const EXTRA_EYE = ['wide', 'small', 'clin'];
 const eyeKeys = [...eyeNames, ...EXTRA_EYE];
 const eyeKeyIdx = n => { const j = eyeKeys.indexOf(n); return j < 0 ? 0 : j; };
 
-const anims = ALL.map(A => {
+const anims = ALL.map((A, ai) => {
   const N = Math.max(2, Math.ceil(A.d * FPS));
-  const f = [], fx = [];
+  const f = [], fx = [], cAlt = [];
   for (let i = 0; i < N; i++) {
     const p = i / N;
     const c = I.evalClip(A, p, base);
+    const co = IO.evalClip(ALL_O[ai], p, IO.L.c5);
+    cAlt.push(r3(co.col[0]), r3(co.col[1]), r3(co.col[2]));
     FIELDS.forEach(q => f.push(r3(c[q] || 0)));
     f.push(r3(c.col[0]), r3(c.col[1]), r3(c.col[2]), eyeKeyIdx(c.eyes));
     const out = { f: [], b: [], o: [], x: [], g: [] };
@@ -91,7 +111,7 @@ const anims = ALL.map(A => {
     fx.push(items);
   }
   totalFrames += N;
-  return { id: A.id, n: A.n, fam: A.fam, d: A.d, trail: A.trail || 0, hard: !!A.hard, frames: N, f, fx: fx.some(a => a.length) ? fx : undefined };
+  return { id: A.id, n: A.n, fam: A.fam, d: A.d, trail: A.trail || 0, hard: !!A.hard, frames: N, f, c2: cAlt, fx: fx.some(a => a.length) ? fx : undefined };
 });
 
 /* forme du fantôme (capuche + ailes déployées) : sert au sillage et au dédoublement */
@@ -99,7 +119,7 @@ const ghost = parsePath(I.hoodD(0, 0) + 'M-45 -15C-55 -24 -72 -18 -81 -2C-70 -4 
 
 const data = {
   fps: FPS, scale: SCALE, stride: STRIDE, fields: FIELDS,
-  hexKeys, hex: hexKeys.map(k => I.HEX[k]),
+  hexKeys, hex: hexKeys.map(k => I.HEX[k]), hexOrange: hexKeys.map(k => HEX_ORANGE[k]),
   shapeNames, shapes, eyeNames, eyeKeys, eyes, texts,
   feath: I.FEATH.map(d => parsePath(d)), runes: I.RUNES.map(d => parsePath(d)), rim: parsePath(I.RIM), void: parsePath(I.VOID), brow: parsePath(I.BROW), ghost,
   tap: I.TAP, amb: I.AMB,

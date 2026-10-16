@@ -32,7 +32,7 @@ class EsFr {
 /* L'esprit gardien : le personnage du mode en ligne. Port Kotlin du moteur de la maquette « L'esprit gardien » ; les animations
    elles-mêmes sont lues dans esprit.json (voir scripts/bake-esprit.mjs). Il ne rebondit jamais : il plane, bat des ailes, dresse sa
    capuche et parle avec ses runes. Les capteurs de mouvement ne sont pas repris (la barre reste immobile). */
-class EspritStage(private val d: EspritData) : Being {
+class EspritStage(private val d: EspritData, val orange: Boolean = false) : Being {
   private class ESpr(var v: Float) {
     var t = v
     var dd = 0f
@@ -83,17 +83,17 @@ class EspritStage(private val d: EspritData) : Being {
   private val pi = Math.PI.toFloat()
 
   /* palette (Oklab) */
-  private val base = d.lab("c5")
-  private val labCy = d.lab("cy")
-  private val labIn = d.lab("in")
-  private val labC8 = d.lab("c8")
-  private val labC1 = d.lab("c1")
-  private val labC2 = d.lab("c2")
-  private val labWh = d.lab("wh")
-  private val labVd = d.lab("vd")
-  private val labPu = d.lab("pu")
-  private val labH = arrayOf(d.lab("h1"), d.lab("h2"), d.lab("h3"), d.lab("h4"))
-  private val labR = arrayOf(d.lab("r1"), d.lab("r2"), d.lab("r3"))
+  private val base = d.lab("c5", orange)
+  private val labCy = d.lab("cy", orange)
+  private val labIn = d.lab("in", orange)
+  private val labC8 = d.lab("c8", orange)
+  private val labC1 = d.lab("c1", orange)
+  private val labC2 = d.lab("c2", orange)
+  private val labWh = d.lab("wh", orange)
+  private val labVd = d.lab("vd", orange)
+  private val labPu = d.lab("pu", orange)
+  private val labH = arrayOf(d.lab("h1", orange), d.lab("h2", orange), d.lab("h3", orange), d.lab("h4", orange))
+  private val labR = arrayOf(d.lab("r1", orange), d.lab("r2", orange), d.lab("r3", orange))
   private val eyeKeys = d.eyeKeys
   private val eyeOpen = Math.max(0, eyeKeys.indexOf("open"))
   private val eyeOff = Math.max(0, eyeKeys.indexOf("eteint"))
@@ -251,6 +251,10 @@ class EspritStage(private val d: EspritData) : Being {
     val f = a.f
     for (k in 0 until EspritData.EYES) out.v[k] = f[o0 + k] + (f[o1 + k] - f[o0 + k]) * w
     out.v[EspritData.EYES] = f[o0 + EspritData.EYES]
+    if (orange) {   /* version orange : couleurs calculées par le moteur avec la palette orange */
+      val c = a.colAlt
+      for (k in 0 until 3) out.v[EspritData.C0 + k] = c[i0 * 3 + k] + (c[i1 * 3 + k] - c[i0 * 3 + k]) * w
+    }
     out.anim = a; out.p = p
   }
 
@@ -657,7 +661,8 @@ class EspritStage(private val d: EspritData) : Being {
       if (layer != kind) continue
       val op = it[o + 7]
       if (op <= 0.003f) continue
-      val color = argb(d.argb[Math.max(0, Math.min(d.argb.size - 1, it[o + 8].toInt()))], op)
+      val pal = if (orange) d.argbAlt else d.argb
+      val color = argb(pal[Math.max(0, Math.min(pal.size - 1, it[o + 8].toInt()))], op)
       val x = cx + it[o + 2] * u
       val y = cy + it[o + 3] * u
       when (layer) {

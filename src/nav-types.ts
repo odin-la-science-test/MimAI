@@ -20,4 +20,5 @@ export type RootStackParamList = {
   Companion: undefined;
   CrashLog: undefined;
   Cloud: undefined;
+  Studio: undefined;
 };

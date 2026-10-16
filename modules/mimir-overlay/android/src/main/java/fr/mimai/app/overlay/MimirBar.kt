@@ -43,7 +43,8 @@ class MimirBar(
   private val dp = ctx.resources.displayMetrics.density
   private val screenW = ctx.resources.displayMetrics.widthPixels
   /* hors ligne : l'étoile de Mìmir ; en mode en ligne : l'esprit gardien (si ses animations sont chargées) */
-  private var stage: Being = if (MimirTheme.online && esprit != null) EspritStage(esprit!!) else EtoileStage(data)
+  private fun makeStage(online: Boolean): Being = if (esprit != null) EspritStage(esprit!!, !online) else EtoileStage(data)
+  private var stage: Being = makeStage(MimirTheme.online)
   private var swapping = false
   private var dragging = false
   private var roam = true
@@ -309,15 +310,16 @@ class MimirBar(
 
   fun setOnline(on: Boolean) {
     ui.post {
-      val wantEsprit = on && esprit != null
-      if ((stage is EspritStage) == wantEsprit || swapping) return@post
+      val cur = stage
+      val same = if (esprit != null) (cur is EspritStage && cur.orange == !on) else (cur is EtoileStage)
+      if (same || swapping) return@post
       if (isOpen) { pendingSwap = true; return@post }   /* pas de changement pendant que la bulle est ouverte */
       swapping = true
       val old = stage
       old.play(if (old is EspritStage) "depart" else "eveil")
       kick()
       ui.postDelayed({
-        val ns: Being = if (wantEsprit) EspritStage(esprit!!) else EtoileStage(data)
+        val ns: Being = makeStage(on)
         stage = ns
         ns.place(restX - fxLeft, restY, sizeFor(ns))
         ns.ambient = true

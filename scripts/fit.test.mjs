@@ -9,13 +9,15 @@ const GB = 1e9;
 const mk = (id, over = {}) => ({ id, name: id, family: 'Fam', paramsB: 1, quant: 'Q4_K_M', tags: [], needRamGb: 1, sizeBytes: 0.8 * GB, ...over });
 const P = (ramGb, freeDiskGb = 50) => ({ ramGb, freeDiskGb });
 
-test('seuils RAM : 0,35 / 0,5 / 0,65 (inclus)', () => {
-  assert.equal(F.fitFor(mk('a', { needRamGb: 3.5 }), P(10)).level, 'ideal');
-  assert.equal(F.fitFor(mk('a', { needRamGb: 3.6 }), P(10)).level, 'ok');
-  assert.equal(F.fitFor(mk('a', { needRamGb: 5 }), P(10)).level, 'ok');
-  assert.equal(F.fitFor(mk('a', { needRamGb: 5.1 }), P(10)).level, 'limite');
-  assert.equal(F.fitFor(mk('a', { needRamGb: 6.5 }), P(10)).level, 'limite');
-  const t = F.fitFor(mk('a', { needRamGb: 6.6 }), P(10));
+test('seuils RAM : 0,30 / 0,45 / 0,60 (inclus) et avertissement au-delà de 0,40', () => {
+  assert.equal(F.fitFor(mk('a', { needRamGb: 3 }), P(10)).level, 'ideal');
+  assert.equal(F.fitFor(mk('a', { needRamGb: 3.1 }), P(10)).level, 'ok');
+  assert.equal(F.fitFor(mk('a', { needRamGb: 3.9 }), P(10)).warn, undefined);
+  assert.match(F.fitFor(mk('a', { needRamGb: 4.1 }), P(10)).warn, /fermer MiMai/);
+  assert.equal(F.fitFor(mk('a', { needRamGb: 4.5 }), P(10)).level, 'ok');
+  assert.equal(F.fitFor(mk('a', { needRamGb: 4.6 }), P(10)).level, 'limite');
+  assert.equal(F.fitFor(mk('a', { needRamGb: 6 }), P(10)).level, 'limite');
+  const t = F.fitFor(mk('a', { needRamGb: 6.1 }), P(10));
   assert.equal(t.level, 'trop-lourd');
   assert.equal(t.blockedBy, 'ram');
 });

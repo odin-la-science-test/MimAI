@@ -2,7 +2,14 @@
    réseau, export de diagnostic manuel, suppression des données.
    Aucun compte : l'app n'en a pas (ADR-002). */
 import React, { useState } from 'react';
-import { View, Text, Share } from 'react-native';
+import { View, Share } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { buildBackup, mergeBackup, backupFileName } from '../services/backup';
+import { uid } from '../services/db';
+import { bi } from '../i18n';
+import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp } from '../state';
@@ -14,7 +21,7 @@ import { PROVIDER_BY_ID } from '../services/cloud/providers';
 
 /* ─────────── Confidentialité ─────────── */
 export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamList, 'Privacy'>) {
-  const { data, blockNet, authorizeNet, wipe, exportDiagnostic, toast } = useApp();
+  const { data, patchData, blockNet, authorizeNet, wipe, exportDiagnostic, toast } = useApp();
   const cl = data.settings.cloud;
   const online = isOnlineMode(cl);
   const names = Object.keys(cl?.providers || {}).filter(id => cl!.providers[id].enabled).map(id => PROVIDER_BY_ID[id]?.name || id).join(', ');
@@ -26,6 +33,38 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
     ['Documents', data.docs.length + ' indexés localement'],
     ...(online ? [] : [['Modèles et compétences', data.settings.installed.length + ' modèles · ' + data.adapters.length + ' adaptateurs'] as [string, string]]),
   ];
+
+  const lang = data.settings.lang || 'auto';
+  const [busyB, setBusyB] = useState(false);
+  const exportBackup = async () => {
+    if (busyB) return;
+    setBusyB(true);
+    try {
+      const uri = (FileSystem.cacheDirectory || '') + backupFileName();
+      await FileSystem.writeAsStringAsync(uri, JSON.stringify(buildBackup(data)), { encoding: FileSystem.EncodingType.UTF8 });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: bi('Sauvegarde MiMai', 'MiMai backup') });
+      else toast(bi('Partage indisponible sur cet appareil.', 'Sharing is not available on this device.'));
+    } catch { toast(bi('Export impossible.', 'Export failed.')); }
+    finally { setBusyB(false); }
+  };
+  const importBackup = async () => {
+    if (busyB) return;
+    try {
+      const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true, multiple: false });
+      if (r.canceled || !r.assets?.length) return;
+      setBusyB(true);
+      const raw = JSON.parse(await FileSystem.readAsStringAsync(r.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 }));
+      /* la fusion se fait sur une copie : le résultat est connu tout de suite, puis appliqué d'un coup */
+      const copy = JSON.parse(JSON.stringify({ convs: data.convs, memories: data.memories, docs: data.docs, tex: data.tex })) as { convs: typeof data.convs; memories: typeof data.memories; docs: typeof data.docs; tex: typeof data.tex };
+      const x = mergeBackup(copy, raw, uid);
+      if ('error' in x) toast(x.error);
+      else {
+        patchData(d => { d.convs = copy.convs; d.memories = copy.memories; d.docs = copy.docs; d.tex = copy.tex; });
+        toast(bi('Restauré : ', 'Restored: ') + x.convs + bi(' discussion(s), ', ' conversation(s), ') + x.memories + bi(' souvenir(s), ', ' memory item(s), ') + x.docs + bi(' document(s).', ' document(s).'));
+      }
+    } catch { toast(bi('Fichier de sauvegarde illisible.', 'Unreadable backup file.')); }
+    finally { setBusyB(false); }
+  };
 
   return (
     <Screen scroll>
@@ -89,6 +128,23 @@ export function Privacy({ navigation }: NativeStackScreenProps<RootStackParamLis
         ))}
         {!data.netLog.length ? <Text style={{ fontSize: 13, color: C.n700, paddingVertical: 6 }}>Aucun événement réseau. MiMai n’a rien demandé.</Text> : null}
       </View>
+
+      <Kicker style={{ marginTop: 18 }}>Langue</Kicker>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+        {([['auto', bi('Automatique', 'Automatic')], ['fr', 'Français'], ['en', 'English']] as const).map(([k, label]) => (
+          <Btn key={k} title={label} kind={lang === k ? 'primary' : 'secondary'} height={44} fontSize={14} onPress={() => patchData(d => { d.settings.lang = k; })} />
+        ))}
+      </View>
+      <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700, marginTop: 8 }}>{bi('Une partie des textes est encore en français quand l’anglais est choisi.', 'Some texts are still in French when English is selected.')}</Text>
+
+      <Kicker style={{ marginTop: 18 }}>Sauvegarde</Kicker>
+      <Card style={{ marginTop: 8, gap: 10 }}>
+        <Text style={{ fontSize: 13, lineHeight: 19, color: C.n800 }}>{bi('Un fichier avec vos discussions, votre mémoire, vos documents et vos exemples, pour changer de téléphone. Il n’est pas chiffré : gardez-le en lieu sûr. Les clés des fournisseurs, les photos et les modèles n’en font pas partie.', 'A file with your conversations, memory, documents and examples, to change phones. It is not encrypted: keep it safe. Provider keys, photos and models are not included.')}</Text>
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          <Btn title={busyB ? '…' : bi('Exporter mes données', 'Export my data')} height={44} fontSize={14} disabled={busyB} onPress={() => void exportBackup()} />
+          <Btn title={bi('Importer une sauvegarde', 'Import a backup')} kind="secondary" height={44} fontSize={14} disabled={busyB} onPress={() => void importBackup()} />
+        </View>
+      </Card>
 
       <Kicker style={{ marginTop: 18 }}>Diagnostic et données</Kicker>
       <View style={{ marginTop: 6 }}>

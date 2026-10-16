@@ -2,7 +2,8 @@
    (recommandés pour CE téléphone, recherche, filtres, tri, compatibilité) ; le téléchargement passe
    par la fenêtre réseau explicite de 15 min et la vérification SHA-256 (flux inchangé). */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Alert, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Alert, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DeviceInfo from 'expo-device';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -120,6 +121,7 @@ const ModelRow = React.memo(function ModelRow({ m, fit, open, busy, locked, phas
           <View style={{ gap: 6 }}>
             <FitBadge fit={fit} />
             <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.n800 }}>{fit.reason}</Text>
+            {fit.warn ? <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.a800, fontWeight: '600' }}>{fit.warn}</Text> : null}
             <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>{fit.speedLabel}</Text>
             {quantSpeedNote(m.quant) ? <Text style={{ fontSize: 12, lineHeight: 17, color: C.a700 }}>{quantSpeedNote(m.quant)}</Text> : null}
           </View>

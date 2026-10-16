@@ -1,6 +1,7 @@
 /* Un moteur d'IA par fonction : Rapide, Réflexion, Outils, Vision. */
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../i18n/Text';
 import { useApp, MODELS } from '../state';
 import { C, F } from '../theme';
 import { Kicker, Btn } from '../ui';

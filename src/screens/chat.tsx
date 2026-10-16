@@ -1,6 +1,7 @@
 /* Conversation : étapes de réflexion locales, streaming, modes, feedback, correction. */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Image } from 'react-native';
+import { Text } from '../i18n/Text';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

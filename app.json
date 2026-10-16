@@ -13,7 +13,7 @@
     ],
     "android": {
       "package": "fr.mimai.app",
-      "versionCode": 42,
+      "versionCode": 43,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/adaptive-icon.png",
         "monochromeImage": "./assets/icons/adaptive-icon-mono.png",
@@ -56,7 +56,13 @@
         }
       ],
       "expo-speech-recognition",
-      ["expo-audio", { "microphonePermission": false }]
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
+      "expo-sharing"
     ]
   }
 }

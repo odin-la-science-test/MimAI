@@ -2,7 +2,8 @@
    téléchargement réel du modèle (Hugging Face + SHA-256), prêt.
    Aucun compte : l'app n'en a pas besoin (README §1, ADR-002). */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions, AppState } from 'react-native';
+import { View, TouchableOpacity, ScrollView, useWindowDimensions, AppState } from 'react-native';
+import { Text } from '../i18n/Text';
 import { overlayAvailable, overlayGranted, overlayRequest, overlayShow } from '../services/overlay';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
@@ -185,7 +186,7 @@ export function Device({ navigation }: NativeStackScreenProps<RootStackParamList
             <AvatarIc size={24}><Ico name="spark" size={12} color={C.a700} /></AvatarIc>
             <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
               <Text style={{ fontSize: 13.5, lineHeight: 20, color: C.n800 }}>{m.explain}</Text>
-              <Text style={{ fontSize: 13, lineHeight: 19, color: C.n800 }}>{mFit.reason}</Text>
+              <Text style={{ fontSize: 13, lineHeight: 19, color: C.n800 }}>{mFit.reason}{mFit.warn ? ' ' + mFit.warn : ''}</Text>
               <Text style={{ fontSize: 12, lineHeight: 17, color: C.n700 }}>{mFit.speedLabel}</Text>
             </View>
           </View>

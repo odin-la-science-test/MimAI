@@ -5,7 +5,8 @@
    - Dans Expo Go (ou si la permission est refusée) : Mìmir flotte dans l'app.
    - FloatingMimir : compagnon glissable présent sur tous les écrans. */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, PanResponder, TouchableOpacity, Dimensions } from 'react-native';
+import { View, PanResponder, TouchableOpacity, Dimensions } from 'react-native';
+import { Text } from '../i18n/Text';
 import { useIsFocused } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';

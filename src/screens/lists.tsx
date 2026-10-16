@@ -1,7 +1,8 @@
 /* Listes : Chats (historique + recherche + drapeau d'entraînement),
    Bibliothèque (documents RAG locaux) et vue document (résumé local cité). */
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { Text } from '../i18n/Text';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,13 +15,16 @@ import type { Conv } from '../services/db';
 import { isOnlineMode } from '../services/cloud/mode';
 
 /* ─────────── Chats ─────────── */
+/* recherche sans accents ni majuscules */
+const fold = (s: string): string => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 export function Chats({ navigation }: NativeStackScreenProps<RootStackParamList, 'Chats'>) {
   const { data, set, newChat, deleteConv, setTrainFlag } = useApp();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Conv | null>(null);
   const groups = useMemo(() => {
-    const norm = q.trim().toLowerCase();
-    const match = (c: Conv) => !norm || c.title.toLowerCase().includes(norm) || c.msgs.some(m => m.text.toLowerCase().includes(norm));
+    const norm = fold(q.trim());
+    const match = (c: Conv) => !norm || fold(c.title).includes(norm) || c.msgs.some(m => fold(m.text).includes(norm));
     const byDay = (d: number) => data.convs.filter(c => dayOf(c.ts) === d && match(c));
     return [
       { label: 'Aujourd’hui', items: byDay(0) },
@@ -30,6 +34,12 @@ export function Chats({ navigation }: NativeStackScreenProps<RootStackParamList,
   }, [q, data.convs]);
 
   const snippet = (c: Conv) => {
+    /* pendant une recherche : l'extrait où le mot est trouvé */
+    const nq = fold(q.trim());
+    if (nq) {
+      const hit = c.msgs.find(m => fold(m.text).includes(nq));
+      if (hit) { const i = fold(hit.text).indexOf(nq); return (i > 30 ? '…' : '') + hit.text.slice(Math.max(0, i - 30), i + 90).replace(/\s+/g, ' '); }
+    }
     const last = [...c.msgs].reverse().find(m => m.role === 'ai') || c.msgs[c.msgs.length - 1];
     return last ? last.text.split('\n')[0] : '';
   };

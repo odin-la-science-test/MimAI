@@ -1,6 +1,7 @@
 /* Accueil : salutation, Mìmir, tuiles d'action, compositeur. */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text } from '../i18n/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
@@ -9,6 +10,7 @@ import { C, F } from '../theme';
 import { IconBtn, Tag, Navbar, MenuSheet, Composer, AvatarIc, useTopPad, useKeyboardOpen } from '../ui';
 import { onThemeChange } from '../theme';
 import { isOnlineMode } from '../services/cloud/mode';
+import { bi } from '../i18n';
 
 const TILE_ICONS: Record<string, string> = { think: 'brain', write: 'pen', analyze: 'chart', code: 'code' };
 
@@ -44,6 +46,13 @@ export function Home({ navigation }: NativeStackScreenProps<RootStackParamList, 
           <Tag kind="accent2" dot>{online ? 'En ligne · IA en ligne active' : (!e.internet && data.settings.cloud?.enabled) ? 'Hors ligne · pas d’Internet' : netOn ? 'Réseau autorisé' : 'Local · Internet bloqué'}</Tag>
           {online ? null : <Tag kind="neutral" onPress={() => navigation.navigate('Models')}>{am ? am.name : 'Modèle'} ›</Tag>}
         </View>
+        {!data.settings.helpSeen && data.settings.onboarded ? (
+          <TouchableOpacity onPress={() => navigation.navigate('Help')} accessibilityRole="button" accessibilityLabel="Découvrir les gestes de MiMai"
+            style={{ marginHorizontal: 16, marginTop: 12, borderRadius: 22, backgroundColor: C.a100, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: '600', color: C.a800 }}>{bi('Nouveau ? Découvrez les gestes de MiMai (1 minute).', 'New here? Discover MiMai’s gestures (1 minute).')}</Text>
+            <Text style={{ fontSize: 16, color: C.a800 }}>›</Text>
+          </TouchableOpacity>
+        ) : null}
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 14, paddingTop: 12, width: '100%', maxWidth: 640, alignSelf: 'center' }}
           keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, paddingLeft: 6 }}>
@@ -80,6 +89,7 @@ export function Home({ navigation }: NativeStackScreenProps<RootStackParamList, 
           { icon: 'layers', title: 'Mémoire', sub: data.memories.length + ' souvenir(s) actif(s)', on: () => navigation.navigate('Memory') },
           { icon: 'user', title: 'Mìmir', sub: data.settings.comp.on ? 'Affiché dans l’app' : 'Le compagnon, partout', on: () => navigation.navigate('Companion') },
           { icon: 'spark', title: 'IA en ligne gratuite', sub: data.settings.cloud?.enabled ? 'Activée · bascule automatique' : 'Désactivée · vos propres clés', on: () => navigation.navigate('Cloud') },
+          { icon: 'chat', title: 'Aide et gestes', sub: 'Les gestes et les modes, en une minute', on: () => navigation.navigate('Help') },
           { icon: 'pen', title: 'Atelier', sub: 'Créer des images et des vocaux', on: () => navigation.navigate('Studio') },
           { icon: 'lock', title: 'Confidentialité', sub: online ? 'Stockage local · IA en ligne active' : 'Local, sans compte', on: () => navigation.navigate('Privacy') },
           { icon: 'chart', title: 'Rapport de plantage', sub: 'Erreurs et fermetures, à copier', on: () => navigation.navigate('CrashLog') },

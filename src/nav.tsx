@@ -20,6 +20,7 @@ import { Companion, FloatingMimir } from './screens/companion';
 import { CrashLog } from './screens/crashlog';
 import { Cloud } from './screens/cloud';
 import { Studio } from './screens/studio';
+import { Help } from './screens/help';
 import { trail } from './services/crashlog';
 
 const NO_BACK = ['Splash', 'Welcome', 'Home', 'Ready'];
@@ -77,6 +78,7 @@ export function RootNav() {
         <Stack.Screen name="CrashLog" component={CrashLog} />
         <Stack.Screen name="Cloud" component={Cloud} />
         <Stack.Screen name="Studio" component={Studio} />
+        <Stack.Screen name="Help" component={Help} />
       </Stack.Navigator>
       {ready ? <FloatingMimir /> : null}
       {/* retour : un seul bouton, toujours présent sur chaque page qui a une page précédente (jamais sur l'accueil ni le démarrage) */}

@@ -44,7 +44,7 @@ test('adaptation a l appareil : jamais de modele trop lourd ; limite seulement p
   const m = [
     mk('lourd', { paramsB: 14, sizeBytes: 8 * GB, needRamGb: 9.9 }),
     mk('ok'),
-    mk('limite', { paramsB: 8, sizeBytes: 4.5 * GB, needRamGb: 5.2 }),
+    mk('limite', { paramsB: 8, sizeBytes: 3.6 * GB, needRamGb: 4.6 }),
   ];
   const gen = A.rankForSpecialty(m, 'general', P(8), 5).map(x => x.model.id);
   assert.ok(!gen.includes('lourd'));

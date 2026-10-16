@@ -1,8 +1,6 @@
 # Politique de confidentialité — MiMai
 
-*Dernière mise à jour : 4 octobre 2026. Version française d'abord, English version below.*
-
-> **Avant publication :** cette page doit être publiée sur une URL publique (ex. GitHub Pages) et son lien saisi dans la Play Console.
+*Dernière mise à jour : 16 octobre 2026. Version française d'abord, English version below.*
 
 ## Français
 
@@ -45,7 +43,7 @@ Dans **Menu → IA en ligne gratuite**, vous pouvez activer, après une confirma
 ### Autorisations Android
 - **Internet** : pour le téléchargement explicite d'un modèle et, si vous l'activez, pour l'IA en ligne gratuite.
 - **Vibration** : retour haptique léger sur certains boutons. Aucune donnée n'est collectée.
-- **Micro** : uniquement quand vous touchez le bouton micro (commande vocale). La reconnaissance se fait **sur votre appareil** avec le service vocal d'Android ; MiMai refuse de la faire par Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.
+- **Micro** : uniquement quand vous touchez le bouton micro (commande vocale ou dictée dans la bulle). Hors ligne, la reconnaissance se fait **sur votre appareil** avec le service vocal d'Android ; MiMai refuse de la faire par Internet. En mode en ligne, le service de reconnaissance de votre téléphone (Google) peut utiliser Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.
 - **Lecture à voix haute** (option « Réponses vocales », désactivée par défaut) : MiMai confie le texte de ses réponses à la **synthèse vocale d'Android** de votre téléphone. MiMai n'envoie rien sur Internet ; si vous choisissez dans Android une voix « réseau », c'est ce moteur système (et non MiMai) qui peut utiliser Internet, selon sa propre politique.
 - **Afficher par-dessus les autres applications**, **service au premier plan** et **notifications** : uniquement dans la variante de l'application qui inclut la « bulle Mìmir » ; ces autorisations sont demandées seulement si vous activez la bulle, qui n'affiche qu'un bouton flottant et **ne lit pas le contenu de l'écran**.
 - L'application n'accède ni aux contacts, ni à la localisation, ni à l'appareil photo, ni au stockage général : les fichiers que vous importez passent par le sélecteur de fichiers du système.
@@ -81,14 +79,28 @@ Conversations and messages, memories, documents you import or write, training ex
 ### What is sent over the Internet
 The network is **blocked by default**. Only one operation opens it, and only after your explicit action: **downloading an AI model** (a public GGUF file) from `huggingface.co` (Hugging Face, Inc.). The network window lasts 15 minutes at most and closes as soon as the download ends.
 
-- No personal data, conversation content or document is ever sent.
+- No personal data, conversation content or document is sent **during this download**.
 - Like any Internet request, the download server sees your **IP address** and standard connection metadata. This is handled by Hugging Face under its own policy; MiMai does not receive it.
 - The downloaded file is verified (size and SHA-256) before use.
 
+### Free online AI (optional, off by default)
+In **Menu → Free online AI** you can turn on, after a confirmation, models hosted by free providers (Cerebras, Groq, Google Gemini, SambaNova, OpenRouter, Mistral AI, Cloudflare Workers AI). This only exists if **you** paste your own API key: MiMai ships no key and runs no server.
+
+- While it is on, the **text of your questions** (and the recent conversation history) is sent straight from your phone to the provider, never through the MiMai publisher. Your **memory, documents and training examples** are sent only if you turn on “Memory, documents and examples”; your **photos** (Vision) only if you turn on “Photos”. Both are off by default.
+- Each provider processes the data under its own terms (some free tiers may use it to improve their products); it also sees your IP address.
+- Your keys are kept in the **Android Keystore** secure storage, never in the database, backups or reports. “Disconnect” erases the key.
+- MiMai tracks each provider's usage (tokens, requests, daily limits) on the device and switches between them automatically; this tracking contains no conversation content.
+- **Images and voice clips**: a creation request (“generate an image of…”, “make a voice clip…”) sends the description or text to the provider (Cloudflare or Google). Images created are stored in the app's private space.
+- **Documents and photos attached to a conversation** are read **on the device** (text, Word, Excel, PowerPoint, PDF). In online mode, the content of the attached document is sent to the provider with your question (that is the point of attaching it); a photo is sent only if “Photos” is on. A scanned PDF may be read by Google Gemini if you connected it.
+- **Voice dictation**: offline, recognition runs on the device. In online mode, your phone's speech recognition service (Google) may use the Internet; the audio is then handled by that service.
+- **Loss of Internet**: the app detects the connection; without Internet, online mode is suspended and the on-device model takes over.
+- While online AI is on, only online models answer: the on-device model does not silently take over. If it is off, everything is processed on the device.
+- **Backup**: the export file you create (Privacy → Backup) contains your conversations, memory, documents and examples, unencrypted, and goes only where you send it.
+
 ### Android permissions
-- **Internet**: only for the explicit model download.
+- **Internet**: for the explicit model download and, if you turn it on, for the free online AI.
 - **Vibration**: light haptic feedback on some buttons. No data is collected.
-- **Microphone**: only when you tap the microphone button (voice command). Recognition runs **on your device** with Android's speech service; MiMai refuses to use network-based recognition. MiMai neither records nor sends the audio; only the recognised text is used, as if you had typed it. The microphone never listens continuously.
+- **Microphone**: only when you tap the microphone button (voice command or dictation in the bubble). Offline, recognition runs **on your device** with Android's speech service and MiMai refuses to use network recognition. In online mode, your phone's speech recognition service (Google) may use the Internet.
 - **Read aloud** ("Voice replies" option, off by default): MiMai hands the text of its answers to your phone's **Android text-to-speech**. MiMai sends nothing over the Internet; if you pick a "network" voice in Android, it is that system engine (not MiMai) that may use the Internet, under its own policy.
 - **Draw over other apps**, **foreground service** and **notifications**: only in the app variant that includes the "Mìmir bubble"; they are requested only if you turn the bubble on. It shows a floating button and **does not read screen content**.
 - The app does not access contacts, location, camera or general storage: files you import go through the system file picker.

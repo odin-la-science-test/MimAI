@@ -2,7 +2,8 @@
    L'utilisateur colle sa propre clé gratuite ; MiMai suit chaque limite du jour et passe d'un modèle / fournisseur à l'autre
    tout seul, sans rien afficher dans la discussion. Les clés restent dans le coffre du téléphone. */
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Linking } from 'react-native';
+import { View, TextInput, Linking } from 'react-native';
+import { Text } from '../i18n/Text';
 import * as Clipboard from 'expo-clipboard';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
@@ -140,10 +141,10 @@ export function Cloud({ navigation }: NativeStackScreenProps<RootStackParamList,
                       {r.status.until && r.status.until > Date.now() ? <Text style={{ fontSize: 12, color: C.n700 }}>Reprise vers {hhmm(r.status.until)}.</Text> : null}
                       {r.status.reason && st !== 'ok' ? <Text style={{ fontSize: 12, color: C.n700 }}>{r.status.reason}</Text> : null}
                       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                        <Btn title="Priorité ↑" kind="secondary" height={38} fontSize={13} onPress={() => move(def.id, -1)} />
-                        <Btn title="Priorité ↓" kind="secondary" height={38} fontSize={13} onPress={() => move(def.id, 1)} />
-                        <Btn title="Changer la clé" kind="secondary" height={38} fontSize={13} onPress={() => void openCard(def.id)} />
-                        <Btn title="Déconnecter" kind="ghost" height={38} fontSize={13} onPress={() => void disconnect(def.id)} />
+                        <Btn title="Priorité ↑" kind="secondary" height={44} fontSize={13} onPress={() => move(def.id, -1)} />
+                        <Btn title="Priorité ↓" kind="secondary" height={44} fontSize={13} onPress={() => move(def.id, 1)} />
+                        <Btn title="Changer la clé" kind="secondary" height={44} fontSize={13} onPress={() => void openCard(def.id)} />
+                        <Btn title="Déconnecter" kind="ghost" height={44} fontSize={13} onPress={() => void disconnect(def.id)} />
                       </View>
                     </View>
                   ) : !isOpen ? (
@@ -153,7 +154,7 @@ export function Cloud({ navigation }: NativeStackScreenProps<RootStackParamList,
                   {isOpen ? (
                     <View style={{ gap: 8, marginTop: 4 }}>
                       <Text style={{ fontSize: 12.5, lineHeight: 18, color: C.n800 }}>{def.keyHint}</Text>
-                      <Btn title="Obtenir une clé gratuite" kind="ghost" height={38} fontSize={13} onPress={() => void Linking.openURL(def.keyUrl)} />
+                      <Btn title="Obtenir une clé gratuite" kind="ghost" height={44} fontSize={13} onPress={() => void Linking.openURL(def.keyUrl)} />
                       {def.needsAccount ? (
                         <TextInput value={account} onChangeText={setAccount} placeholder="Identifiant de compte (Account ID)" accessibilityLabel="Identifiant de compte" autoCapitalize="none" autoCorrect={false}
                           style={{ borderRadius: 16, backgroundColor: C.n100, paddingHorizontal: 14, height: 48, fontSize: 15, color: C.text }} placeholderTextColor={C.n600} />

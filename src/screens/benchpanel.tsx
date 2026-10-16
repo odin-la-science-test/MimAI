@@ -1,6 +1,7 @@
 /* Benchmarks avant / après entraînement : instantanés de vitesse + qualité MESURÉS sur cet appareil. */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from '../i18n/Text';
 import { useApp } from '../state';
 import { C, F } from '../theme';
 import { Card, Btn, Kicker, Bar } from '../ui';

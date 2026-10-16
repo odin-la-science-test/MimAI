@@ -1,51 +1,83 @@
-# Fiche Google Play — MiMai (brouillon à relire)
+# Fiche Google Play — MiMai (version du 16 octobre 2026)
 
 Textes à coller dans la Play Console. Chaque affirmation correspond à ce que l'app fait réellement dans le build natif (pas dans Expo Go).
+Limites de la Play Console : titre 30 caractères, description courte 80, description complète 4 000.
 
 ## Français (fr-FR)
 
-**Titre (30 max)** : MiMai — IA sur votre appareil
+**Titre** : MiMai — IA sur votre appareil
 
-**Description courte (80 max)** : Une IA qui reste sur votre téléphone. Sans compte, sans serveur.
+**Description courte** : Une IA qui reste sur votre téléphone. Sans compte, sans serveur.
 
 **Description complète**
 
-MiMai est une application d'intelligence artificielle qui fonctionne sur votre appareil. Vos conversations, vos notes et vos documents ne quittent pas votre téléphone.
+MiMai est une application d'intelligence artificielle qui fonctionne sur votre appareil. Hors ligne, vos conversations, vos notes et vos documents ne quittent jamais votre téléphone.
 
-• Sans compte : aucune inscription, aucune adresse e-mail, aucun identifiant.
-• Local par défaut : MiMai bloque son propre accès à Internet. Le réseau ne s'ouvre qu'à votre demande, pendant 15 minutes, pour télécharger un modèle d'IA. Option facultative : l'IA en ligne gratuite, avec vos propres clés (Groq, Gemini, Cerebras…), désactivée tant que vous ne l'activez pas.
-• Modèles à la demande : vous choisissez et installez un modèle (Qwen 2.5, SmolLM2). Taille et empreinte SHA-256 sont vérifiées avant installation.
-• Mémoire locale : MiMai retient vos préférences et vous pouvez les modifier ou les supprimer.
-• Bibliothèque : importez des fichiers texte et interrogez-les, avec citation des passages.
-• Personnalisation : corrigez les réponses, exportez votre jeu d'exemples, importez un adaptateur LoRA entraîné sur votre ordinateur. Chaque adaptateur est testé avant activation, et vous pouvez revenir en arrière.
-• Commande vocale : touchez le micro pour parler à MiMai. La reconnaissance se fait sur l'appareil (Android 13 ou plus avec le pack de langue hors ligne), jamais par Internet. MiMai peut aussi lire ses réponses à voix haute (option, voix du téléphone).
-• Barre Mìmir (option) : une fine barre noire autour de la caméra, proposée une seule fois à l'installation, pour parler à MiMai depuis n'importe quelle application. Pas de personnage à l'écran ; elle ne lit pas l'écran et n'enregistre rien.
-• Mìmir : un compagnon animé qui réagit quand vous secouez le téléphone.
+DEUX MODES, DEUX COULEURS
+• Orange = hors ligne : tout se passe sur votre téléphone.
+• Bleu = en ligne (option) : vous branchez vos propres clés gratuites (Groq, Google Gemini, Cerebras, Cloudflare…) et MiMai passe tout seul d'un modèle à l'autre quand une limite du jour est atteinte. Désactivé tant que vous ne l'activez pas.
+• Un appui de 3 secondes sur le petit bonhomme bascule d'un mode à l'autre. Sans Internet, MiMai repasse seul en hors ligne.
+
+CE QUE VOUS POUVEZ FAIRE
+• Discuter par écrit ou à la voix, avec des réponses lues à voix haute.
+• Joindre un document ou une photo à une discussion : texte, Word, Excel, PowerPoint, PDF, images. Les fichiers sont lus sur votre téléphone.
+• Créer des images et des voix avec vos fournisseurs en ligne (Atelier).
+• Une bulle de discussion par-dessus n'importe quelle appli, avec un petit personnage animé que vous déplacez du doigt (option).
+• Mémoire locale : MiMai retient vos préférences ; vous les modifiez ou les supprimez.
+• Bibliothèque de documents avec citation des passages.
+• Personnalisation : corrigez les réponses, importez un adaptateur LoRA entraîné sur votre ordinateur ; chaque adaptateur est testé avant activation.
+• Sauvegarde et restauration de vos discussions, de votre mémoire et de vos documents pour changer de téléphone.
+• Interface en français et en anglais.
+
+VIE PRIVÉE
+• Sans compte : aucune inscription, aucune adresse e-mail.
+• Hors ligne, MiMai bloque son propre accès à Internet ; le réseau ne s'ouvre qu'à votre demande, 15 minutes, pour télécharger un modèle (taille et SHA-256 vérifiés).
+• En mode en ligne, le texte de vos questions (et les pièces jointes que vous choisissez d'envoyer) part vers le fournisseur dont vous avez collé la clé ; rien ne passe par un serveur de MiMai. Vos clés sont dans le coffre sécurisé d'Android.
 • Pas de publicité, pas de statistiques, pas de pistage.
 
-Limites à connaître : les modèles sont volumineux (de 0,5 à 1,1 Go) et la rapidité dépend de votre téléphone. L'extraction de PDF et DOCX n'est pas encore disponible : importez du texte.
+Limites à connaître : les modèles sont volumineux (de 0,5 à 3 Go) et la rapidité dépend de votre téléphone. Les limites gratuites des fournisseurs en ligne changent. La génération de vidéo n'est pas disponible.
 
 ## English (en-US)
 
 **Title**: MiMai — On-device AI
+
 **Short description**: AI that stays on your phone. No account, no server.
-**Full description**: MiMai runs AI models on your device. Conversations, notes and documents stay on your phone unless you turn on the optional online AI. No account needed. MiMai blocks its own network access by default and opens it for 15 minutes only when you choose to download a model. Optional free online AI (off by default, bring your own free API keys: Groq, Gemini, Cerebras…) with automatic switching between providers; only what you type is sent, and only if you turn it on. Models are verified (size + SHA-256) before installation. Local memory, document library with citations, personalisation through corrections and LoRA adapters trained on your computer (each one tested before activation, with rollback). Voice command: tap the microphone to talk to MiMai; recognition runs on the device (Android 13+ with the offline language pack), never over the Internet. MiMai can also read its answers aloud (option, phone voice). No ads, no analytics, no tracking. Models are large (0.5–1.1 GB); speed depends on your phone. PDF/DOCX extraction is not available yet.
 
-## Data Safety (à vérifier avec le build final)
+**Full description**
 
-| Question | Réponse |
-|---|---|
-| Collecte de données | **Aucune** |
-| Partage de données | **Aucun** |
-| Données chiffrées en transit | Oui (téléchargement de modèle en HTTPS uniquement) |
-| Suppression des données | Oui : Confidentialité → Supprimer les données locales |
-| SDK tiers d'analyse ou de publicité | Aucun |
-| Audio / voix | Micro utilisé seulement à l'appui sur le bouton ; reconnaissance **sur l'appareil**, audio ni enregistré ni transmis : non collecté |
+MiMai is an AI app that runs on your device. Offline, your conversations, notes and documents never leave your phone.
 
-Les téléchargements de modèles contactent huggingface.co : seul le fichier demandé est récupéré, aucune donnée de l'utilisateur n'est envoyée. À mentionner dans la politique de confidentialité.
+TWO MODES, TWO COLORS
+• Orange = offline: everything happens on your phone.
+• Blue = online (optional): plug in your own free keys (Groq, Google Gemini, Cerebras, Cloudflare…) and MiMai switches models by itself when a daily limit is reached. Off until you turn it on.
+• Hold the little character for 3 seconds to switch modes. With no Internet, MiMai goes back offline by itself.
+
+WHAT YOU CAN DO
+• Chat by typing or by voice, with answers read aloud.
+• Attach a document or photo to a conversation: text, Word, Excel, PowerPoint, PDF, images. Files are read on your phone.
+• Create images and voice clips with your online providers (Studio).
+• A chat bubble over any app, with a small animated character you can drag with your finger (optional).
+• Local memory: MiMai remembers your preferences; edit or delete them.
+• Document library with cited passages.
+• Personalization: correct answers, import a LoRA adapter trained on your computer; each adapter is tested before activation.
+• Back up and restore your conversations, memory and documents to change phones.
+• Interface in French and English.
+
+PRIVACY
+• No account: no sign-up, no e-mail address.
+• Offline, MiMai blocks its own Internet access; the network opens only on your request, for 15 minutes, to download a model (size and SHA-256 verified).
+• In online mode, the text of your questions (and the attachments you choose to send) goes to the provider whose key you pasted; nothing goes through a MiMai server. Your keys are kept in Android's secure storage.
+• No ads, no analytics, no tracking.
+
+Good to know: models are large (0.5 to 3 GB) and speed depends on your phone. Free tiers of online providers change. Video generation is not available.
+
+## Sécurité des données (formulaire Play Console)
+
+Voir `docs/DATA_SAFETY.md` : le mode en ligne facultatif change les réponses (des données sont envoyées à des tiers choisis par l'utilisateur).
 
 ## Autres déclarations
 - Public : tout public ; aucune publicité ; pas d'achats intégrés ; pas de compte.
 - Catégorie suggérée : Productivité (ou Outils).
-- Permissions : `INTERNET` (téléchargement de modèles), `VIBRATE` (retour haptique), `RECORD_AUDIO` (commande vocale, micro ouvert uniquement à l'appui sur le bouton). Avec la bulle : `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE` + `POST_NOTIFICATIONS` (voir `PLAY_STORE_CHECKLIST.md`).
-- Captures d'écran : à produire depuis le build installé (téléphone, 16:9 ou 9:16, 2 minimum).
+- Permissions : `INTERNET`, `VIBRATE`, `RECORD_AUDIO` (dictée, micro ouvert uniquement à l'appui). Avec la bulle : `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE` (+ `SPECIAL_USE`), `POST_NOTIFICATIONS` (voir `docs/PLAY_DECLARATION_BULLE.md`).
+- Captures d'écran et vidéo : voir `docs/TEST_FERME.md` (liste des plans à produire).
+- Politique de confidentialité : URL publique de `docs/privacy/index.html` (voir `docs/TEST_FERME.md`).

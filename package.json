@@ -36,6 +36,9 @@
     "esprit:bake": "node scripts/bake-esprit.mjs",
     "test:esprit": "node --test scripts/esprit.test.cjs",
     "test:docs": "node --test scripts/docs.test.cjs",
+    "test:backup": "node --test scripts/backup.test.cjs",
+    "test:i18n": "node --test scripts/i18n.test.cjs",
+    "privacy:page": "node scripts/build-privacy-page.mjs",
     "test:cloud": "node --test scripts/cloud.test.cjs"
   },
   "dependencies": {
@@ -58,6 +61,7 @@
     "expo-screen-orientation": "~57.0.2",
     "expo-secure-store": "~57.0.4",
     "expo-sensors": "~57.0.3",
+    "expo-sharing": "~57.0.23",
     "expo-speech": "~57.0.3",
     "expo-speech-recognition": "^57.1.0",
     "expo-splash-screen": "~57.0.9",

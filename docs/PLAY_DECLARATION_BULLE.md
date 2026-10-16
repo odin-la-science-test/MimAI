@@ -19,8 +19,10 @@ sans bulle (`-Target aab`) si tu veux d'abord faire valider l'app.
 2. **Affichage par-dessus d'autres applications** (`SYSTEM_ALERT_WINDOW`)
    - Justification à coller :
      > La barre d'assistant autour de la caméra est la fonction centrale de l'application « Mìmir » : elle doit rester visible par-dessus les autres applications pour donner un accès immédiat à l'assistant. Il n'existe pas d'alternative équivalente (une notification ne permet pas un accès en un toucher avec une présence visuelle). La permission n'est demandée que lorsque l'utilisateur active la bulle, et elle peut être retirée à tout moment.
-3. **Sécurité des données** : inchangée (aucune donnée collectée ni partagée).
-4. **Politique de confidentialité** : déjà à jour (section « Autorisations Android »).
+3. **Microphone** (`RECORD_AUDIO`) : demandé uniquement quand l'utilisateur touche le bouton micro (discussion ou bulle). Justification à coller :
+   > Le microphone sert uniquement à la dictée : l'utilisateur touche le bouton micro, parle, et son message est écrit puis envoyé à l'assistant. L'audio n'est ni enregistré ni transmis par MiMai ; la reconnaissance est réalisée par le service vocal d'Android. Depuis la bulle, une activité transparente au premier plan écoute puis se ferme dès la phrase terminée.
+4. **Sécurité des données** : **mise à jour nécessaire** à cause du mode en ligne facultatif : voir `docs/DATA_SAFETY.md`.
+5. **Politique de confidentialité** : à jour (sections « IA en ligne gratuite » et « Autorisations Android »), à publier sur une URL publique (`docs/TEST_FERME.md`, étape 1).
 
 ## 2 bis. Divulgation visible (obligatoire chez Google)
 La version avec bulle affiche, à la fin de l'installation (écran « MiMai est prêt »), une carte « Mìmir à portée, discrètement » qui explique l'usage AVANT toute demande de permission : fine barre autour de la caméra par-dessus les autres applis, ne lit pas l'écran, n'enregistre rien, autorisation Android demandée une seule fois, retrait possible dans Compagnon. Joins une capture de cet écran à ta déclaration et montre-le dans la vidéo. La bulle n'est JAMAIS activée sans ce choix explicite (Android l'interdit de toute façon : l'autorisation « Afficher par-dessus » ne peut pas être accordée automatiquement).

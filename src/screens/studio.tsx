@@ -1,7 +1,8 @@
 /* Atelier : créer des images et des vocaux avec les fournisseurs en ligne gratuits déjà connectés (Cloudflare, Gemini).
    Mêmes clés, mêmes limites suivies que le reste de l'IA en ligne. Rien n'est envoyé sans que vous touchiez « Créer ». */
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image } from 'react-native';
+import { View, TextInput, Image } from 'react-native';
+import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp } from '../state';

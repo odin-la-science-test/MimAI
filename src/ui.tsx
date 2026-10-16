@@ -1,11 +1,13 @@
 /* Composants de design « Organic » — fidèles aux maquettes disagne/. */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, TextInput, Modal, ScrollView, KeyboardAvoidingView, Platform, Keyboard, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, TextInput, Modal, ScrollView, KeyboardAvoidingView, Platform, Keyboard, useWindowDimensions } from 'react-native';
+import { Text } from './i18n/Text';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, R, shadow } from './theme';
 import { BuddyMove, MOVES } from './art';
 import { onThemeChange } from './theme';
+import { tr } from './i18n';
 
 /* ─────────── icônes (traits lucide, comme dans les maquettes) ─────────── */
 const ICONS: Record<string, { d: string; extra?: React.ReactNode }> = {
@@ -218,7 +220,7 @@ export function SearchBar({ value, onChange, placeholder }: { value: string; onC
   return (
     <View style={s.search}>
       <Ico name="search" size={17} color={C.n700} />
-      <TextInput value={value} onChangeText={onChange} placeholder={placeholder} accessibilityLabel={placeholder} style={s.searchIn} placeholderTextColor={C.n600} returnKeyType="search" autoCorrect={false} maxFontSizeMultiplier={1.3} />
+      <TextInput value={value} onChangeText={onChange} placeholder={tr(placeholder)} accessibilityLabel={tr(placeholder)} style={s.searchIn} placeholderTextColor={C.n600} returnKeyType="search" autoCorrect={false} maxFontSizeMultiplier={1.3} />
     </View>
   );
 }

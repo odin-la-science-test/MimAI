@@ -1,6 +1,7 @@
 /* Rapport de plantage : tout ce qu'il faut pour comprendre un problème, à copier-coller. Rien n'est envoyé automatiquement. */
 import React, { useCallback, useState } from 'react';
-import { View, Text, Share } from 'react-native';
+import { View, Share } from 'react-native';
+import { Text } from '../i18n/Text';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';

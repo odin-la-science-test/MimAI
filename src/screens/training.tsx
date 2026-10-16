@@ -8,7 +8,8 @@
    Aucune progression simulée : les pourcentages viennent des étapes réellement exécutées. */
 import React, { useEffect, useRef, useState } from 'react';
 import * as Battery from 'expo-battery';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, TouchableOpacity, TextInput } from 'react-native';
+import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp } from '../state';

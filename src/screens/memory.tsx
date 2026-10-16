@@ -1,7 +1,8 @@
 /* Mémoire (README §6) : apprentissage immédiat — liste, ajout, activation,
    suppression. Distincte de l'entraînement. */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, TouchableOpacity, TextInput } from 'react-native';
+import { Text } from '../i18n/Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../nav-types';
 import { useApp } from '../state';

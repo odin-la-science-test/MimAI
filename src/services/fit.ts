@@ -31,9 +31,15 @@ export interface Fit {
   speed: SpeedLevel;
   /* texte prêt à afficher, explicitement étiqueté comme estimation */
   speedLabel: string;
+  /* avertissement mémoire (modèle compatible mais lourd pour cet appareil) */
+  warn?: string;
 }
 
-export const RAM_RATIO = { ideal: 0.35, ok: 0.5, limite: 0.65 } as const;
+/* Seuils resserrés : Android réserve une bonne part de la RAM au système, et un modèle chargé en occupe bien plus que son fichier.
+   Mesuré sur un téléphone de 7,4 Go : un 4B (3,6 Go annoncés) a fait tuer MiMai en arrière-plan. */
+export const RAM_RATIO = { ideal: 0.30, ok: 0.45, limite: 0.60 } as const;
+/* au-delà de cette part de la RAM, on avertit même si le modèle reste « compatible » */
+export const WARN_RATIO = 0.40;
 export const DISK_MARGIN = 1.1;
 export const UNKNOWN_RAM_MAX_GB = 1.5;
 
@@ -79,9 +85,11 @@ export function fitFor(model: FitModel, profile: DeviceProfile): Fit {
 
   const r = need / ram;
   const use = 'Utilise ≈ ' + fmt(need) + ' Go sur ' + fmt(ram) + ' Go de mémoire';
+  const warn = r > WARN_RATIO ? 'Attention : sur ce téléphone (' + fmt(ram) + ' Go), ce modèle peut faire fermer MiMai quand elle passe en arrière-plan. Pour un usage fluide, préférez un modèle de ' + fmt(ram * WARN_RATIO) + ' Go de mémoire ou moins.' : undefined;
+  const withWarn = (f: Fit): Fit => (warn ? { ...f, warn } : f);
   if (r <= RAM_RATIO.ideal) return mk('ideal', use + ' : confortable.');
-  if (r <= RAM_RATIO.ok) return mk('ok', use + ' : fonctionne bien.');
-  if (r <= RAM_RATIO.limite) return mk('limite', use + ' : possible mais risque de lenteurs ou de fermeture d’autres applications.');
+  if (r <= RAM_RATIO.ok) return withWarn(mk('ok', use + ' : fonctionne bien.'));
+  if (r <= RAM_RATIO.limite) return withWarn(mk('limite', use + ' : possible mais risque de lenteurs ou de fermeture d’autres applications.'));
   return mk('trop-lourd', use + ' : trop pour cet appareil.', 'ram');
 }
 

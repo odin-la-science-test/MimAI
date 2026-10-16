@@ -22,6 +22,7 @@ import { ensureIndexed } from './services/rag';
 import { activeAdapter, trainAndEvaluate, rollbackToPrevious, applyOutcome } from './services/training';
 import { titleFrom, nowHM, fmtGo } from './theme';
 import { applyTheme } from './theme';
+import { setLang, tr } from './i18n';
 import { isOnlineMode, setInternetUp } from './services/cloud/mode';
 import * as Network from 'expo-network';
 import { bindCloud, cloudEngine, cloudHook, loadCloudKeys, defaultCloud } from './services/cloud';
@@ -108,6 +109,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const dataRef = useRef<AppData>(data);
   dataRef.current = data;
+
+  /* documents restaurés d'une sauvegarde : ré-indexés (recherche dans le document) */
+  useEffect(() => {
+    if (!ready || !data.docs.some(x => !x.indexed)) return;
+    const t = setTimeout(() => patchData(d => { d.docs = d.docs.map(x => (x.indexed ? x : ensureIndexed(x))); }), 80);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, data.docs]);
+
+  /* langue de l'interface (Auto = langue du téléphone) */
+  setLang(data.settings.lang);
 
   /* couleurs : orange hors ligne, bleu en mode en ligne (appliqué avant le rendu des écrans) */
   applyTheme(isOnlineMode(data.settings.cloud));
@@ -259,7 +271,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const patchData = (fn: (d: AppData) => void) => setData(prev => { const copy: AppData = JSON.parse(JSON.stringify(prev)); fn(copy); return copy; });
 
-  const toast = (t: string) => {
+  const toast = (t0: string) => {
+    const t = tr(t0);
     set(s => ({ ...s, toast: t }));
     setTimeout(() => set(s => (s.toast === t ? { ...s, toast: '' } : s)), 2600);
   };

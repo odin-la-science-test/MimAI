@@ -21,4 +21,5 @@ export type RootStackParamList = {
   CrashLog: undefined;
   Cloud: undefined;
   Studio: undefined;
+  Help: undefined;
 };

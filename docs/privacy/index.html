@@ -18,40 +18,53 @@ a{color:var(--acc)}code{background:rgba(122,138,94,.18);padding:1px 6px;border-r
 <h1>Politique de confidentialité — MiMai</h1>
 <div class="nav"><a href="#fr">Français</a><a href="#en">English</a></div>
 <section id="fr"><h2 style="font-size:1.4rem;color:var(--olive)">Français</h2>
-<p><em>Dernière mise à jour : 4 octobre 2026. Version française d'abord, English version below.</em></p>
+<p><em>Dernière mise à jour : 16 octobre 2026. Version française d'abord, English version below.</em></p>
 <h2>En bref</h2>
 <p>MiMai est une application d'assistant IA qui <strong>fonctionne sur votre téléphone</strong>. Il n'y a <strong>ni compte, ni serveur MiMai, ni publicité, ni outil d'analyse, ni collecte de données</strong>. L'éditeur ne reçoit aucune de vos données.</p>
 <h2>Éditeur et contact</h2>
-<p>MiMai (développeur : Ethan) — <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<p>MiMai (développeur : Ethan) — <a href="mailto:cells-atlas@gmail.com">cells-atlas@gmail.com</a>.</p>
 <h2>Données stockées sur votre appareil</h2>
-<p>Les éléments suivants sont créés par vous et <strong>restent sur votre appareil</strong> (base SQLite privée de l'application) :</p>
-<p>conversations et messages, souvenirs (mémoire), documents que vous importez ou écrivez, exemples d'entraînement, profils/adaptateurs personnalisés, réglages, journal réseau et journal d'erreurs locaux.</p>
+<p>Les éléments suivants sont créés par vous et <strong>restent sur votre appareil</strong> (base SQLite privée de l'application) : conversations et messages, souvenirs (mémoire), documents que vous importez ou écrivez, exemples d'entraînement, profils/adaptateurs personnalisés, réglages, journal réseau et journal d'erreurs locaux.</p>
 <ul>
 <li>Les contenus sensibles sont <strong>chiffrés au repos</strong> (AES-256-GCM) ; la clé est conservée dans le Keystore Android et ne quitte pas l'appareil. <em>(Le chiffrement n'est actif que dans l'application installée, pas dans le mode de test Expo Go.)</em></li>
 <li>La sauvegarde automatique Android et le transfert d'appareil sont <strong>désactivés</strong> pour ces données.</li>
 <li>Vous pouvez tout effacer depuis <strong>Confidentialité → Supprimer les données locales</strong>. Désinstaller l'application efface aussi toutes les données.</li>
+<li>Les <strong>photos</strong> que vous joignez à la fonction Vision sont copiées dans l'espace privé de l'application, analysées <strong>sur l'appareil</strong> par le modèle de vision, et supprimées avec la conversation ou lors de la suppression des données. Elles ne sont jamais envoyées. MiMai n'utilise pas la caméra et ne demande aucune permission photo (sélecteur de fichiers d'Android).</li>
+<li>Un <strong>rapport de plantage</strong> (appareil, erreurs techniques, étapes juste avant un problème) est conservé sur l'appareil pour vous aider à signaler un bug. Il ne contient ni conversation ni document. Il n'est jamais envoyé automatiquement : c'est vous qui le copiez ou le partagez, et vous pouvez l'effacer (Menu → Rapport de plantage).</li>
 </ul>
 <h2>Ce qui est envoyé sur Internet</h2>
 <p>Le réseau est <strong>bloqué par défaut</strong>. Une seule opération l'ouvre, uniquement après votre action explicite : le <strong>téléchargement d'un modèle d'IA</strong> (fichier GGUF public) depuis <code>huggingface.co</code> (Hugging Face, Inc.). La fenêtre réseau dure 15 minutes au maximum et se referme dès la fin du téléchargement.</p>
 <ul>
-<li>Aucune donnée personnelle, aucun contenu de conversation ni aucun document n'est envoyé.</li>
+<li>Aucune donnée personnelle, aucun contenu de conversation ni aucun document n'est envoyé <strong>lors de ce téléchargement</strong>.</li>
 <li>Comme toute requête Internet, le serveur de téléchargement voit votre <strong>adresse IP</strong> et les informations techniques standard de la connexion. Ces informations sont traitées par Hugging Face selon sa propre politique ; MiMai ne les reçoit pas.</li>
 <li>Le fichier téléchargé est vérifié (taille et empreinte SHA-256) avant utilisation.</li>
 </ul>
+<h2>IA en ligne gratuite (facultative, désactivée par défaut)</h2>
+<p>Dans <strong>Menu → IA en ligne gratuite</strong>, vous pouvez activer, après une confirmation, l'usage de modèles hébergés par des fournisseurs gratuits (Cerebras, Groq, Google Gemini, SambaNova, OpenRouter, Mistral AI, Cloudflare Workers AI). Cette fonction n'existe que si <strong>vous</strong> collez votre propre clé d'API : MiMai ne fournit aucune clé et n'a aucun serveur.</p>
+<ul>
+<li>Quand elle est active, le <strong>texte de vos questions</strong> (et l'historique récent de la discussion) est envoyé directement de votre téléphone au fournisseur, sans passer par l'éditeur de MiMai. Votre <strong>mémoire, vos documents et vos exemples d'entraînement</strong> ne sont envoyés que si vous activez l'option « Mémoire, documents et exemples » ; vos <strong>photos</strong> (fonction Vision) ne sont envoyées que si vous activez « Photos ». Ces options sont désactivées par défaut.</li>
+<li>Chaque fournisseur traite ces données selon ses propres conditions (certains niveaux gratuits peuvent les utiliser pour améliorer leurs produits) ; il voit aussi votre adresse IP.</li>
+<li>Vos clés sont conservées dans le <strong>coffre sécurisé Android</strong> (Keystore), jamais dans la base de données, les sauvegardes ni les rapports. « Déconnecter » efface la clé.</li>
+<li>MiMai suit localement l'usage de chaque fournisseur (jetons, requêtes, limites du jour) et passe automatiquement de l'un à l'autre ; ce suivi reste sur l'appareil et ne contient aucun contenu de conversation.</li>
+<li><strong>Images et voix</strong> : une demande de création (« génère une image de… », « fais un vocal… ») ou la lecture d'une réponse avec une <strong>voix en ligne</strong> envoie le texte concerné (description, texte à lire) au fournisseur (Cloudflare ou Google). Les images et sons créés sont enregistrés dans l'espace privé de l'application ; les sons de lecture sont effacés après usage. La voix du téléphone, elle, ne quitte pas l'appareil.</li>
+<li><strong>Documents et photos joints à une discussion</strong> : ils sont lus <strong>sur l'appareil</strong> (texte, Word, Excel, PowerPoint, PDF). En mode en ligne, le contenu du document joint est envoyé au fournisseur avec votre question (c'est le but de la pièce jointe) ; une photo n'est envoyée que si l'option « Photos » est activée. Un PDF scanné peut être lu par Google Gemini si vous l'avez connecté.</li>
+<li><strong>Dictée vocale</strong> : hors ligne, la reconnaissance se fait sur l'appareil. En mode en ligne, le service de reconnaissance vocale du téléphone (Google) peut utiliser Internet : l'audio est alors traité par ce service.</li>
+<li><strong>Perte d'Internet</strong> : l'app détecte la connexion ; sans Internet, le mode en ligne est suspendu et le modèle du téléphone reprend la main.</li>
+<li>Tant que l'IA en ligne est active, seuls les modèles en ligne répondent : le modèle du téléphone ne prend pas le relais en silence. Si l'IA en ligne est désactivée, tout est traité sur l'appareil.</li>
+</ul>
 <h2>Autorisations Android</h2>
 <ul>
-<li><strong>Internet</strong> : uniquement pour le téléchargement explicite d'un modèle.</li>
+<li><strong>Internet</strong> : pour le téléchargement explicite d'un modèle et, si vous l'activez, pour l'IA en ligne gratuite.</li>
 <li><strong>Vibration</strong> : retour haptique léger sur certains boutons. Aucune donnée n'est collectée.</li>
-<li><strong>Micro</strong> : uniquement quand vous touchez le bouton micro (commande vocale). La reconnaissance se fait <strong>sur votre appareil</strong> avec le service vocal d'Android ; MiMai refuse de la faire par Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.</li>
-<li><strong>Jeu « La Garde des Étoiles »</strong> : jeu intégré qui fonctionne entièrement <strong>hors ligne</strong> dans l'application (affichage par la WebView d'Android, sans accès réseau). Il ne demande aucune autorisation supplémentaire et n'envoie rien. Sa progression (étoiles, sorts) est conservée <strong>sur votre appareil</strong> et est effacée avec « Supprimer les données locales ».</li>
+<li><strong>Micro</strong> : uniquement quand vous touchez le bouton micro (commande vocale ou dictée dans la bulle). Hors ligne, la reconnaissance se fait <strong>sur votre appareil</strong> avec le service vocal d'Android ; MiMai refuse de la faire par Internet. En mode en ligne, le service de reconnaissance de votre téléphone (Google) peut utiliser Internet. L'audio n'est ni enregistré ni envoyé par MiMai ; seul le texte reconnu est utilisé, comme si vous l'aviez tapé. Le micro n'écoute jamais en continu.</li>
 <li><strong>Lecture à voix haute</strong> (option « Réponses vocales », désactivée par défaut) : MiMai confie le texte de ses réponses à la <strong>synthèse vocale d'Android</strong> de votre téléphone. MiMai n'envoie rien sur Internet ; si vous choisissez dans Android une voix « réseau », c'est ce moteur système (et non MiMai) qui peut utiliser Internet, selon sa propre politique.</li>
 <li><strong>Afficher par-dessus les autres applications</strong>, <strong>service au premier plan</strong> et <strong>notifications</strong> : uniquement dans la variante de l'application qui inclut la « bulle Mìmir » ; ces autorisations sont demandées seulement si vous activez la bulle, qui n'affiche qu'un bouton flottant et <strong>ne lit pas le contenu de l'écran</strong>.</li>
 <li>L'application n'accède ni aux contacts, ni à la localisation, ni à l'appareil photo, ni au stockage général : les fichiers que vous importez passent par le sélecteur de fichiers du système.</li>
 </ul>
 <h2>Enfants</h2>
-<p>MiMai ne collecte aucune donnée et n'est pas destinée à profiler des enfants. Tranche d'âge : tout public.</p>
+<p>MiMai (l'éditeur) ne collecte aucune donnée et n'est pas destinée à profiler des enfants. Tranche d'âge : tout public.</p>
 <h2>Vos droits (RGPD)</h2>
-<p>L'éditeur ne détenant aucune donnée vous concernant, il n'y a rien à lui demander d'accéder, de rectifier ou d'effacer : vous gardez la maîtrise complète de vos données sur votre appareil (suppression depuis l'application). Pour toute question : <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<p>L'éditeur ne détenant aucune donnée vous concernant, il n'y a rien à lui demander d'accéder, de rectifier ou d'effacer : vous gardez la maîtrise complète de vos données sur votre appareil (suppression depuis l'application). Pour toute question : <a href="mailto:cells-atlas@gmail.com">cells-atlas@gmail.com</a>.</p>
 <h2>Modifications</h2>
 <p>Toute modification de cette politique sera publiée à cette adresse avec une nouvelle date.</p>
 </section>
@@ -59,27 +72,42 @@ a{color:var(--acc)}code{background:rgba(122,138,94,.18);padding:1px 6px;border-r
 <h2>Summary</h2>
 <p>MiMai is an AI assistant app that <strong>runs on your phone</strong>. There is <strong>no account, no MiMai server, no ads, no analytics and no data collection</strong>. The publisher receives none of your data.</p>
 <h2>Publisher and contact</h2>
-<p>MiMai (developer: Ethan) — <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<p>MiMai (developer: Ethan) — <a href="mailto:cells-atlas@gmail.com">cells-atlas@gmail.com</a>.</p>
 <h2>Data stored on your device</h2>
 <p>Conversations and messages, memories, documents you import or write, training examples, custom profiles/adapters, settings, and local network and error logs are created by you and <strong>stay on your device</strong> (the app's private SQLite database).</p>
 <ul>
 <li>Sensitive content is <strong>encrypted at rest</strong> (AES-256-GCM); the key lives in the Android Keystore and never leaves the device. <em>(Encryption is only active in the installed app, not in the Expo Go test mode.)</em></li>
 <li>Android auto-backup and device-to-device transfer are <strong>disabled</strong> for this data.</li>
 <li>You can erase everything from <strong>Privacy → Delete local data</strong>. Uninstalling the app also removes all data.</li>
+<li><strong>Photos</strong> you attach to the Vision function are copied into the app's private storage, analysed <strong>on the device</strong> by the vision model, and deleted with the conversation or when you delete local data. They are never uploaded. MiMai does not use the camera and requests no photo permission (Android file picker).</li>
+<li>A <strong>crash report</strong> (device, technical errors, steps just before a problem) is kept on the device to help you report a bug. It contains no conversation or document. It is never sent automatically: you copy or share it yourself, and you can erase it (Menu → Crash report).</li>
 </ul>
 <h2>What is sent over the Internet</h2>
 <p>The network is <strong>blocked by default</strong>. Only one operation opens it, and only after your explicit action: <strong>downloading an AI model</strong> (a public GGUF file) from <code>huggingface.co</code> (Hugging Face, Inc.). The network window lasts 15 minutes at most and closes as soon as the download ends.</p>
 <ul>
-<li>No personal data, conversation content or document is ever sent.</li>
+<li>No personal data, conversation content or document is sent <strong>during this download</strong>.</li>
 <li>Like any Internet request, the download server sees your <strong>IP address</strong> and standard connection metadata. This is handled by Hugging Face under its own policy; MiMai does not receive it.</li>
 <li>The downloaded file is verified (size and SHA-256) before use.</li>
 </ul>
+<h2>Free online AI (optional, off by default)</h2>
+<p>In <strong>Menu → Free online AI</strong> you can turn on, after a confirmation, models hosted by free providers (Cerebras, Groq, Google Gemini, SambaNova, OpenRouter, Mistral AI, Cloudflare Workers AI). This only exists if <strong>you</strong> paste your own API key: MiMai ships no key and runs no server.</p>
+<ul>
+<li>While it is on, the <strong>text of your questions</strong> (and the recent conversation history) is sent straight from your phone to the provider, never through the MiMai publisher. Your <strong>memory, documents and training examples</strong> are sent only if you turn on “Memory, documents and examples”; your <strong>photos</strong> (Vision) only if you turn on “Photos”. Both are off by default.</li>
+<li>Each provider processes the data under its own terms (some free tiers may use it to improve their products); it also sees your IP address.</li>
+<li>Your keys are kept in the <strong>Android Keystore</strong> secure storage, never in the database, backups or reports. “Disconnect” erases the key.</li>
+<li>MiMai tracks each provider's usage (tokens, requests, daily limits) on the device and switches between them automatically; this tracking contains no conversation content.</li>
+<li><strong>Images and voice clips</strong>: a creation request (“generate an image of…”, “make a voice clip…”) sends the description or text to the provider (Cloudflare or Google). Images created are stored in the app's private space.</li>
+<li><strong>Documents and photos attached to a conversation</strong> are read <strong>on the device</strong> (text, Word, Excel, PowerPoint, PDF). In online mode, the content of the attached document is sent to the provider with your question (that is the point of attaching it); a photo is sent only if “Photos” is on. A scanned PDF may be read by Google Gemini if you connected it.</li>
+<li><strong>Voice dictation</strong>: offline, recognition runs on the device. In online mode, your phone's speech recognition service (Google) may use the Internet; the audio is then handled by that service.</li>
+<li><strong>Loss of Internet</strong>: the app detects the connection; without Internet, online mode is suspended and the on-device model takes over.</li>
+<li>While online AI is on, only online models answer: the on-device model does not silently take over. If it is off, everything is processed on the device.</li>
+<li><strong>Backup</strong>: the export file you create (Privacy → Backup) contains your conversations, memory, documents and examples, unencrypted, and goes only where you send it.</li>
+</ul>
 <h2>Android permissions</h2>
 <ul>
-<li><strong>Internet</strong>: only for the explicit model download.</li>
+<li><strong>Internet</strong>: for the explicit model download and, if you turn it on, for the free online AI.</li>
 <li><strong>Vibration</strong>: light haptic feedback on some buttons. No data is collected.</li>
-<li><strong>Microphone</strong>: only when you tap the microphone button (voice command). Recognition runs <strong>on your device</strong> with Android's speech service; MiMai refuses to use network-based recognition. MiMai neither records nor sends the audio; only the recognised text is used, as if you had typed it. The microphone never listens continuously.</li>
-<li><strong>"La Garde des Étoiles" game</strong>: a built-in game that runs entirely <strong>offline</strong> inside the app (rendered by Android's WebView, with network access blocked). It needs no extra permission and sends nothing. Its progress (stars, spells) is kept <strong>on your device</strong> and is erased with "Delete local data".</li>
+<li><strong>Microphone</strong>: only when you tap the microphone button (voice command or dictation in the bubble). Offline, recognition runs <strong>on your device</strong> with Android's speech service and MiMai refuses to use network recognition. In online mode, your phone's speech recognition service (Google) may use the Internet.</li>
 <li><strong>Read aloud</strong> ("Voice replies" option, off by default): MiMai hands the text of its answers to your phone's <strong>Android text-to-speech</strong>. MiMai sends nothing over the Internet; if you pick a "network" voice in Android, it is that system engine (not MiMai) that may use the Internet, under its own policy.</li>
 <li><strong>Draw over other apps</strong>, <strong>foreground service</strong> and <strong>notifications</strong>: only in the app variant that includes the "Mìmir bubble"; they are requested only if you turn the bubble on. It shows a floating button and <strong>does not read screen content</strong>.</li>
 <li>The app does not access contacts, location, camera or general storage: files you import go through the system file picker.</li>
@@ -87,7 +115,7 @@ a{color:var(--acc)}code{background:rgba(122,138,94,.18);padding:1px 6px;border-r
 <h2>Children</h2>
 <p>MiMai collects no data. Age range: everyone.</p>
 <h2>Your rights (GDPR)</h2>
-<p>The publisher holds no data about you, so there is nothing to access, rectify or erase on its side: you keep full control on your device (deletion from within the app). Questions: <a href="mailto:cells-atlas@gmail.com.">cells-atlas@gmail.com.</a></p>
+<p>The publisher holds no data about you, so there is nothing to access, rectify or erase on its side: you keep full control on your device (deletion from within the app). Questions: <a href="mailto:cells-atlas@gmail.com">cells-atlas@gmail.com</a>.</p>
 <h2>Changes</h2>
 <p>Any change to this policy will be published at this address with a new date.</p>
 </section>

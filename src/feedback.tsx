@@ -1,6 +1,7 @@
 /* Feedback sous les réponses (👍/👎 en SVG) + dialogue de correction — design « Organic ». */
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, Animated, Easing, Modal, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
+import { View, Pressable, Animated, Easing, Modal, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
+import { Text } from './i18n/Text';
 import Svg, { Path } from 'react-native-svg';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';

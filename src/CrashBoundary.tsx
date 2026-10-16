@@ -1,7 +1,8 @@
 /* Filet de sécurité : une erreur d'affichage (React) ne ferme plus l'application en silence.
    L'erreur est écrite dans le journal et un écran propose de copier le rapport ou de réessayer. */
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { Text } from './i18n/Text';
 import * as Clipboard from 'expo-clipboard';
 import { buildReport, recordJsError } from './services/crashlog';
 
